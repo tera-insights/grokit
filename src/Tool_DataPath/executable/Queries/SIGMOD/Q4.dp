@@ -1,0 +1,74 @@
+
+/** scanners */
+new scanner lineitem;
+new scanner customer;
+new scanner orders;
+new scanner supplier;
+new scanner nation;
+
+// define new waypoint
+new waypoint W3  = Select:-orders;
+new waypoint W14 = Select:-nation;
+
+
+/* a waypoint has to be declard with new before
+   it is used for a connection | topological sort */
+
+// for joins, the right hand side is terminating
+// guard it by ?
+new waypoint W6  = Join(lineitem.l_orderkey):-lineitem, ?W3;
+new waypoint W16 = Join(supplier.s_nationkey):-supplier, ?W14;
+
+new waypoint W25 = Join(customer.c_custkey):- customer, ?W6;
+
+new waypoint W26 = Join(customer.c_nationkey):- W25, ?W16;
+
+// aggregates now
+new waypoint W27 = Aggregate:-W26;
+
+// print waypoint
+new waypoint W28 = Print:-?W27;
+
+
+/** the following queries are written in a different way */
+
+// forward definitions of queries
+new query Q4;
+
+waypoint W3 {
+  query Q4 { filter (orders.o_orderdate>=DATE('1997-03-01')) && (orders.o_orderdate<DATE('1997-04-07')); }
+}
+
+waypoint W6 { 
+  query Q4 { join orders.o_orderkey; }
+}
+
+waypoint W14 { 
+  query Q4 { filter nation.n_name == 'JAPAN'; }
+}
+
+waypoint W16 {
+  query Q4 { join nation.n_nationkey; } 
+}
+
+waypoint W25 {
+  query Q4 { join orders.o_custkey; }
+}
+
+waypoint W26 {
+  query Q4 { join supplier.s_nationkey; }
+}
+
+waypoint W27 {
+  query Q4 {
+    aggregate agg_q4_1=Sum(( (nation.n_name == 'JAPAN') ? ((lineitem.l_extendedprice * (1.000000 - lineitem.l_discount))) : (0.000000) ));
+    aggregate agg_q4_2=Sum((lineitem.l_extendedprice * (1.000000 - lineitem.l_discount)));
+  } 
+}
+
+waypoint W28 {
+  query Q4 { print (agg_q4_1 / agg_q4_2); }
+}
+
+run query Q4;
+

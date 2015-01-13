@@ -1,0 +1,24 @@
+/** This query adds up all the flows per source IP and computes the total 
+    amount of data 
+
+*/
+
+new scanner flows;
+
+/** TopK GLA */
+new waypoint topk = GLA :- flows;
+
+new waypoint pr = Print :- ?topk;
+
+new query Q1 {
+    waypoint topk {
+       gla (dummy:FLOAT, mac:MACADDR, f:DOUBLE) = TopK_MAC_Sum [10] (flows.FSize, flows.MAC, flows.FSize);
+    }
+    
+    waypoint pr {
+       print mac, f;
+    }
+    
+}
+
+run query Q1;

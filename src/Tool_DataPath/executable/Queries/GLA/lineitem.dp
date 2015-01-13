@@ -1,0 +1,17 @@
+new scanner lineitem;
+
+new waypoint gl = GLA :- lineitem;
+new waypoint pr = Print :- ?gl;
+
+new query Q1 {
+
+		waypoint gl {
+			 gla (c:BIGINT, s:DOUBLE, a:DOUBLE) = AverageGLA [1000000 , 1.0e+6] ( 2.0*lineitem.l_discount );
+		}
+
+		waypoint pr {
+			 print c,s,a;	
+		}
+}
+
+run query Q1;

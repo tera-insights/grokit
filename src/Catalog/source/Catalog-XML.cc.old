@@ -1,0 +1,552 @@
+#include "Catalog.h"
+#include "Errors.h"
+
+#include <libxml2/libxml/parser.h>
+#include <libxml2/libxml/tree.h>
+#include <libxml2/libxml/encoding.h>
+#include <libxml2/libxml/xmlwriter.h>
+
+
+Catalog::Catalog(string xmlFile) {
+
+	// first, let us initialize all the mutexes
+	pthread_mutex_init(&constMutex, NULL);
+	pthread_mutex_init(&diskMutex, NULL);
+	pthread_mutex_init(&schemaMutex, NULL);
+
+	// load the XML document.
+	xmlDocPtr doc = xmlReadFile(xmlFile.c_str(), NULL, 0);
+	FATALIF(doc == NULL, "Failed to load catalog file %s.", xmlFile.c_str());
+
+	// get the root element.
+	xmlNodePtr elm = xmlDocGetRootElement(doc);
+	FATALIF(elm == NULL, "Cannot retrieve catalog root element.");
+
+	// check root element name.
+	FATALIF(strcasecmp((const char*)elm->name, "catalog") != 0,
+		"malformed XML document (root element).");
+
+	// traverse all kids.
+	elm = elm->xmlChildrenNode;
+	while (elm != NULL) {
+		// ***** <config> section *****
+		if (strcasecmp((const char*)elm->name, "config") == 0) {
+			xmlNodePtr conf = elm->xmlChildrenNode;
+
+			// travers through all the constants
+			while (conf != NULL) {
+
+				// check name
+				if (strcasecmp((char *)conf->name, "constant") == 0) {
+
+					// get the name property -- all of them have it.
+					char *name = (char *)xmlGetProp(conf, BAD_CAST "name");
+					FATALIF(name == NULL, "name information not available for configuration constant.");
+
+					// get the type property -- all of them have it.
+					char *type = (char *)xmlGetProp(conf, BAD_CAST "type");
+					FATALIF(type == NULL, "type information not available for configuration constant.");
+
+					// get the value property -- all of them have it.
+					char *value = (char *)xmlGetProp(conf, BAD_CAST "value");
+					FATALIF(value == NULL, "value information not available for configuration constant.");
+
+					// is it an integer?
+					if (strcasecmp((char *)type, "integer") == 0) {
+						int val = atoi(value);
+						string valn = string(name);
+
+						// add it to the map
+						intConstants[valn] = val;
+					}
+					// is it a double?
+					else if (strcasecmp((char *)type, "double") == 0) {
+						double val = atof(value);
+						string valn = string(name);
+
+						// add it to the map
+						doubleConstants[valn] = val;
+					}
+					// is it a string?
+					else if (strcasecmp((char *)type, "string") == 0) {
+						string val = string(value);
+						string valn = string(name);
+
+						// add it to the map
+						stringConstants[valn] = val;
+					}
+					// undefined
+					else {
+						FATAL("unknown data type %s", type);
+					}
+
+					// free the properties.
+					xmlFree(value);
+					xmlFree(name);
+					xmlFree(type);
+
+					// next constant
+				}
+
+				conf = conf->next;
+			}
+		}
+
+		// ***** <storage> section *****
+		else if (strcasecmp((const char*)elm->name, "storage") == 0) {
+			// get the children node
+			xmlNodePtr disk = elm->xmlChildrenNode;
+
+			// some variables...
+			StringContainer paths;
+			vector<int> idxs;
+
+			// traverse through all the existing disk paths.
+			while (disk != NULL) {
+				// check name
+				if (strcasecmp((char *)disk->name, "disk") == 0) {
+
+					// get the path.
+					char *path = (char *)xmlGetProp(disk, BAD_CAST "path");
+					FATALIF(path == NULL, "path information not available in storage section.");
+
+					// get the index
+					char *idx = (char *)xmlGetProp(disk, BAD_CAST "index");
+					FATALIF(idx == NULL, "index information not available in storage section.");
+
+					// append it.
+					idxs.push_back(atoi(idx));
+					paths.push_back(string(path));
+
+					// free the properties.
+					xmlFree(path);
+					xmlFree(idx);
+				}
+
+				// next element.
+				disk = disk->next;
+			}
+
+			// now recreate the paths
+			diskPaths = paths;
+			for (int i=0;i<idxs.size();i++) {
+				diskPaths[i] = paths[idxs[i]];
+			}
+		}
+
+		// ***** <schema> section -- the most important one! *****
+		else if (strcasecmp((const char *)elm->name, "schema") == 0) {
+			xmlNodePtr schm = elm->xmlChildrenNode;
+
+			// traverse all schemas.
+			while (schm != NULL) {
+				// get in if its <relation>
+				if (strcasecmp((char *)schm->name, "relation") == 0) {
+					// get relation name and check.
+					char *name = (char *)xmlGetProp(schm, BAD_CAST "name");
+					FATALIF(name == NULL, "schema section -- relation without a name.");
+
+					// get metadata path and check
+					char *mpath = (char *)xmlGetProp(schm, BAD_CAST "metadata");
+					FATALIF(mpath == NULL, "schema section -- relation without a metadata path.");
+
+					// get number of tuples and check
+					char *ntupl = (char *)xmlGetProp(schm, BAD_CAST "tuples");
+					FATALIF(ntupl == NULL, "schema section -- relation without number of tuples.");
+
+					// get the relName.
+					string relName(name);
+
+					// get the metaPath
+					string metaPath(mpath);
+
+					// get the numTuples
+					long int numTuples = atol(ntupl);
+
+					// free the name.
+					xmlFree(name);
+
+					// free the path
+					xmlFree(mpath);
+
+					// free the tuples
+					xmlFree(ntupl);
+
+					// declare stuff we will need.
+					AttributeContainer curAtts;
+
+					// go through the relational data
+					xmlNodePtr schk = schm->xmlChildrenNode;
+					while (schk != NULL) {
+						// is it the <attributes> section?
+						if (strcasecmp((const char *)schk->name, "attributes") == 0) {
+
+							// stuff we declare for our relation
+							int attIndex = 0;
+
+							// get the atts and traverse
+							xmlNodePtr atts = schk->xmlChildrenNode;
+
+							while (atts != NULL) {
+								// check subtree name
+								if (strcasecmp((const char *)atts->name, "attribute") == 0) {
+
+									// get name property.
+									char *name = (char *)xmlGetProp(atts, BAD_CAST "name");
+									FATALIF(name == NULL, "relation section -- attribute without a name.");
+
+									string attName = string(name);
+
+									// get uniques property
+									char *uniquesc = (char *)xmlGetProp(atts, BAD_CAST "uniques");
+									FATALIF(uniquesc == NULL, "relation section -- attribute without uniques.");
+									long int attUniques = atol(uniquesc);
+
+
+									// get type property.
+									char *typec = (char *)xmlGetProp(atts, BAD_CAST "type");
+									FATALIF(typec == NULL, "relation section -- attribute without a type.");
+
+
+									// check the types and insert.
+									AttributeType attType = AttributeType::CreateFromName(typec);
+
+									// free.
+									xmlFree(name);
+									xmlFree(typec);
+									xmlFree(uniquesc);
+
+									// create an attribute and add it in the collection
+									Attribute att(attName, attType, attIndex++, attUniques);
+									curAtts.Append(att);
+								}
+
+								// next attribute.
+								atts = atts->next;
+							}
+						}
+
+						// is it the <primary-key> section?
+						else if (strcasecmp((const char*)schk->name, "primary-key") == 0) {
+							// get the key atts.
+							xmlNodePtr pks = schk->xmlChildrenNode;
+
+							// go through all of them
+							while (pks != NULL) {
+								// get in if name is correct
+								if (strcasecmp((const char *)pks->name, "attribute") == 0) {
+									// get name and check.
+									char *name = (char *)xmlGetProp(pks, BAD_CAST "name");
+									FATALIF(name == NULL, "primary-key section -- primary key without attribute name");
+
+									// find it in attNames.
+									bool found = false;
+
+									// good, now find this attribute in the container
+									// and make it PK
+									for (curAtts.MoveToStart();!curAtts.AtEnd();curAtts.Advance()) {
+										if (curAtts.Current().GetName() == name) {
+											curAtts.Current().SetPrimaryKey(true);
+											found = true;
+										}
+									}
+
+									WARNINGIF(!found, "primary-key section -- attribute %s not found in relation", name);
+
+									// free.
+									xmlFree(name);
+								}
+
+								// next PK.
+								pks = pks->next;
+							}
+						}
+
+						// is it the <foreign-keys> section?
+						else if (strcasecmp((const char*)schk->name, "foreign-keys") == 0) {
+							// important note: we won't do the semantic checking
+							// right here because the foreign relations might not
+							// have been processed yet, so we delay those checks
+							// until we have all of our structures completely
+							// filled.
+
+							// get the fkey atts.
+							xmlNodePtr fks = schk->xmlChildrenNode;
+
+							// traverse 'em
+							while (fks != NULL) {
+								// get in if name is correct
+								if (strcasecmp((const char *)fks->name, "attribute") == 0) {
+									// get the name
+									char *name = (char *)xmlGetProp(fks, BAD_CAST "name");
+									FATALIF(name == NULL, "foreign-key section -- key without attribute name");
+
+									// get the foreign relation name
+									char *frel = (char *)xmlGetProp(fks, BAD_CAST "relation");
+									FATALIF(frel == NULL, "foreign-key section -- key without foreign relation name");
+
+									// get the foreign attribute name
+									char *fatt = (char *)xmlGetProp(fks, BAD_CAST "fname");
+									FATALIF(fatt == NULL, "foreign-key section -- key without foreign attribute name");
+
+									// see if it is present in the relation -- we can do
+									// this check here
+									bool found = false;
+
+									// get the attribute, set the FK information and put
+									// it back
+									for (curAtts.MoveToStart();!curAtts.AtEnd();curAtts.Advance()) {
+										if (curAtts.Current().GetName() == name) {
+											curAtts.Current().SetForeignKey(frel, fatt);
+											found = true;
+										}
+									}
+
+									WARNINGIF(!found, "foreign-key section -- attribute %s not found in local relation", name);
+
+									// free
+									xmlFree(name);
+									xmlFree(frel);
+									xmlFree(fatt);
+								}
+
+								// next FK.
+								fks = fks->next;
+							}
+						}
+
+						// next relation.
+						schk = schk->next;
+					}
+
+					// build the schema and add it to the catalog
+					Schema newSch(curAtts, relName, metaPath, numTuples);
+					schemas.Insert(newSch);
+				}
+
+				// next schema
+				schm = schm->next;
+			}
+		}
+
+		// next section in the catalog
+		elm = elm->next;
+	}
+
+	// free stuff.
+	xmlFreeDoc(doc);
+	xmlCleanupParser();
+}
+
+void Catalog::SaveCatalog(string xmlFile) {
+
+	// get *all* the mutexes
+	pthread_mutex_lock(&schemaMutex);
+	pthread_mutex_lock(&constMutex);
+	pthread_mutex_lock(&diskMutex);
+
+	// set indentation
+	xmlIndentTreeOutput = 1;
+
+	// get an XML writer and check.
+	xmlDocPtr doc;
+	char tmp[256];
+
+	xmlTextWriterPtr writer = xmlNewTextWriterDoc(&doc, 0);
+	FATALIF(writer == NULL, "cannot initialize xml writer.");
+
+	// start a document
+	FATALIF(xmlTextWriterStartDocument(writer, NULL, CATALOG_CHARACTER_ENCODING, NULL) < 0,
+		"cannot start new document.");
+
+	// start the catalog element.
+	xmlTextWriterStartElement(writer, BAD_CAST "catalog");
+
+	// CONFIGURATION SECTION
+	// start the configuration element.
+	xmlTextWriterStartElement(writer, BAD_CAST "config");
+
+	// first, we will go through the integer constants
+	map<string, int>::iterator ii;
+	for (ii = intConstants.begin(); ii != intConstants.end(); ii++) {
+		// cast value
+		sprintf(tmp, "%i\0", ii->second);
+
+		// write the attribute
+		xmlTextWriterStartElement(writer, BAD_CAST "constant");
+		xmlTextWriterWriteAttribute(writer, BAD_CAST "name", BAD_CAST ii->first.c_str());
+		xmlTextWriterWriteAttribute(writer, BAD_CAST "type", BAD_CAST "integer");
+		xmlTextWriterWriteAttribute(writer, BAD_CAST "value", BAD_CAST tmp);
+		xmlTextWriterEndElement(writer);
+	}
+
+	// second, the double constants
+	map<string, double>::iterator di;
+	for (di = doubleConstants.begin(); di != doubleConstants.end(); di++) {
+		// cast value
+		sprintf(tmp, "%f\0", di->second);
+
+		// write the attribute
+		xmlTextWriterStartElement(writer, BAD_CAST "constant");
+		xmlTextWriterWriteAttribute(writer, BAD_CAST "name", BAD_CAST di->first.c_str());
+		xmlTextWriterWriteAttribute(writer, BAD_CAST "type", BAD_CAST "double");
+		xmlTextWriterWriteAttribute(writer, BAD_CAST "value", BAD_CAST tmp);
+		xmlTextWriterEndElement(writer);
+	}
+
+	// third, the string constants
+	map<string, string>::iterator si;
+	for (si = stringConstants.begin(); si != stringConstants.end(); si++) {
+		// write the attribute
+		xmlTextWriterStartElement(writer, BAD_CAST "constant");
+		xmlTextWriterWriteAttribute(writer, BAD_CAST "name", BAD_CAST si->first.c_str());
+		xmlTextWriterWriteAttribute(writer, BAD_CAST "type", BAD_CAST "string");
+		xmlTextWriterWriteAttribute(writer, BAD_CAST "value", BAD_CAST si->second.c_str());
+		xmlTextWriterEndElement(writer);
+	}
+
+	// done with this section -- close the configuration element.
+	xmlTextWriterEndElement(writer);
+
+	// STORAGE SECTION
+	// open the storage element.
+	xmlTextWriterStartElement(writer, BAD_CAST "storage");
+
+	// go through all the disk paths.
+	for (int i=0;i<diskPaths.size();i++) {
+		// open an element for this disk.
+		xmlTextWriterStartElement(writer, BAD_CAST "disk");
+
+		// write the path.
+		xmlTextWriterWriteAttribute(writer, BAD_CAST "path", BAD_CAST diskPaths[i].c_str());
+
+		// write the index
+		sprintf(tmp, "%i\0", i);
+		xmlTextWriterWriteAttribute(writer, BAD_CAST "index", BAD_CAST tmp);
+
+		// close that element.
+		xmlTextWriterEndElement(writer);
+	}
+
+	// close the storage element.
+	xmlTextWriterEndElement(writer);
+
+	// SCHEMA SECTION
+	// open the schema element
+	xmlTextWriterStartElement(writer, BAD_CAST "schema");
+
+	// go through all the relations
+	for (schemas.MoveToStart(); !schemas.AtEnd(); schemas.Advance()) {
+		// open the relation element and write its attributes
+		xmlTextWriterStartElement(writer, BAD_CAST "relation");
+
+		// write the name, number of tuples and metadata path
+		xmlTextWriterWriteAttribute(writer, BAD_CAST "name",
+			BAD_CAST schemas.Current().GetRelationName().c_str());
+		sprintf(tmp, "%i\0", schemas.Current().GetNumTuples());
+		xmlTextWriterWriteAttribute(writer, BAD_CAST "tuples", BAD_CAST tmp);
+		xmlTextWriterWriteAttribute(writer, BAD_CAST "metadata",
+			BAD_CAST schemas.Current().GetMetadataPath().c_str());
+
+		// open an element for the attributes
+		xmlTextWriterStartElement(writer, BAD_CAST "attributes");
+
+		AttributeContainer atts;
+		schemas.Current().GetAttributes(atts);
+
+		// go through all the attributes of this relation
+		for (atts.MoveToStart();!atts.AtEnd();atts.Advance()) {
+			// create an element for this attribute
+			xmlTextWriterStartElement(writer, BAD_CAST "attribute");
+
+			// write the name
+			xmlTextWriterWriteAttribute(writer, BAD_CAST "name",
+				BAD_CAST atts.Current().GetName().c_str());
+
+			// write the name
+			AttributeType t;
+			atts.Current().GetType(t);
+
+			t.GetTypeAsStringSQL(tmp);
+
+			// write in the type
+			xmlTextWriterWriteAttribute(writer, BAD_CAST "type", BAD_CAST tmp);
+
+			// write in the number of uniques in the attribute
+			sprintf(tmp, "%ld", atts.Current().GetUniques());
+			xmlTextWriterWriteAttribute(writer, BAD_CAST "uniques", BAD_CAST tmp);
+
+			// end this attribute's element
+			xmlTextWriterEndElement(writer);
+		}
+
+		// close the attributes element.
+		xmlTextWriterEndElement(writer);
+
+		// now, open an element for the primary key.
+		xmlTextWriterStartElement(writer, BAD_CAST "primary-key");
+
+		// go through all the attributes, again
+		for (atts.MoveToStart();!atts.AtEnd();atts.Advance()) {
+			// write the attribute name
+			// is it a PK?
+			if (atts.Current().IsPrimaryKey()) {
+				xmlTextWriterStartElement(writer, BAD_CAST "attribute");
+				xmlTextWriterWriteAttribute(writer, BAD_CAST "name",
+					BAD_CAST atts.Current().GetName().c_str());
+				xmlTextWriterEndElement(writer);
+			}
+		}
+
+		// close the primary key element.
+		xmlTextWriterEndElement(writer);
+
+		// open an element for the foreign keys.
+		xmlTextWriterStartElement(writer, BAD_CAST "foreign-keys");
+
+		// again, go through all the atts
+		for (atts.MoveToStart();!atts.AtEnd();atts.Advance()) {
+			// is is a foreign key?
+			if (atts.Current().IsForeignKey()) {
+				// write attribute name, foreign relation and foreign attribute
+				xmlTextWriterStartElement(writer, BAD_CAST "attribute");
+				xmlTextWriterWriteAttribute(writer, BAD_CAST "name",
+					BAD_CAST atts.Current().GetName().c_str());
+				xmlTextWriterWriteAttribute(writer, BAD_CAST "relation",
+					BAD_CAST atts.Current().GetForeignRelation().c_str());
+				xmlTextWriterWriteAttribute(writer, BAD_CAST "fname",
+					BAD_CAST atts.Current().GetForeignAttribute().c_str());
+				xmlTextWriterEndElement(writer);
+			}
+		}
+
+		// close the foreign keys element.
+		xmlTextWriterEndElement(writer);
+
+		// close the relation element.
+		xmlTextWriterEndElement(writer);
+	}
+
+	// close the schema element
+	xmlTextWriterEndElement(writer);
+
+	// close the catalog element.
+	xmlTextWriterEndElement(writer);
+
+	// end the document
+	FATALIF(xmlTextWriterEndDocument(writer) < 0, "cannot finalize xml document.");
+
+	// free the writer.
+	xmlFreeTextWriter(writer);
+
+	// write everything to disk.
+	xmlSaveFormatFileEnc(xmlFile.c_str(), doc, CATALOG_CHARACTER_ENCODING, 1);
+
+	// free the document.
+	xmlFreeDoc(doc);
+
+	// return the mutexes
+	pthread_mutex_unlock(&diskMutex);
+	pthread_mutex_unlock(&constMutex);
+	pthread_mutex_unlock(&schemaMutex);
+}

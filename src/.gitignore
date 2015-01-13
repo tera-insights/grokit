@@ -1,0 +1,6 @@
+configure
+Makefile
+maker
+*/object/*.o
+Headersdp
+Tool_DataPath/executable/grokit_error.json

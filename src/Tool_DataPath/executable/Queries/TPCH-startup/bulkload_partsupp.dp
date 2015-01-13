@@ -1,0 +1,15 @@
+/** bulk loader for lineitem */
+
+new query Q1; 
+
+new scanner partsupp;
+
+new waypoint W1 = TextLoader {
+		attributes from partsupp;
+		separator '|';
+		file "/DATA/Disk%d/partsupp.tbl" 60; 
+};
+
+new writer partsupp(Q1) :- ?W1;
+
+run query Q1;

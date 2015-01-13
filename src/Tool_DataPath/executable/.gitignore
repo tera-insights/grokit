@@ -1,0 +1,12 @@
+inFile.pgy
+log.sqlite*
+query.json
+wpConfig.json
+datapath.sqlite*
+Generated/*
+Sources/*
+dp
+LOG
+DOT.dot
+DOT1.dot
+data/*

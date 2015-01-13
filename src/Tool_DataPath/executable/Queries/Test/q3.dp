@@ -1,0 +1,37 @@
+/*
+SELECT l.l_orderkey, l.l_partkey, l.l_suppkey
+FROM lineitem AS l
+WHERE (l.l_returnflag = 'R') AND
+      (l.l_discount < 0.04 OR l.l_shipmode = 'MAIL') AND
+      (l.l_orderkey > 5000) AND (l.l_orderkey < 6000)
+
+ANSWER: 109 rows in set (17.47 sec)
+*/
+
+/** scanners */
+new scanner lineitem;
+
+// define new waypoint
+new waypoint s = Select:-lineitem;
+
+/* a waypoint has to be declard with new before
+   it is used for a connection | topological sort */
+
+// print waypoint
+new waypoint pr = Print:-?s;
+
+/** Example of code for one query in a lump */
+new query Q1 {
+    // code for Q1 for each waypoint
+    // order of waypoints does not matter
+    waypoint s {
+	filter (lineitem.l_returnflag == 'R') && (lineitem.l_discount < 0.04 || lineitem.l_shipmode == 'MAIL') && (lineitem.l_orderkey > 5000) && (lineitem.l_orderkey < 6000);
+    }
+   waypoint pr {
+   	print lineitem.l_orderkey, lineitem.l_partkey, lineitem.l_suppkey;
+   }
+}
+
+
+run query Q1;
+

@@ -1,0 +1,10 @@
+/* data sources */
+flows = LOAD flows;
+
+gby = GLA(GBy_IP_MAC_Sum) flows USING flows.SIP, flows.MAC, flows.FSize
+          AS ip:IPV4ADDR, mac:MACADDR, f:DOUBLE;
+
+topk = GLA(TopK_IP_MAC_Sum) gby INITIALIZE 10 USING f, ip, mac, f
+          AS dummy:FLOAT, ip2:IPV4ADDR, mac2:MACADDR, f2:DOUBLE;
+
+PRINT topk USING ip2, mac2, f2;

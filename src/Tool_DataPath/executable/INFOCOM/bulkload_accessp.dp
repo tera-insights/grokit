@@ -1,0 +1,15 @@
+/** bulk loader for lineitem */
+
+new query Q1; 
+
+new scanner accessp;
+
+new waypoint W1 = TextLoader {
+		attributes from accessp;
+		separator '|';
+		file "AP_bldg.data" 1; 
+};
+
+new writer accessp(Q1) :- ?W1;
+
+run query Q1;

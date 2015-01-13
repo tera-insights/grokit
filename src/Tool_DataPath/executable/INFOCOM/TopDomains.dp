@@ -1,0 +1,39 @@
+/** This query adds up all the flows per source domain IP and computes the total 
+    amount of data. Prints the result as names
+
+*/
+
+new scanner flows;
+new scanner domains;
+new scanner masks;
+
+new waypoint gby = GLA :- flows;
+new waypoint topk = GLA :- gby;
+new waypoint mask = Join(masks.ip) :- masks, ?topk;
+new waypoint dom = Join(masks.id) :- mask, ?domains;
+new waypoint pr = Print :- ?dom;
+
+new query Q1 {
+    waypoint gby {
+       gla (ip:IPV4ADDR, f:DOUBLE) = GBy_IP_Sum [] (Domain(flows.SIP), flows.FSize);
+    }
+
+    waypoint topk {
+       gla (dummy:FLOAT, ip2:IPV4ADDR, f2:DOUBLE) = TopK_IP_Sum [10] (f, ip, f);
+    }
+    
+    waypoint mask {
+       join ip2;
+    }
+
+    waypoint dom {
+       join domains.id;
+    }
+
+    waypoint pr {
+       print domains.name, f2;
+    }
+    
+}
+
+run query Q1;

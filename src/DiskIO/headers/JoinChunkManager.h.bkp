@@ -1,0 +1,154 @@
+#ifndef _ChunkManager_H_
+#define _ChunkManager_H_
+
+#include<vector>
+#include<map>
+#include<set>
+
+using namespace std;
+
+#define LHSSIZE 4
+#define RHSSIZE 4
+
+class ChunkFloor;
+
+/////////////////// Some modifications done not to use tile mechanism right now, and use simple cross product between chunks ///////////
+
+/**
+		We have ChunkMetaData class which receives chunk when they go to disk. And it also receives chunk ids when they are read from disk.
+		ChunkMetaData class maintains bucket to floor map when chunks are written on disk. It maintains chunk to floor map for when chunks
+		are read back from disk and this helps to redirect the chunkID to correct floor (because while reading from disk we have no info
+		of bucket number, hence this mapping is required to reach to the correct floor). Same bucket number constitute a floor.
+
+		ChunkFloor class does all management of creating tiles from the floor dynamically. That means once chunks are received from disk
+		it creates the floor (rectangle) dynamically and send back the tiles. Tiles are smallest unit to be processed on one processor.
+		Hence floor creation and tiles formation is dynamic because we need to be aggressive on sending tiles for processing as soon
+		as they are received and at the same time keep track of what all tiles are processed. If for some reason, tiles are not processed
+		then we can get it back to send it again later.
+
+		Everything is just integer here, only management. Relevant APIs are provided for use by FileScanners
+*/
+
+
+/**
+		This consists of few chunks from LHS and few chunks from RHS constituting a tile, all lhs needs to be merged into one and
+		similarly all rhs needs to be merged into one for final processing. This behaves as one component of cross product.
+*/
+struct ChunkTile {
+	vector<int> lhs;
+	vector<int> rhs;
+	int tileID;
+	int subbucketNo;
+
+	ChunkTile& operator=(const ChunkTile& tile) {
+		lhs = tile.lhs;
+		rhs = tile.rhs;
+		tileID = tile.tileID;
+		subbucketNo = tile.subbucketNo;
+		return *this;
+	}
+};
+
+/**
+		This is a manager of chunks to support hash join. While sending chunks to disk we need to call ChunkToDisk with appropriate sub bucket number.
+		ChunkMetaData will maintain what all chunk belong to what floor (same subbucket number constitutes a floor). It also maintains chunkID to Floor
+		mapping to help identifying which floor chunk must be routed when received from the disk. So it acts as manager when chunks are sent to disk
+		and also when chunks are received from the disk
+*/
+
+class ChunkMetaData {
+
+	// Keep sub bucket to floor mapping
+	map<int, ChunkFloor*> mySubBucketToFloorMap;
+
+	// Keeps chunk ID to floor mapping to identify correct floor once received from disk
+	map<int, ChunkFloor*> myChunkIDToChunkFloor;
+
+public:
+
+	ChunkMetaData ();
+
+	~ChunkMetaData ();
+
+	// This is called before sending left hash chunk to disk for bookkeeping. This will just update above data members
+	void ChunkToDisk (int subbucket, int chunkID, bool isLeftJoin);
+
+	// This is called when a chunk is received from disk. Just identify the correct floor and make a call to that floor
+	void ChunkFromDisk (int chunkID);
+
+	// Get the tiles to work on, false if no tiles but it can become true later on so keep checking availability
+	// Here we need which floor has some leftover tiles and make a call to that floor, this may need to be called in loop
+	// as some tile may be sent back later which are missed to be processed because of processor unavailability
+	bool GetTile (ChunkTile& tileOut);
+
+	// For debug purpose
+	void PrintRectangles ();
+
+};
+
+/**
+		This does all inner level management. We create floor (rectangle) using adjacency list, all LHS chunks are top guys,
+		and all RHS chunks are into the adjacency list of left ones. We keep slicing out tiles from it and remove those
+		elements from adjacency list. We keep LHS guys until all RHS members are done.
+*/
+class ChunkFloor {
+
+	// Chunks written on disk
+	set<int> leftChunksToDisk;
+	set<int> rightChunksToDisk;
+
+	// Chunk received from disk so far
+	set<int> leftChunksFromDisk;
+	set<int> rightChunksFromDisk;
+
+	// These are used to create tiles
+	typedef map<int, set<int> > Floor;
+	Floor myFloor; // left -> right array (chunk received from disk are arranged in floors (rectangles))
+
+	// map from tile IDs to ChunkTile
+	map<int, ChunkTile*> tileIDToChunkTile;
+
+	// Tiles IDs which are still to be processed, this also includes IDs which are returned
+	// due to insufficient cpu resource
+	set<int> tilesPending;
+
+public:
+
+	ChunkFloor ();
+
+	// This updates leftChunksToDisk and rightChunksToDisk sets for future reference
+	void ChunkToDisk (int chunkID, bool isLeftJoin);
+
+	// This updates myRect by knowing if its left join chunk or right one. Rectangle is created in adjacency
+	// list form. One side of rectangle is left join chunks and other side is right join chunks
+	void ChunkFromDisk (int chunkID);
+
+	// This basically picks a small rectangle called tile. Each side of tile will be merged later and processed
+	// If not enough CPU resource to process it, it can be sent back using its tile ID. When rectangle is formed
+	// it is assumed that we will form small tiles in orderly fashion to avoid dynamic programming kind of solution.
+	// We just slice from top left corner and it is known that each adjacency member of the list are same, for eg
+	// 1 -> 2,3,5
+	// 3 -> 2,3,5
+	// 4 -> 2,3,5
+	// As we see above, top left corner contains all same list 2,3,5 which makes life easier. This is guranteed
+	// at the time of formation of rectangle when chunks were received from disk. Once tile is created, we remove 
+	// corrosponding adjancency list members, but we keep main member until all adjacency members are done.
+	bool GetTile(ChunkTile& tileOut);
+
+	// If not enough CPU resource to process the tile, it can be sent back using its tile ID
+	void UnprocessedTile(int tileID);
+
+	// Is this floor done?
+	bool IsEmpty();
+
+	// For debug purpose
+	void PrintRectangle ();
+
+private:
+
+	// Helper function which creates tiles using bigger rectangle	
+	void CreateTile ();
+
+};
+
+#endif

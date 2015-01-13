@@ -1,0 +1,16 @@
+/* This is the piggy version of UserFit.dp. */
+
+LOAD flows;
+LOAD distributions;
+
+userfit = GLA:GroupByGLA< [macg:MACADDR], GLA:THistogramGLA> flows 
+        USING flows.MAC, ExtractMinute(flows.Start)
+        AS mac:MACADDR, fit:INT, param1:DOUBLE, param2:DOUBLE, param3:DOUBLE;
+
+
+usergroup = GLA:GroupByGLA< [f:INT], GLA:CountGLA >  userfit USING fit, /*dummy*/ 0 
+                  AS fit2:INT, count:BIGINT;
+
+dist =  JOIN distributions BY distributions.id, usergroup BY fit2;
+
+PRINT dist USING distributions.name, count;

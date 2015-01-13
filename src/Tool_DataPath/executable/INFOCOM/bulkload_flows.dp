@@ -1,0 +1,15 @@
+/** bulk loader for lineitem */
+
+new query Q1; 
+
+new scanner flows;
+
+new waypoint W1 = TextLoader {
+		attributes from flows;
+		separator '|';
+		file "data%d" 20; 
+};
+
+new writer flows(Q1) :- ?W1;
+
+run query Q1;

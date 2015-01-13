@@ -1,0 +1,15 @@
+/** bulk loader for lineitem */
+
+new query Q1; 
+
+new scanner supplier;
+
+new waypoint W1 = TextLoader {
+		attributes from supplier;
+		separator '|';
+		file "/DATA/Disk%d/supplier.tbl" 30; 
+};
+
+new writer supplier(Q1) :- ?W1;
+
+run query Q1;

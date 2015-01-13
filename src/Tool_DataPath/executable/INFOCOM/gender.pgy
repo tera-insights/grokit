@@ -1,0 +1,13 @@
+gender = LOAD gender;
+flows = LOAD flows;
+domains = LOAD domains;
+
+a = FILTER gender BY gender.gender == 1 /* male */;
+b = JOIN flows ON flows.MAC, a ON gender.MAC;
+c = GLA:GroupByGLA< [ip:IPV4ADDR], GLA:SumGLA >  b 
+                    USING Domain(flows.DIP), flows.FSize AS IP, fsize;
+d = GLA:TopK< [IP:IPV4ADDr] > c USING fsize, IP
+e = JOIN domains ON domains.IP, d ON IP;
+
+PRINT e USING domains.name;
+ 

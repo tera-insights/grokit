@@ -1,0 +1,64 @@
+
+/*
+SELECT SUM (l.l_discount)
+FROM customer AS c, orders AS o, lineitem AS l
+WHERE (c.c_custkey = o.o_custkey) AND
+    (o.o_orderkey = l.l_orderkey) AND
+    (c.c_name = 'Customer#000070919') AND
+    (l.l_quantity > 30.0) AND (l.l_discount < 0.03)
+
+ANSWER: 0.03 (55.4 sec)
+
+*/
+
+/** scanners */
+new scanner customer;
+new scanner orders;
+new scanner lineitem;
+
+// define new waypoint
+new waypoint s = Select:-customer;
+
+new waypoint l = Select:-lineitem;
+
+/* a waypoint has to be declard with new before
+   it is used for a connection | topological sort */
+
+new waypoint wJ = Join(orders.o_custkey) :- orders, ?s;
+
+new waypoint wJ2 = Join(lineitem.l_orderkey) :- l, ?wJ;
+
+// aggregates now
+new waypoint agg = Aggregate:-wJ2;
+
+// print waypoint
+new waypoint pr = Print:-?agg;
+
+/** Example of code for one query in a lump */
+new query Q1 {
+    // code for Q1 for each waypoint
+    // order of waypoints does not matter
+    waypoint s {
+	filter customer.c_name == 'Customer#000070919';
+    }
+    waypoint l {
+			filter (lineitem.l_quantity >30.0000001) && (lineitem.l_discount < 0.0299999);
+    }
+    waypoint wJ {
+	join customer.c_custkey;
+    }
+    waypoint wJ2 {
+	join orders.o_orderkey;
+    }
+    waypoint agg {
+	aggregate agg_q1_1=Sum(lineitem.l_discount);
+	aggregate cnt=Count(1.0);
+   }	
+   waypoint pr {
+   	print agg_q1_1, cnt;
+   }
+}
+
+
+run query Q1;
+

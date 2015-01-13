@@ -1,0 +1,44 @@
+
+/*
+SELECT SUM (c.c_acctbal), COUNT(*)
+FROM customer AS c, orders AS o
+WHERE (c.c_custkey = o.o_custkey) AND
+    (o.o_totalprice < 10000.0)
+
+ANSWER: 1.33123e+08 (17.31 sec)
+
+*/
+
+/** scanners */
+new scanner customer;
+new scanner orders;
+
+// define new waypoint
+new waypoint s = Select:-orders;
+
+/* a waypoint has to be declard with new before
+   it is used for a connection | topological sort */
+
+new waypoint wJ = Join(customer.c_custkey) :- ?s, customer;
+
+// print waypoint
+new waypoint pr = Print:- ?wJ;
+
+/** Example of code for one query in a lump */
+new query Q1 {
+    // code for Q1 for each waypoint
+    // order of waypoints does not matter
+    waypoint s {
+	filter orders.o_totalprice < 900.0;
+    }   
+    waypoint wJ {
+	join orders.o_custkey;
+    }
+   waypoint pr {
+   	print customer.c_acctbal, orders.o_custkey, customer.c_custkey;
+   }
+}
+
+
+run query Q1;
+

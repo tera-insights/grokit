@@ -1,0 +1,24 @@
+/** scanners */
+new scanner orders;
+
+// define new waypoint
+new waypoint agg  = Aggregate:-orders;
+
+// print waypoint
+new waypoint pr = Print:-?agg;
+
+new query Q1 {
+  waypoint agg {
+  aggregate agg_q1_1=Count(1.0);
+  aggregate agg_q1_2=Sum(orders.o_custkey);
+  aggregate agg_q1_3=Sum(orders.o_orderkey);
+  aggregate agg_q1_4=Sum(orders.o_totalprice);
+   }
+   waypoint pr {
+    print agg_q1_1, agg_q1_2, agg_q1_3, agg_q1_4;
+   }
+}
+
+
+run query Q1;
+

@@ -1,0 +1,35 @@
+/* For each user (MAC) build time histogram for each second of the day
+(86400), form usage histogram (num seconds per flow number), fit best
+curve. Report number of users for each possible best fit (0:6) */
+
+
+new scanner flows;
+new scanner distributions;
+
+new waypoint userfit = GLA :- flows;
+new waypoint usergroup = GLA :- userfit;
+new waypoint dist = Join(distributions.id):-distributions,?usergroup;
+new waypoint pr = Print :- ?dist;
+
+new query Q1 {
+    waypoint userfit {
+       gla (mac:MACADDR, fit:INT, param1:DOUBLE, 
+           param2:DOUBLE, param3:DOUBLE) 
+            = GBy_MAC_THist  (flows.MAC, ExtractMinute(flows.Start));
+    }
+    
+    waypoint usergroup {
+       gla (fit2:INT, count:BIGINT) = GBy_INT_Count (fit, /*dummy*/ 0);
+    }
+
+    waypoint dist{
+        join fit2;
+    }
+
+    waypoint pr{
+       print distributions.name, count;
+    }
+    
+}
+
+run query Q1;

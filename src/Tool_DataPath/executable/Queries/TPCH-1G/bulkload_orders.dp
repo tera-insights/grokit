@@ -1,0 +1,17 @@
+/** bulk loader for lineitem */
+
+new query Q1; 
+
+new scanner orders;
+
+new waypoint W1 = TextLoader {
+		attributes from orders;
+		separator '|';
+		file "orders.tbl" 1; 
+};
+
+new writer orders(Q1) :- ?W1;
+
+run query Q1;
+
+flush;

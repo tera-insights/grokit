@@ -1,0 +1,23 @@
+// Description of all the types in the system 
+
+// INT
+create datatype INT from "INT.h" = INTEGER, SMALLINT, bool; 
+
+// BIGINT
+create datatype	BIGINT from "BIGINT.h" = IDENTIFIER;
+
+// DATE
+create datatype DATE from "DATE.h";
+
+// DOUBLE, 64bit
+create datatype DOUBLE from "DOUBLE.h";
+
+// FLOAT, 32bit
+create datatype	FLOAT	from "FLOAT.h";
+
+// variable sized string, hash-accelerated
+create datatype HString from "HString.h" = VARCHAR, STRING;
+
+
+flush;
+quit;

@@ -1,0 +1,56 @@
+/*Query:
+
+SELECT COUNT(*), AVG(l_discount), AVG(l_extendedprice), AVG(l_quantity),
+   SUM(l_extendedprice * (1.000000 - l_discount) * (1.000000 + l_tax)),
+   SUM(lineitem.l_extendedprice * (1.000000 - lineitem.l_discount)),
+   SUM(l_quantity)
+   FROM lineitem
+   WHERE l_shipdate < date '1998-09-01' AND l_discount<0.03;
+
+  count  |          avg           |        avg         |         avg         |            sum             |         sum          |     sum     
+---------+------------------------+--------------------+---------------------+----------------------------+----------------------+-------------
+ 1612725 | 0.01000758343796989567 | 38267.264730837558 | 25.5181695577361298 | 63542631745.87555800000000 | 61097198875.79780000 | 41153790.00
+
+*/
+
+
+/** scanners */
+new scanner lineitem;
+
+// define new waypoint
+new waypoint W4  = Select:-lineitem;
+
+/* a waypoint has to be declard with new before
+   it is used for a connection | topological sort */
+
+// aggregates now
+new waypoint W10 = Aggregate:-W4;
+
+// print waypoint
+new waypoint W11 = Print:-?W10;
+
+/** Example of code for one query in a lump */
+new query Q1 {
+    // code for Q1 for each waypoint
+    // order of waypoints does not matter
+    waypoint W4 {
+    	filter lineitem.l_shipdate < DATE(1998,9,1); // && lineitem.l_discount < 0.0299999;
+    }   
+    waypoint W10 {
+    	aggregate agg_q1_1=Count(1.0);
+	aggregate agg_q1_2=Average(lineitem.l_discount);
+	aggregate agg_q1_3=Average(lineitem.l_extendedprice);
+	aggregate agg_q1_4=Average(lineitem.l_quantity);
+	aggregate agg_q1_5=Sum(((lineitem.l_extendedprice * (1.000000 - lineitem.l_discount)) * (1.000000 + lineitem.l_tax)));
+	aggregate agg_q1_6=Sum((lineitem.l_extendedprice * (1.000000 - lineitem.l_discount)));
+	aggregate agg_q1_7=Sum(lineitem.l_quantity); 
+   }	
+   waypoint W11 {
+   	print agg_q1_1, agg_q1_2, agg_q1_3, agg_q1_4, 
+	      agg_q1_5, agg_q1_6, agg_q1_7;
+   }
+}
+
+
+run query Q1;
+

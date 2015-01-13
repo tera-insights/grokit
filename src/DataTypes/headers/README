@@ -1,0 +1,71 @@
+This directory contains header files for description of basic
+datatypes supported by the system. Each file has a very strict format
+to allow efficient code generation.
+
+IMPORTANT: All the type definitions are with respect to the machine
+WORDSIZE. This is defined in machine.h together with other platform
+dependent defitions.
+
+1. Name of the file:
+   TYPE.h
+
+   where Type is the name of the type inthe SQL standard. If the name
+   of the type has spaces, they are replaced by _. If multiple names
+   are used to designate the same type, the name that is a single word
+   is used. the capitalization of the type is all caps (to avoid
+   clashes with the C++ types.).
+
+   If the type as a size parameter, is has to be omitted form the name
+   of the file.
+
+2. All the functions defined as inline functions. NO EXCEPTIONS
+
+   Using the types becomes very tedious if functions are not inlined.
+
+3. The header file must contain the definition of a type named TYPE
+
+   This can be done in three ways
+   a. a brand new definition
+   b. a typedef from a basic type
+   c. a template that takes as argument the size parameter
+
+ The space that the type takes should be a multiple of the word size (4bytes)
+ except for the variable sized strings.
+
+4. A function FromString has to be provided
+
+   The function acts as a constructor. It must have the signature:
+   FromString(&TYPE, char* text) and it should populate
+   the object TYPE with information extracted from the string.
+   How this is done it is type dependent.
+
+5. A function ToString has to be provided
+
+   int ToString(&TYPE, char* text, int maxSize)
+
+   the value of the TYPE is printed into text and the number of
+   characters (including the training \0) is returned.
+
+6. The type should be defined such that sizeof(type) is a multiple of
+sizeof(int). Sizeof(int) is defined as the word size and it is the
+smallest storable unit (crucial for join).
+
+7. For all types, the following operator should be defined:
+   a. assignment: =
+   b. equality: ==, !=
+
+8. For the arithmetic types, the followin operators should be defined
+   a. comparison: >,<, >=, <=
+   b. operations: +, -, /, *
+
+9. For the string types, the type has to be compatible with \0
+   terminated char* or to provide conversion to this type. This is
+   necessary to allow string functions.
+
+10. A function Hash(Type) needs to be defined for each type. Hopefully
+the compiler will not complain about translation and other stuff when
+we used the function. The Function Hash has to map the type into an
+(unsigned int) in a way that makes the result depend on all the bits
+(cannot just take some part of the representation as the hash). The
+preffered way is to XOR all the words makin up the representation.
+

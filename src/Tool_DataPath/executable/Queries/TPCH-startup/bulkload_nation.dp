@@ -1,0 +1,15 @@
+/** bulk loader for lineitem */
+
+new query Q1; 
+
+new scanner nation;
+
+new waypoint W1 = TextLoader {
+		attributes from nation;
+		separator '|';
+		file "nation.tbl" 1; 
+};
+
+new writer nation(Q1) :- ?W1;
+
+run query Q1;

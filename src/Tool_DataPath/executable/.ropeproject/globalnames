@@ -1,0 +1,7 @@
+€}qU	load_tpch]q(UtpchDirqU	getDPInitqU
+sedCommandqUparserqUdataDirqUtpchArchiveWebqU	loadTableq	Uyesq
+UgeneratePipesqUbulkload_templateqUtablesqUtpchArchiveNameqUnoqUdpExecqU
+init_groupqUbuildGeneratorqUcleanupqUtpchFileqUhandleErrorqUargsqU
+getArchiveqUtpchVersionqUgenerateQueryqU
+queryFilesqUscaleFactorqUtablesSingleqU	tableFlagqUdbgenDirqU
+numStripesqUloadDataq UtpchURLq!es.

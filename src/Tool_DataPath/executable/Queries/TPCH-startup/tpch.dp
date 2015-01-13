@@ -1,0 +1,77 @@
+/* Definitions of relations in TPC-H */
+
+create relation customer (c_custkey				INT, 
+		c_name						VARCHAR,
+		c_address 					VARCHAR,
+		c_nationkey					INT,
+		c_phone						VARCHAR,
+		c_acctbal					FLOAT,
+		c_mktsegment					VARCHAR,
+		c_comment					VARCHAR
+		);
+
+
+create relation lineitem ( l_orderkey				BIGINT, 
+		l_partkey					INT,
+		l_suppkey	 				INT,
+		l_linenumber 					INT,
+		l_quantity					FLOAT,
+		l_extendedprice					FLOAT,
+		l_discount					FLOAT,
+		l_tax						FLOAT,
+		l_returnflag					VARCHAR,
+		l_linestatus					VARCHAR,
+		l_shipdate					DATE,
+		l_commitdata				DATE,
+		l_receiptdate					DATE,
+		l_shipinstruct					VARCHAR,
+		l_shipmode					VARCHAR,
+		l_comment					VARCHAR
+		);
+
+
+create relation nation  (  n_nationkey				INT, 
+		n_name						VARCHAR,
+		n_regionkey					INT, 
+		n_comment					VARCHAR);
+
+create relation  orders (  o_orderkey				BIGINT, 
+		o_custkey					INT, 
+		o_orderstatus					VARCHAR,
+		o_totalprice					FLOAT,
+		o_orderdate					DATE,
+		o_orderpriority					VARCHAR,
+		o_clerk						VARCHAR,
+		o_shippriority					VARCHAR,
+		o_comment					VARCHAR);
+
+create relation part  ( p_partkey				INT,	
+		p_name						VARCHAR,
+		p_mfgr						VARCHAR,
+		p_brand						VARCHAR,
+		p_type						VARCHAR,
+		p_size						INT,
+		p_container					VARCHAR,
+		p_retailprice					FLOAT,
+		p_comment					VARCHAR);
+
+create relation partsupp  ( ps_partkey				INT,
+		ps_suppkey					INT,
+		ps_availqty					FLOAT,
+		ps_supplycost					FLOAT,
+		ps_comment					VARCHAR);
+
+create relation region  ( r_regionkey				INT,
+		r_name						VARCHAR,
+		r_comment					VARCHAR);
+
+create relation   supplier  (  s_suppkey			INT,
+		s_name						VARCHAR,
+		s_address					VARCHAR,
+		s_nationkey					INT,
+		s_phone						VARCHAR,
+		s_acctbal					FLOAT,
+		s_comment					VARCHAR);
+
+flush;
+quit;

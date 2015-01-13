@@ -1,0 +1,158 @@
+	#ifndef _NUMA_MMAP_ALLOC_H_
+	#define _NUMA_MMAP_ALLOC_H_
+	
+	#include <map>
+	#include <set>
+	#include <list>
+	#include <pthread.h>
+	#include <sys/mman.h>
+	
+	#ifdef USE_HUGE_PAGES
+	#ifndef MAP_HUGETLB
+	#define MAP_HUGETLB 0x40
+	#endif
+	#define MAP_FLAGS (MAP_PRIVATE | MAP_ANON | MAP_HUGETLB)
+	#else
+	#define MAP_FLAGS (MAP_PRIVATE | MAP_ANON)
+	#endif
+	
+	#include "MmapAllocator.h"
+	using namespace std;
+	
+	// This enables to store header information in chunk itself
+	// If not set, header info will be stored elsewhere
+	//#define STORE_HEADER_IN_CHUNK 1
+	
+	// For debug purpose
+	#define ASSERT_ON 1
+	
+	#ifndef ASSERT
+	#ifdef ASSERT_ON
+	#define ASSERT(expr) assert(expr)
+	#else
+	#define ASSERT(expr)
+	#endif
+	#endif
+	
+	/** This header specifies the interface of the class NumaMemoryAllocator
+	 * and the implementation of mmap_alloc and mmap_free based on this class.
+	
+	 * The class behaves like a singleton to ensure a single global allocator.
+	
+	 * The strategy used is the following:
+	 * 1. We initialize the heap for all numa nodes
+	 * 2. We serve requests from allocated heap (smaller chunks are carved out
+	      from biggest available chunk) if requested chunk is not exact match in freelist
+	 * 3. We maintain a map from sizes (multiple of pages) to free lists per numa node
+	 * 5. When chunk is freed, it is immediately coalesced with neighbouring chunks to reduce fragmentation
+	 * 6. With each chunk, a header information is maintained which helps in coalescing of chunks
+	      If header information is maintained within chunk itself, super fast! because
+	      we dont need to lookup header chunk using pointer given from ptr->header map
+	 * 7. When requested chunk is not found in numa, we check other numa nodes
+	 * 8. When requested size is not found in freelist, we pick biggest chunk, it is
+	 *    no time operation as we take out last element of map (sorted by size) and
+	 *    if it has element bigger than requested size, it will have freelist too for sure.
+	 * 9. Coelasceing of chunks is just some assignment of pointers if header is stored in
+	 *    chunk itself (ensure STORE_HEADER_IN_CHUNK is set), hence O(1) time.
+	 * 10. Splitting of chunks is also some assignment of pointers if header is stored in
+	 *     chunks, and hence very fast operation.
+	 * 11. Header is 40 bytes long (void*) aligned.
+	
+	 This allocator is thread safe.
+	
+	 */
+	
+	#define NUM_LPG_SYSTEM 60844 /* number of large pages in the system */
+	// we should read this from /proc/sys/vm/nr_hugepages instead of hardwireing
+	
+	#define INIT_HEAP_PAGE_SIZE 256*16
+	#define HEAP_GROW_BY_SIZE 256*16
+	
+	class NumaMemoryAllocator {
+	  pthread_mutex_t mutex; // to guard the implementation
+	
+	
+	  bool mHeapInitialized;
+	  struct NumaNode; // forward declaration
+	 
+	  // Keep the record of all chunks, allocated and unallocated both (for coalesce)
+	
+	  struct ChunkInfo{
+	    ChunkInfo* prevChunk; // pointer to previous physical chunk
+	    ChunkInfo* nextChunk; // pointer to next physical chunk
+	    void* currentPtr;     // Keep current pointer too for ease of code
+	    NumaNode* numaNode;
+	
+	    union SizeInfo{
+	      struct SizeStruct{
+	        int size; // size of current chunk in pages, dont use size_t
+	        bool isFree; // Is current chunk free?
+	      };
+	      SizeStruct sizeStruct;
+	      void* Align;
+	    };
+	
+	    SizeInfo sizeInfo; // void* aligned
+	  };
+	
+	  struct NumaNode{
+	    map<int, set<void*>*> mSizeToFreeListMap;
+	  };
+	
+	#ifndef STORE_HEADER_IN_CHUNK
+	  map<void*, ChunkInfo*> mPtrToChunkInfoMap;
+	
+	  // Avoid new and delete, keep deletes chunks for future use.
+	  list<ChunkInfo*> mDeletedChunks;
+	#endif
+	  // Avoid new and delete, keep deleted lists for future use.
+	  list<set<void*>*> mDeletedLists;
+	
+	  map<int, NumaNode*> mNumaNumberToNumaNodeMap;
+	
+	
+	  // translator from bytes to pages
+	  // rounds up the size
+	  int BytesToPageSize(size_t bytes);
+	  size_t PageSizeToBytes(int pSize);
+	
+	  //static NumaMemoryAllocator& singleton();
+	
+	  NumaMemoryAllocator(NumaMemoryAllocator&); // block the copy constructor
+	
+	  void UpdateFreelist(ChunkInfo* chunkInfo);
+	
+	  void RemoveFromFreelist(ChunkInfo* chunkInfo);
+	
+	  void Coalesce(void* ptr);
+	
+	  void HeapInit();
+	
+	  void SearchFreeList(NumaNode*, int pSize, bool& exactListFound, bool& biggerListFound,
+	                      map<int, set<void*>*>::iterator& iter,
+	                      map<int, set<void*>*>::reverse_iterator& r_iter);
+	
+	public:
+	  // default constructor; initializes the allocator
+	  NumaMemoryAllocator(void);
+	 
+	  // function to get access to the singleton instance
+	  static NumaMemoryAllocator& GetAllocator(void);
+	
+	  // functin to allocate
+	  void* MmapAlloc(size_t noBytes, int numaNode = 0);
+	 
+	  // function to deallocate
+	  void MmapFree(void* ptr);
+	
+	  // Destructor (frees the mmaps)
+	  ~NumaMemoryAllocator(void);
+	};
+	
+	// To avoid static initialization fiasco
+	NumaMemoryAllocator& NumaMemoryAllocator::GetAllocator(void){
+	    static NumaMemoryAllocator* a = new NumaMemoryAllocator();
+	    return *a;
+	}
+	
+	#endif // _BIGCHUNK_MMAP_ALLOC_H_

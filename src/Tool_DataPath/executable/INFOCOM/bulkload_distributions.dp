@@ -1,0 +1,15 @@
+/** bulk loader for lineitem */
+
+new query Q1; 
+
+new scanner distributions;
+
+new waypoint W1 = TextLoader {
+		attributes from distributions;
+		separator '|';
+		file "distributions.data" 1; 
+};
+
+new writer distributions(Q1) :- ?W1;
+
+run query Q1;

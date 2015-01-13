@@ -1,0 +1,30 @@
+/** scanners */
+new scanner lineitem;
+
+// define new waypoint
+new waypoint agg  = Aggregate:-lineitem;
+
+// print waypoint
+new waypoint pr = Print:-?agg;
+
+new query Q1 {
+  waypoint agg {
+  aggregate agg_q1_1=Count(1.0);
+  aggregate agg_q1_2=Sum(lineitem.l_discount);
+  aggregate agg_q1_3=Sum(lineitem.l_extendedprice);
+  aggregate agg_q1_4=Sum(lineitem.l_quantity);
+  aggregate agg_q1_5=Sum(lineitem.l_tax);
+  aggregate agg_q1_6=Sum(lineitem.l_linenumber);
+  aggregate agg_q1_7=Sum(lineitem.l_orderkey);
+  aggregate agg_q1_8=Sum(lineitem.l_partkey);
+  aggregate agg_q1_9=Sum(lineitem.l_suppkey);
+   }
+   waypoint pr {
+    print agg_q1_1, agg_q1_2, agg_q1_3, agg_q1_4,
+        agg_q1_5, agg_q1_6, agg_q1_7, agg_q1_8, agg_q1_9;
+   }
+}
+
+
+run query Q1;
+

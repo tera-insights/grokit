@@ -1,0 +1,18 @@
+new scanner nation;
+
+new waypoint s = Select :- nation;
+
+new waypoint wP = Print :- ?s;
+
+new query Q1 {
+
+		waypoint s {
+			filter (nation.n_name == 'JAPAN');
+		}
+
+		waypoint wP {
+						 print nation.n_nationkey, nation.n_regionkey, nation.n_name, nation.n_comment;
+		}
+}
+
+run query Q1;

@@ -1,0 +1,15 @@
+/** bulk loader for lineitem */
+
+new query Q1; 
+
+new scanner masks;
+
+new waypoint W1 = TextLoader {
+		attributes from masks;
+		separator '|';
+		file "masks.data" 1; 
+};
+
+new writer masks(Q1) :- ?W1;
+
+run query Q1;

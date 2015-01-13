@@ -1,0 +1,60 @@
+#ifndef _MMAPED_COMPRESSIBLE_STORAGE_H_
+#define _MMAPED_COMPRESSIBLE_STORAGE_H_
+
+#include "ColumnStorage.h"
+#include "CompressibleStorageUnit.h"
+
+/** This class implements ColumnStorage and offers the following facilities:
+
+		1. It is well paired off with the NumaMMapAllocator to ensure high performance
+		2. It supports compressed/uncompressed columns and does decompression if necessary
+		3. It supports efficient disk interaction (fast I/O)
+
+		This class does not support writes that extend the data. If data
+		needs to be extended the program will fail with an error.
+
+		Once decompressed, the column will be decompressed forever (for all future uses).
+ */
+
+class MMappedCompressibleStorage : public ColumnStorage {
+
+private:	
+	CompressibleStorageUnit* storage;
+	
+
+protected:
+
+	// these are the standard pure virtual functions any ColumnStorage must provide
+	ColumnStorage *CreateShallowCopy ();
+	void Finalize ();
+	char *GetData (int posToStartFrom, int &numBytesRequested, int haveWritten);
+	ColumnStorage *Done (int numBytes, int haveWritten);
+	void Detach ();
+	int GetNumBytes ();
+	int GetNumCompressedBytes ();
+
+public:
+
+	// Compress the date if not already
+	void Compress();
+
+	char* GetCompressedData();
+
+	// Constructor from existing data. 
+	// This constructor is used by the FileScanner to get chunks from the disk
+	// All other usage scenarios should use the other constructor
+	// Parameters:
+	//      _data: pointer to the data pool
+	//      _dataSize: size of data in bytes
+	//      isCompressed: is data compressed
+	// Note : _dataSize is ignored if isCompressed = true since it is read from compressed header
+	MMappedCompressibleStorage (void* _data, int _dataSize, bool isCompressed);
+
+	MMappedCompressibleStorage () : storage(NULL) {}
+
+	// Destructor
+	~MMappedCompressibleStorage ();
+
+};
+
+#endif //  _MMAPED_COMPRESSIBLE_STORAGE_H_

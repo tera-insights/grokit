@@ -1,0 +1,26 @@
+/** scanners */
+new scanner partsupp;
+
+// define new waypoint
+new waypoint agg  = Aggregate:-partsupp;
+
+// print waypoint
+new waypoint pr = Print:-?agg;
+
+new query Q1 {
+  waypoint agg {
+  aggregate agg_q1_1=Count(1.0);
+  aggregate agg_q1_2=Sum(partsupp.ps_availqty);
+  aggregate agg_q1_3=Sum(partsupp.ps_partkey);
+  aggregate agg_q1_4=Sum(partsupp.ps_suppkey);
+  aggregate agg_q1_5=Sum(partsupp.ps_supplycost);
+   }
+   waypoint pr {
+    print agg_q1_1, agg_q1_2, agg_q1_3, agg_q1_4,
+        agg_q1_5;
+   }
+}
+
+
+run query Q1;
+

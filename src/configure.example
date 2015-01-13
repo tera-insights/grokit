@@ -1,0 +1,32 @@
+DATAPATH CONFIGURATION FILE
+=================================
+
+INSTRUCTIONS:
+------------
+DataPath will look into the system information to find the suitable configuration to run itself.
+But if you want to override the default configuration settings, 
+you can specify the values for the following parameters.
+
+Make a copy of configure.example and name it configure. Then modify the parameters as explained
+below.
+
+Uncomment the lines for the parameters and set the value.
+---------------------------------------------------------------------------
+
+----Central hash table parameters----
+* -- NUM_SLOTS_IN_SEGMENT_BITS should not be over 24 bits if the size of a chunk is 2M tuples. 
+*    This size works well and Cleaner produces reasonably sized chunks.
+//USER_DEFINED_NUM_SLOTS_IN_SEGMENT_BITS = 24
+
+* -- NUM_SEGS should be manipulated to use most memory in the system (about 70%). 
+*    Make sure it is set to a sum of few 2^k numbers so that % operator is implemented 
+*    efficiently by the compiler.
+//USER_DEFINED_NUM_SEGS = 4
+
+
+----ExecEngine Thread Settings----
+* -- Number of threads available for the execution engine. This should be #Processors x 1.5
+//USER_DEFINED_NUM_EXEC_ENGINE_THREADS = 64
+
+* -- How many disk tokens we allow (this controls the parallelism)
+//USER_DEFINED_NUM_DISK_TOKENS = 64

@@ -1,0 +1,15 @@
+/** bulk loader for lineitem */
+
+new query Q1; 
+
+new scanner domains;
+
+new waypoint W1 = TextLoader {
+		attributes from domains;
+		separator '|';
+		file "id_domname.data" 1; 
+};
+
+new writer domains(Q1) :- ?W1;
+
+run query Q1;

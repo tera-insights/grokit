@@ -1,0 +1,10 @@
+/*
+SELECT SUM (l.l_extendedprice * (1 - l.l_discount)), l.l_orderkey, o.o_orderdate, o.o_shippriority
+FROM customer AS c, orders AS o, lineitem AS l
+WHERE (c.c_mktsegment = 'BUILDING') AND
+      (c.c_custkey = o.o_custkey) AND (l.l_orderkey = o.o_orderkey) AND
+    (l_orderkey < 100 OR o_orderkey < 100)
+GROUP BY l_orderkey, o_orderdate, o_shippriority
+
+ANSWER: 7 rows (41.2 sec)
+*/

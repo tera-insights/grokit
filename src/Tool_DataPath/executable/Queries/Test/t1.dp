@@ -1,0 +1,31 @@
+/* Query
+	 SELECT o_custkey, o_orderkey, o_totalprice
+	 FROM orders
+	 WHERE o_totalprice < 10000.0;
+
+	 Results:
+   29727 | 2234369554 | 89724231185 | 162238886.58
+   29727 | 2.23437e+09|8.97242e+10  |1.62239e+08|
+
+*/
+
+/** scanners */
+new scanner orders;
+
+new waypoint sel = Select:-orders;
+
+// print waypoint
+new waypoint pr = Print:-?sel;
+
+new query Q1 {
+		waypoint sel{
+			filter orders.o_totalprice < 900.0; // should be 10000.0	
+}
+   waypoint pr {
+    print orders.o_custkey, orders.o_orderkey, orders.o_totalprice;
+   }
+}
+
+
+run query Q1;
+

@@ -1,0 +1,19 @@
+/* Definitions of relations for netflow application */
+
+create relation  flows (  Start		INT, /* start time as an int of form mmddhhmmss */
+       		       	  End		INT, 
+			  SIP		IPV4ADDR, /* source IP */
+  			  DIP		IPV4ADDR, /* destination IP */
+			  SPort		INT, /* source port */
+			  DPort		INT, /* destinatin port */
+			  PNum		INT, /* protocol number */
+			  ToS		INT, /* type of service */
+			  PCount	INT, /* packet count */
+			  FSize		INT, /* flow size */
+			  MAC		MACADDR, /* MAC matched */
+			  AP		INT, /* access point matched*/
+ 			  MTCH		INT /* match: 0-none, 1-source, 2-dest */
+		       );
+
+flush;
+quit;

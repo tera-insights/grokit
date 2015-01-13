@@ -1,0 +1,15 @@
+/** bulk loader for lineitem */
+
+new query Q1; 
+
+new scanner buildings;
+
+new waypoint W1 = TextLoader {
+		attributes from buildings;
+		separator '|';
+		file "ID_bldg.data" 1; 
+};
+
+new writer buildings(Q1) :- ?W1;
+
+run query Q1;

@@ -1,0 +1,12 @@
+new scanner region;
+
+new waypoint wP = Print :- ?region;
+
+new query Q1 {
+		waypoint wP {
+						 // print region.r_regionkey, region.r_name, region.r_comment;
+						 print region.r_regionkey;
+		}
+}
+
+run query Q1;

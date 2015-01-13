@@ -1,0 +1,31 @@
+/* Definitions of dimension table for flow data */
+
+// relation containint netmask to domainID mapping
+create relation  masks ( ip     IPV4ADDR, /* net mask */
+                         id     INT /* domain id */
+                       );
+
+// relation containing names of domains
+create relation  domains ( id     INT, /* domain id */
+                         name   VARCHAR
+                       );
+
+// relation containing mapping form Access point to buildingID
+create relation  accessp ( ap     INT, /* access point id */
+                           id     INT /* building id */
+                       );
+
+// relation containing names of buildings
+create relation  buildings ( id     INT, /* domain id */
+                         name   VARCHAR
+                       );
+
+// relation containing gender information
+create relation gender (mac   MACADDR, /* mac of the user */
+                        id INT /* 1=male, 0=female */
+                        );
+
+
+flush;
+quit;
+

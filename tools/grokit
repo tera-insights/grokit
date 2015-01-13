@@ -1,0 +1,419 @@
+#!/bin/bash
+#
+#  Copyright 2013 Christopher Dudley
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+#
+
+# This is a front-end script to the various datapath scripts.
+# This script will be linked into /usr/local/bin during installation so that
+# datapath can be run from any directory in the system.
+
+LIBS_DIR=/usr/lib/grokit
+SCRIPTS_DIR=${LIBS_DIR}/scripts
+
+##### Helper Functions #####
+
+function printUsage {
+    echo "Usage: grokit [options] <command> [file]"
+    echo "Supported commands are:"
+    echo "      run"
+    echo "      debug"
+    echo "      makelib"
+    echo
+    echo "Options:"
+    echo "  -e              File to output errors to"
+    echo "  -h              Show this help message"
+    echo "  -c <config>     Use the specified code generation configuration"
+    echo "  -o              Turns off optimizations for generated code"
+    echo "  -i              Run interactively"
+    echo "  -w              Disable read-only mode"
+    echo "  -v              Enable verbose ouput"
+    echo "  -p <profile>    Use the specified Grokit installation configuration"
+    echo "  -s              Un-suppress Profiler output"
+    echo "  -b              Batch mode, does not try to connect to front-end"
+    echo "  -l              When debugging, use LLDB instead of GDB"
+}
+
+function getConfig {
+    if [ -e ${LIBS_DIR}/${1}.sh ]; then
+        . ${LIBS_DIR}/${1}.sh
+    else
+        echo "Error: No configuration file found for profile $1" >&2
+        local errText=$(cat <<EOT
+{
+    "__type__" : "error",
+    "kind"     : "engine",
+    "message"  : "No configuration file for installation profile $1"
+}
+EOT
+)
+
+        echo $errText > $ERR_FILE
+        exit 2
+    fi
+}
+
+function ensureBuilt {
+    if [ ! -e ${GROKIT_EXEC_PATH}/dp ]; then
+        echo "Error: Grokit not yet initialized."
+        echo "Please run 'grokit config' first."
+        local errText=$(cat <<EOT
+{
+    "__type__" : "error",
+    "kind"     : "engine",
+    "message"  : "Grokit not yet initialized"
+}
+EOT
+)
+        exit 2
+    fi
+}
+
+function getFile {
+    FILE=$(readlink -e $1)
+
+    if [ $? != 0 ]; then
+        echo "Error: File $1 not found."
+        local errText=$(cat <<EOT
+{
+    "__type__" : "error",
+    "kind"     : "engine",
+    "message"  : "File $1 not found"
+}
+EOT
+)
+        echo $errText > $ERR_FILE
+        exit 2
+    fi
+}
+
+# Returns 1 if yes and 0 if no
+# $1 = Prompt
+# $2 = variable in which to store result
+function getYesOrNo {
+    # Valid answers for yes and no
+    local ANS_YES="y yes"
+    local ANS_NO="n no"
+
+    local __resultvar=$2
+
+    while [ 0 ]; do
+        read -p "$1" ans
+
+        # Check if yes
+        echo $ANS_YES | grep -i -w "$ans" &>/dev/null
+        if [ $? == 0 ]; then
+            local myresult=1
+            eval $__resultvar="'$myresult'"
+            return
+        fi
+
+        # Check if no
+        echo $ANS_NO | grep -i -w "$ans" &>/dev/null
+        if [ $? == 0 ]; then
+            local myresult=0
+            eval $__resultvar="'$myresult'"
+            return
+        fi
+
+        # Didn't get either
+        echo "Please answer y(es) or n(o)."
+    done
+}
+
+function runQuery {
+    cd $DP_DIR
+
+    if [ $NO_OPTS == 1 ]; then
+        # Turn off optimizations
+        export DEBUG_GROKIT=1
+    fi
+
+    # Remove old error file
+    if [ -e ./grokit_error.json ]; then
+        rm ./grokit_error.json
+    fi
+
+    if [ $debug == 1 ]; then
+        # Run through the debugger
+        if [ $USE_GDB == 1 ]; then
+            gdb --args ./dp $DP_OPTS $1
+        else
+            lldb -- ./dp $DP_OPTS $1
+        fi
+    else
+        # Just run normally
+        ./dp $DP_OPTS $1
+    fi
+
+    local ret=$?
+
+    # Copy error file
+    if [ -e ./grokit_error.json ]; then
+        cat ./grokit_error.json >$ERR_FILE
+        exitCode=2
+    fi
+}
+
+# $1 = List of paths (colon separated)
+# $2 = subdirectory in those paths to check for
+function getExistingSubpaths {
+    local allPaths=""
+
+    local prevIFS="$IFS"
+    IFS=":"
+
+    for path in "$1"; do
+        cannonicalPath=$(readlink -e $path)
+        if [ $? == 0 ]; then
+            allPaths+="${IFS}${cannonicalPath}"
+        fi
+    done
+
+    IFS="$prevIFS"
+
+    echo "$allPaths"
+}
+
+function getPaths {
+    # Set up Datapath installation paths
+
+    if [ "x$GROKIT_INSTALL_PATH" == "x" ]; then
+        # GROKIT_INSTALL_PATH is not set
+        echo "Error: Grokit environment variables are not set."
+        echo "If you have recently installed Grokit, please close your current terminal and"
+        echo "start a new one. They environment variables are only set for terminals created"
+        echo "after the installation of Grokit."
+        exit -1
+    else
+        BASE_DIR=$GROKIT_INSTALL_PATH
+    fi
+
+    DP_DIR=$GROKIT_EXEC_PATH
+    DP_LOCK_FILE=$GROKIT_LOCK_FILE
+
+    LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib:$(getExistingSubpaths "$GROKIT_LIBRARY_PATH" "libraries")
+    export LD_LIBRARY_PATH
+
+    if [ $VERBOSE == 1 ]; then
+        echo "Install Directory     : $BASE_DIR"
+        echo "Executable Directory  : $DP_DIR"
+        echo "Library path(s)       : $GROKIT_LIBRARY_PATH"
+        echo "Shared Libraries      : $DP_SHARED_LIB_DIR"
+        echo "Lock File             : $DP_LOCK_FILE"
+        echo "LD_LIBRARY_PATH       : $LD_LIBRARY_PATH"
+        echo "Codegen Config        : $GROKIT_CODEGEN_CONFIG"
+    fi
+}
+
+function executeDatapath {
+    getPaths
+
+    if [ ! -e $DP_LOCK_FILE ]; then
+        touch $DP_LOCK_FILE
+        if (($? != 0)); then
+            echo "Failed to create lock file at $DP_LOCK_FILE"
+            echo "Please contact the system administrator."
+            exit 1
+        fi
+    fi
+
+    # Open the lock file
+    exec 9<$DP_LOCK_FILE
+
+    finished=0
+    exitCode=0
+    while (( $finished == 0 )); do
+        # Try to lock the datapath-lock
+        flock -n 9
+        if (( $? != 0 )); then
+            if (($INTERACTIVE == 0)); then
+                # Just exit
+                exitCode=1
+                finished=1
+                continue
+            fi
+
+            echo "Warning: A DataPath process is currently running."
+            echo "Do you wish to terminate the currently running process?"
+
+            getYesOrNo "Kill process? (y/n): " yesOrNoResult
+            if [ ${yesOrNoResult} == 1 ]; then
+                # Kill datapath and try to get the lock again
+                gotAns=1
+                echo "Killing currently running datapath instance."
+                killall dp
+                sleep 1
+            else
+                echo "Aborting."
+                finished=1
+                exitCode=1
+            fi
+        else
+            # We got the lock
+            finished=1
+            runQuery $1
+        fi
+    done
+
+    # Close the lock file
+    exec 9>&-
+}
+
+function runScript {
+    local script=$1
+    shift 1
+    $SCRIPTS_DIR/$script $@
+}
+
+function makeLib {
+    local dest_dir=$GROKIT_INSTALLED_LIBRARY_PATH
+    if (( $# > 1 )); then
+        dest_dir=$2
+    fi
+    # Make sure the installed library directory exists
+    [ -e $dest_dir ] || mkdir $dest_dir
+    php $SCRIPTS_DIR/compile-library.php $dest_dir $FILE
+}
+
+function runTests {
+    runScript tester.sh
+}
+
+##### Argument Parsing #####
+
+NO_OPTS=0
+READ_ONLY=1
+INTERACTIVE=0
+VERBOSE=0
+CONFIG_PROFILE='default'
+CODEGEN_PROFILE='default'
+SUPPRESS_OUTPUT=1
+BATCH_MODE=0
+USE_GDB=1
+ERR_FILE="/tmp/grokit_error"
+COMPILE_ONLY=0
+
+while getopts "e:bhoiwvop:c:slt" opt; do
+    case $opt in
+        h)
+            # Print usage and exit
+            printUsage
+            exit 0
+            ;;
+        e)
+            ERR_FILE=$(readlink -f "$OPTARG")
+            ;;
+        o)
+            NO_OPTS=1
+            ;;
+        i)
+            INTERACTIVE=1
+            ;;
+        w)
+            READ_ONLY=false
+            ;;
+        v)
+            VERBOSE=1
+            ;;
+        p)
+            CONFIG_PROFILE="$OPTARG"
+            ;;
+        c)
+            CODEGEN_PROFILE="$OPTARG"
+            ;;
+        s)
+            SUPPRESS_OUTPUT=0
+            ;;
+        b)
+            BATCH_MODE=1
+            ;;
+        l)
+            USE_GDB=0
+            ;;
+        t)
+            COMPILE_ONLY=1
+            ;;
+        \?)
+            echo "Error: Unknown option -$OPTARG" >&2
+            printUsage
+            exit -1
+            ;;
+    esac
+done
+
+if [ $NO_OPTS == 1 ]; then
+    CODEGEN_PROFILE="${CODEGEN_PROFILE}_no-opt"
+fi
+
+export GROKIT_CODEGEN_CONFIG=$CODEGEN_PROFILE
+
+shift $(expr $OPTIND - 1)
+
+getConfig $CONFIG_PROFILE
+
+if (( $# < 1 )); then
+    echo "Error: No command specified."
+    printUsage
+    exit -1
+fi
+
+debug=0
+
+DP_OPTS="-q"
+if [ $READ_ONLY == 1 ]; then
+    DP_OPTS="$DP_OPTS -r"
+fi
+
+if [ $SUPPRESS_OUTPUT == 1 ]; then
+    DP_OPTS="$DP_OPTS -s"
+fi
+
+if [ $BATCH_MODE == 1 ]; then
+    DP_OPTS="$DP_OPTS -b"
+fi
+
+if [ $COMPILE_ONLY == 1 ]; then
+    DP_OPTS="$DP_OPTS -t"
+fi
+
+DP_OPTS="$DP_OPTS -e"
+
+case $1 in
+    debug)
+        debug=1
+        ;&
+    run)
+        ensureBuilt
+        getFile $2
+        executeDatapath $FILE
+        ;;
+    makelib)
+        getFile $2
+        makeLib $FILE $3
+        ;;
+    test)
+        ensureBuilt
+        runTests
+        ;;
+    *)
+        echo "Error: Unsupported command $1"
+        printUsage
+        exit -1
+        ;;
+esac
+
+### End Argument Parsing ###
+
+exit $exitCode

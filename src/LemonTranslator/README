@@ -1,0 +1,282 @@
+This directory contains a test for the new Lemmon Translator. For now everything, including the parser is here.
+
+-------------------
+
+Spec for Symbolic Parameters for Waypoints. For each waypoint, the
+name and type of parameter is specified+description+example
+
+The example is based on the plan:
+W1=Selection:-lineitem
+W2=Selection:-orders
+W3=Join:-lineitem, ?orders
+W4=Aggregate:W1
+W5=Aggregate:W3
+W6=Print:W4
+W7=Print:W5
+
+The expressions are all produced from ASTs so you do not have to worry
+about them. Your analysis has to compute the lists of attributes
+needed for each waypoint. Selection, Aggregate and Print need a set of
+queries for each attribute that  is used of the form:
+</ (att_name, QueryIDSet), ... >/
+
+The QueryIDSet is the set of queries in which an attribute is needed
+(in the expression). For the Join, the situation is somehow more
+complicated.
+
+Selection:
+=========
+
+filter:string
+-- per query --
+Desc: expression
+Ex: val(lineitem_l_date>'10/2/08')+val(lineitem_l_tax>10)
+From where: AST
+
+queriesForAtts:string
+-- global -- 
+Desc: </ (AttName QueryIDSet), ../>
+Ex: </ (lineitem_l_date, 1), (lineitem_l_tax, 3) />
+
+attsToDrop:string
+-- global --
+Desc: </ att1, att2, .. />
+Attributes that can be dropped since NOBODY needs them
+Ex: </ lineitem_l_tax />
+
+Aggregate:
+=========
+
+aggregates:string
+-- per query -- 
+Desc: ( att_name1, aggFct1, expression1), (att2, aggFct2, exp2), .. 
+Ex: (Q1_agg1, Sum, val(lineitem_l_discount)), (Q1_agg2, Count, 1.0)
+
+queriesForAtts:string
+-- global --
+Desc: </ (AttName QueryIDSet), ../>
+Ex: </ (lineitem_l_date, 1), (lineitem_l_tax, 3) />
+
+Print:
+=====
+
+printList:string
+-- per query --
+Desc: ex1, ex2, ..
+Ex: val(lineitem_l_tax), val(Q1_agg1))
+
+queriesForAtts:string
+-- global --
+Desc: </ (AttName QueryIDSet), ../>
+Ex: </ (lineitem_l_date, 1), (lineitem_l_tax, 3) />
+
+
+Join:
+====
+
+The join has a left hand side (LHS) and a right hand side (RHS). You
+have to produce analysis separatelly for both:
+
+Both LHS and RHS have copy attributes (attributes that have to be
+copied in the result) and both have attributes they access.
+
+
+LHSAtts:string
+Desc: Left hand side attributes as list: </ att1, att2, .. />
+This comes fromt the description of the join.
+Ex: </ lineitem_l_tax />
+
+LHSqueriesForCopyAtts:string
+Desc: </ (AttName QueryIDSet), ../> queries for each attribute for LHS
+for all attributes copied, the set of queries for which they are copied
+if an attribute in LHSAtts is copied, it has to be mentioned here as well
+Ex: </ (lineitem_l_date, 1), (lineitem_l_tax, 3) />
+
+LSHqueriesForAccessedAtts:string
+same as before but LHS mentioned even if not copied
+
+Same thing for RHSqueriesForCopyAtts and RHSqueriesForAccessedAtts. 
+
+The list of copied attributes is determined based on what is needed
+after the join. The copied attributes come from either the left side
+or from the right side (this has to be determined as well).
+
+EXTRA: Join needs LHS and RHS to perform the join (thus they are always "used attributes"). LHS_copy (push up from left) and RHS_copy have to be determined from what is used above ("propagated"). 
+
+propagated-up=LHS_copy U RHS_copy
+LHS_copy = propagated \intersect LHS_all_attributes
+RHS_copy = propagated \intersect RHS_all_attributes
+
+LHS_all_attributes and RHS_all_attributes should be computed in a
+bottom-up fashion in a separate pass that checks the corectness of the
+query graphs.
+
+
+propagated-down_LHS = LHS U LHS_copy
+propagated-down_RHS = RHS U RHS_copy 
+
+
+Rules to figure out what is what for join:
+-----------------------------------------
+
+1. Join attributes for LHS and RHS are extracted from description
+   a. LHS is unique for Join and specified at creation
+   b. RHS is specified/query (join statement)
+
+2. Determine the set of attributes that are needed after the join. 
+   a. split the list into LHS and RHS for each query. These are copy attributes.
+   b. from these lists compute the attributes in the lists above
+
+In bottom up traversal, here are some details:
+
+1) Attributes which are propagated up
+  selection : prop up = prop down U synthesized
+  aggregate : prop up = synthesized (end of story)
+  join :      prop up = left U right
+  print :     dosent matter
+
+2) Checks we need to perform at each waypont for correctness
+  selection : used is subset of prop down
+  aggregate  : used is subset of prop down
+  join       : left is subset of left, right is subset of right
+  print      : used is subset of prop down
+===========================================
+Dynamics of adding/deleting queries
+------------------------------------
+
+The instructions to add (via new statements) and delete (via delete
+statements) are given through the language to the parser. The parser
+has to pass them along to the translator.
+
+A. On delete query
+
+	 When a query is deleted, the translator has to purge information
+	 specific to this query from all waypoints/file scanners. Update the
+	 list of queries/waypoint.
+
+	 For a delete query to be considered, it should appear before "run query ..."
+
+B. On delete waypoint
+	 
+	 Delete the waypoint and all edges attached to it from the
+	 graph. This should not be allowed unless the waypoint has no
+	 queries.
+
+	 In summary, each waypoint deletion deletes the links to itself. 
+	 
+	 Note: waypoints with no queries inside are "dormant". No code is generated for them.
+
+
+C. On run query, the translator has to do the analysis and send the
+info to the coordinator
+
+
+==============================================
+
+The translator has to ensure the corectness of the graph. Requirements are:
+
+A. At the time of "run query Q", the subgraph of Q should be a tree
+that starts with file scanners and ends with waypoints that
+"terminate" the chunk (query exit). Also, paths from file scanners to
+query exits should exist.
+
+
+Questions:
+- If graph is created bottom up and we provide downlink node while adding waypoint. How to provide this for join which has 2 downlink nodes? One to be marked as terminating and other as non-terminating.
+
+- If join RHS is terminating arc and if we don't propagate towards that branch, how do we update the updated query-exit pair to scanners on RHS side?
+
+- While traversing bottom-up, how do I know if I am LHS or RHS. In case we are RHS, should we terminate or proceed.
+
+- What is synthesized for selection?
+
+- For LT_Selection PropDown function, going down = used + coming from above. Why equation is not same for PropUp? GoingUP = coming from below - used ?
+
+- LT_Aggregare, the synthesized attribute which we get by AddAggregate is per query? That would mean we are receiving used attr per query and syn attr per query both from AddAggregate
+
+- When I Propagate UP, how to compute result? Since we know only LHS or RHS whatever branch we coming from.
+
+More ques:
+---------
+1) Should LT_Scanner receive atts while creation? Then AddScanner should be changed not to receive any atts with query. Should every query added be updated with all atts?
+
+2) README Selection part 2 for used is not correct. Since if we include all synthesized attr in used, the correctness will fail, since syn attr do not come from below
+
+TBD:
+====
+- AnalyzeAttUsageTopDown function to be updated for RHS join propagateDownRHS. Also this needs to be called for each query from Run function.
+
+- AnalyseAttUsageBottomUp needs to be called from some top func for each WP per query
+
+- LT_Selection has to be updated with SlotSet synthesized.
+
+- LT_Aggregate, PropagateUp, result field to be filled after clarification of above questions. Also correctness.
+
+
+========================================
+== Bottom Up Analysis
+====================
+
+Goal: find all available attributes at every point.
+Traversal: Topological sort from file scanners to the top
+Global information: none
+PerQueryInfo: availableAtts
+
+Equations:
+----------
+
+availableAtts keeps the list of available attributes that can be pushed up
+availableAtts_down - list of available from bottom
+availableAtts_LHS, availableAtts_RHS -- lists for join (from below)
+used -- list of used attributes/per query
+
+NOTE1: used can be maintained as the data is provided 
+NOTE2: make sure that used is included in information available at bottom
+
+
+1. File Scanner
+	 availableAtts = all attributes of relation
+	 used = \empty
+
+2. Selection
+	 availableAtts = availableAtts_down \union  synthesizedAtts
+	 used = atts_filtercond \union (\union_all att_synthesizedExpr)
+	 Check: used \included available_down
+
+3. Aggregate
+	 availableAtts = \union_all  aggAtts
+	 used = \union_all atts_aggExpressions
+	 Check: used \included available_down
+
+4. Print
+	 availableAtts = \empty
+	 used = \union_all print_expressions
+	 Check: used \included available_down
+
+5. Join
+	 availableAtts = available_LHS \union available_RHS
+	 used = LHS_global \union RHS_query
+	 Check: LHS_global \included available_LHS
+	 				RHS_query \included available_RHS
+
+1) for last part of join where LHS_global \is subset of LHS from down, here is trick. LHS down will be per query and LHS_global may be for many queries. Hence do we need to union all query LHS attributes to see if LHS_global is subset of that union?
+
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+++++ Attribute to Query Maps
+++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+These maps are needed in the code generator to guard access to attributes based on queries active. The maps specify what queries need each specific attribute in a given waypoint (possibly in a different role). The maps, in M4 look like:
+
+( attribute_name, "QueryIDSet_serialized"), ...
+
+QueryIDSerialized in obtained by calling .ToString() method on QueryIDSet
+
+1. Selection, Aggregates, Print
+the list is the second argument to the m4 macros and refers to the usage of attributes to evaluate expressions
+
+a separate list contains the same type of information for OUTPUT attributes
+
+The best way to get the map is to traverse used map and maintain a map from SlotID to QueryIDSet to keep track of attribute usage
+
+2. Join:
+List needs to be computed separatelly for LHS and RHS. For Join, OUTPUT refers to copy attributes

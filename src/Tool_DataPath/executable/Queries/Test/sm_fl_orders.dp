@@ -1,0 +1,40 @@
+/* Query
+	 SELECT COUNT(*), SUM(o_custkey), SUM(o_orderkey), SUM(o_totalprice)
+	 FROM orders
+	 WHERE o_totalprice < 10000.0;
+
+	 Results:
+   29727 | 2234369554 | 89724231185 | 162238886.58
+   29727 | 2.23437e+09|8.97242e+10  |1.62239e+08|
+
+*/
+
+/** scanners */
+new scanner orders;
+
+new waypoint sel = Select:-orders;
+
+// define new waypoint
+new waypoint agg  = Aggregate:-sel;
+
+// print waypoint
+new waypoint pr = Print:-?agg;
+
+new query Q1 {
+		waypoint sel{
+			filter orders.o_totalprice < 900.0; // should be 10000.0	
+}
+  waypoint agg {
+  aggregate agg_q1_1=Count(1.0);
+  aggregate agg_q1_2=Sum(orders.o_custkey);
+  aggregate agg_q1_3=Sum(orders.o_orderkey);
+  aggregate agg_q1_4=Sum(orders.o_totalprice);
+   }
+   waypoint pr {
+    print agg_q1_1, agg_q1_2, agg_q1_3, agg_q1_4;
+   }
+}
+
+
+run query Q1;
+

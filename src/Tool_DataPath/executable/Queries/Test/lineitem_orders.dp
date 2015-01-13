@@ -1,0 +1,16 @@
+new scanner lineitem;
+new scanner orders;
+
+new waypoint wJ = Join(lineitem.l_orderkey) :- lineitem, ?orders;
+new waypoint wP = Print :- ?wJ;
+
+new query Q1 {
+		waypoint wJ {
+						 join orders.o_orderkey;
+		}
+		waypoint wP {
+						 print lineitem.l_orderkey, orders.o_orderkey;
+		}
+}
+
+run query Q1;

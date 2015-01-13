@@ -1,0 +1,195 @@
+#include "JoinChunkManager.h"
+#include<assert.h>
+#include<iostream>
+
+using namespace std;
+
+// ID generator
+static int IDgen = 0;
+
+ChunkMetaData :: ChunkMetaData () {
+}
+
+ChunkMetaData :: ~ChunkMetaData () {
+
+	map<int, ChunkFloor*>::const_iterator it = mySubBucketToFloorMap.begin();
+	for (; it != mySubBucketToFloorMap.end(); ++it) {
+		if (it->second) delete it->second;
+	}
+}
+
+void ChunkMetaData :: ChunkToDisk (int subbucket, int chunkID, bool isLeft) {
+
+	ChunkFloor* Floor = NULL;
+	map<int, ChunkFloor*>::const_iterator it = mySubBucketToFloorMap.find (subbucket);
+	if (it == mySubBucketToFloorMap.end()) {
+		Floor = new ChunkFloor;
+		mySubBucketToFloorMap[subbucket] = Floor;
+	} else {
+		Floor = it->second;
+	}
+	// Pass the data to the floor
+	Floor->ChunkToDisk (chunkID, isLeft);
+	// record the chunkid to floor
+	myChunkIDToChunkFloor[chunkID] = Floor;
+}
+
+void ChunkMetaData :: ChunkFromDisk (int chunkID) {
+
+	map<int, ChunkFloor*>::const_iterator it = myChunkIDToChunkFloor.find (chunkID);
+	assert (it != myChunkIDToChunkFloor.end());
+	// send to the correct floor
+	(it->second)->ChunkFromDisk (chunkID);
+}
+
+bool ChunkMetaData :: GetTile (ChunkTile& tileOut) {
+
+	for (map<int, ChunkFloor*>::const_iterator it = mySubBucketToFloorMap.begin(); it != mySubBucketToFloorMap.end(); ++it) {
+		if (!(it->second)->IsEmpty()) { // If floor still has some tiles left (still not done)
+			(it->second)->GetTile (tileOut);
+			return true;
+		}
+	}
+	return false;
+}
+
+void ChunkMetaData :: PrintRectangles () {
+	for (map<int, ChunkFloor*>::const_iterator it = mySubBucketToFloorMap.begin(); it != mySubBucketToFloorMap.end(); ++it) {
+		(it->second)->PrintRectangle ();
+	}
+}
+
+ChunkFloor :: ChunkFloor () {
+}
+
+void ChunkFloor :: CreateTile () {
+
+	ChunkTile* tile = new ChunkTile;
+	bool gotTile = false;
+	bool firstTime = true;
+	int i = 0 /* zero always*/;
+	for (Floor::iterator it = myFloor.begin(); it != myFloor.end() && i < LHSSIZE; /*++it*/++i) {
+		int j = 0 /* zero always */;
+		gotTile = false;
+		for (set<int>::iterator iter = (it->second).begin(); iter != (it->second).end() && j < RHSSIZE; ++iter, ++j) {
+			gotTile = true;
+			if (firstTime)
+				(tile->rhs).push_back(*iter);
+			else
+				assert((tile->rhs)[j] == *iter);
+			(it->second).erase(iter); // get rid of this so that it does not appear again
+		}
+		firstTime = false;
+		if (gotTile) {
+			(tile->lhs).push_back(it->first);
+		}
+		else {
+			i--; // Since we did not get the tile, so to avoid the increment
+		}
+
+		// remove the left chunk once all right chunks are processed, also check if all right chunks are received
+		// if adjacency list is empty, remove the main LHS member vertex
+		if ((rightChunksToDisk.size() == rightChunksFromDisk.size()) && (it->second).empty()) {
+			Floor::iterator it_temp = it++;
+			myFloor.erase(it_temp); // this will invalidate the 'it' so trick used
+		} else {
+			++it;
+		}
+	}
+
+	if (gotTile) {
+		int ID = IDgen++;
+		tileIDToChunkTile[ID] = tile;
+		tilesPending.insert(ID);
+		tile->tileID = ID;
+		//tile->subbucketNo = not needed anymore
+	}
+}
+
+void ChunkFloor :: ChunkToDisk (int chunkID, bool isLeft) {
+
+	if (isLeft) {
+		set<int>::const_iterator it = leftChunksToDisk.find (chunkID);
+		assert (it == leftChunksToDisk.end()); // shouldn't be seeing same chunk ID to disk twice
+		leftChunksToDisk.insert (chunkID);
+	} else {
+		set<int>::const_iterator it = rightChunksToDisk.find (chunkID);
+		assert (it == rightChunksToDisk.end()); // shouldn't be seeing same chunk ID to disk twice
+		rightChunksToDisk.insert (chunkID);
+	}
+}
+
+void ChunkFloor :: ChunkFromDisk (int chunkID) {
+
+	bool isLeft = false;
+	set<int>::const_iterator it = leftChunksToDisk.find (chunkID);
+	if (it == leftChunksToDisk.end()) {
+		set<int>::const_iterator iter = rightChunksToDisk.find (chunkID);
+		assert(iter != rightChunksToDisk.end());
+	} else {
+		isLeft = true;
+	}
+
+	if (isLeft) {
+		leftChunksFromDisk.insert (chunkID);
+		Floor::const_iterator it = myFloor.find(chunkID);
+		// No chunk should be repeated with same ID
+		assert(it == myFloor.end());
+		// copy all right into left list and add into our rectangle
+		myFloor[chunkID] = rightChunksFromDisk; // relying on set<> copy ctor
+	} else {
+		rightChunksFromDisk.insert (chunkID);
+		// append this new right chunk into all lefts
+		for (Floor::iterator it = myFloor.begin(); it != myFloor.end(); ++it) {
+			assert ((it->second).find(chunkID) == (it->second).end()); // no repeated right chunk
+			(it->second).insert(chunkID);
+		}
+	}
+}
+
+bool ChunkFloor :: GetTile (ChunkTile& tileOut) {
+
+	tileOut.lhs.clear();
+	tileOut.rhs.clear();
+
+	// If returned tiles exist, send them first
+	if (!tilesPending.empty()) {
+		// If returned tiles exist, send them first (pick the first one)
+		set<int>::iterator it = tilesPending.begin();
+		// Look into map to get ChunkTile object
+		map<int, ChunkTile*>::iterator iter = tileIDToChunkTile.find(*it);
+		assert(iter != tileIDToChunkTile.end());
+		tileOut.lhs = (iter->second)->lhs;
+		tileOut.rhs = (iter->second)->rhs;
+		// erase from the pending queue
+		tilesPending.erase(it);
+		return true;
+	} else {
+		// Create tiles from existing received chunks and remove those chunks from there
+		if (!myFloor.empty()) {
+			CreateTile ();
+			return GetTile (tileOut); // recursive call
+		}
+		return false;
+	}
+	return false;
+}
+
+void ChunkFloor :: UnprocessedTile(int ID) {
+	tilesPending.insert(ID);
+}
+
+bool ChunkFloor :: IsEmpty () {
+	return (tilesPending.empty() && myFloor.empty());
+}
+
+void ChunkFloor :: PrintRectangle () {
+	cout << "\nRectangle";
+	for (Floor::iterator it = myFloor.begin(); it != myFloor.end(); ++it) {
+		cout << "\n";
+		cout << "Left " << it->first << " " << "Rights ";
+		for (set<int>::iterator iter = (it->second).begin(); iter != (it->second).end(); ++iter) {
+			cout << " " << (*iter);
+		}
+	}
+}

@@ -1,0 +1,36 @@
+/*
+SELECT ps.ps_partkey, ps.ps_suppkey, ps.ps_availqty
+FROM partsupp AS ps
+WHERE (ps.ps_partkey < 100) AND (ps.ps_suppkey < 50)
+
+ANSWER: 48 rows (1.95 sec)
+
+*/
+
+/** scanners */
+new scanner partsupp;
+
+// define new waypoint
+new waypoint s = Select:-partsupp;
+
+/* a waypoint has to be declard with new before
+   it is used for a connection | topological sort */
+
+// print waypoint
+new waypoint pr = Print:-?s;
+
+/** Example of code for one query in a lump */
+new query Q1 {
+    // code for Q1 for each waypoint
+    // order of waypoints does not matter
+    waypoint s {
+	filter (partsupp.ps_partkey < 100) && (partsupp.ps_suppkey < 50);
+    }
+   waypoint pr {
+   	print partsupp.ps_partkey, partsupp.ps_suppkey, partsupp.ps_availqty;
+   }
+}
+
+
+run query Q1;
+

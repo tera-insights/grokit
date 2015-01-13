@@ -1,0 +1,24 @@
+/* This query builds  a histogram over all the data */
+
+new scanner flows;
+new waypoint sel = Select :- flows;
+new waypoint hist = GLA :- sel;
+new waypoint pr = Print :- ?hist;
+
+new query Q1 {
+    waypoint sel {      
+       filter true;
+//       filter flows.mac == MACADDR;
+    }
+    waypoint hist {
+       gla (fit:INT, param1:DOUBLE, param2:DOUBLE, param3:DOUBLE) 
+           = THistogramGLA ["hist.dta", 86400, 300] (ExtractSecond(flows.Start));
+    }
+    
+    waypoint pr {
+       print fit, param1, param2, param3;
+    }
+    
+}
+
+run query Q1;

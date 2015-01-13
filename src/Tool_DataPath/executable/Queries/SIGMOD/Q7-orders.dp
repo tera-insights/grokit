@@ -1,0 +1,59 @@
+/*
+	SELECT SUM(lineitem.l_extendedprice * (1.000000 - lineitem.l_discount)) FROM
+	lineitem, orders WHERE (l_orderkey = o_orderkey) AND (orders.o_orderdate > DATE('1997-02-01')) AND (orders.o_orderdate <= DATE('1997-05-07'));
+
+        sum         
+---------------------
+ 8639044059.27050000
+
+*/
+
+/** scanners */
+//new scanner part;
+//new scanner lineitem;
+//new scanner customer;
+new scanner orders;
+//new scanner supplier;
+//new scanner nation;
+
+// define new waypoint
+new waypoint W3  = Select:-orders;
+//new waypoint lSel = Select:-lineitem;
+
+
+/* a waypoint has to be declard with new before
+   it is used for a connection | topological sort */
+
+// for joins, the right hand side is terminating
+// guard it by ?
+//new waypoint W6  = Join(lineitem.l_orderkey):-lSel, ?W3;
+
+
+// aggregates now
+new waypoint W36 = Aggregate:-W3;
+
+// print waypoint
+new waypoint W37 = Print:-?W36;
+
+
+/** the following queries are written in a different way */
+
+// forward definitions of queries
+new query Q7;
+
+waypoint W3 {
+  //query Q7 { filter (orders.o_orderdate > DATE('1996-02-01')) && (orders.o_orderdate <= DATE('1997-05-07')); }
+  query Q7 { filter (orders.o_orderkey % 13 == 0); }
+  //query Q7 { filter (orders.o_orderdate > DATE('1996-02-01')) && (orders.o_orderdate <= DATE('1997-01-08')); } // At this range, sometimes we move to hash lhs rhs, sometimes not !
+}
+
+waypoint W36 {
+  query Q7 { aggregate agg_q7_1 = Count(1.0); }
+}
+
+waypoint W37 {
+  query Q7 { print agg_q7_1; }
+}
+
+run query Q7;
+

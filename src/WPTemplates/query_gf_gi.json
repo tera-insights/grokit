@@ -1,0 +1,448 @@
+
+{
+	"attributes" : 
+	[
+		
+		{
+			"name" : "Q1_a_id",
+			"slot" : "2",
+			"type" : 
+			{
+				"node_data" : "INT",
+				"node_source" : 
+				{
+					"column" : 11,
+					"file" : "./inFile.pgy",
+					"line" : 341
+				},
+				"node_type" : "identifier"
+			}
+		},
+		
+		{
+			"name" : "Q1_a_name",
+			"slot" : "4",
+			"type" : 
+			{
+				"node_data" : "STRING",
+				"node_source" : 
+				{
+					"column" : 15,
+					"file" : "./inFile.pgy",
+					"line" : 343
+				},
+				"node_type" : "identifier"
+			}
+		},
+		
+		{
+			"name" : "Q1_a_type_id",
+			"slot" : "3",
+			"type" : 
+			{
+				"node_data" : "INT",
+				"node_source" : 
+				{
+					"column" : 18,
+					"file" : "./inFile.pgy",
+					"line" : 342
+				},
+				"node_type" : "identifier"
+			}
+		}
+	],
+	"edges" : 
+	[
+		
+		{
+			"dest" : "print",
+			"queries" : [ "Q1" ],
+			"source" : "sel",
+			"terminating" : true
+		},
+		
+		{
+			"dest" : "sel",
+			"queries" : [ "Q1" ],
+			"source" : "animals",
+			"terminating" : false
+		}
+	],
+	"header" : [],
+	"waypoints" : 
+	[
+		
+		{
+			"att_map" : 
+			{
+				"Q1_a_id" : "1",
+				"Q1_a_name" : "1",
+				"Q1_a_type_id" : "1"
+			},
+			"name" : "print",
+			"payload" : 
+			{
+				"Q1" : 
+				{
+					"c_defs" : "m4_include(</base/Types/INT.h/>)\nm4_include(</base/Types/STRING.h/>)\n",
+					"c_expr" : "Q1_a_id, Q1_a_type_id, Q1_a_name",
+					"cst_str" : "",
+					"expression" : 
+					[
+						
+						{
+							"node_data" : 
+							{
+								"name" : "Q1_a_id"
+							},
+							"node_source" : 
+							{
+								"column" : 6,
+								"file" : "./inFile.pgy",
+								"line" : 366
+							},
+							"node_type" : "att"
+						},
+						
+						{
+							"node_data" : 
+							{
+								"name" : "Q1_a_type_id"
+							},
+							"node_source" : 
+							{
+								"column" : 12,
+								"file" : "./inFile.pgy",
+								"line" : 366
+							},
+							"node_type" : "att"
+						},
+						
+						{
+							"node_data" : 
+							{
+								"name" : "Q1_a_name"
+							},
+							"node_source" : 
+							{
+								"column" : 23,
+								"file" : "./inFile.pgy",
+								"line" : 366
+							},
+							"node_type" : "att"
+						}
+					],
+					"file" : "animals.csv",
+					"header" : 
+					[
+						[ "id", "INT" ],
+						[ "typ", "INT" ],
+						[ "name", "STRING" ]
+					],
+					"old_header" : "id|typ|name\nINT|INT|STRING\n",
+					"separator" : "|"
+				}
+			},
+			"type" : "print_wp"
+		},
+		
+		{
+			"att_map" : 
+			{
+				"Q1_a_name" : "1"
+			},
+			"filters" : 
+			{
+				"Q1" : 
+				{
+					"args" : 
+					{
+						"node_data" : 
+						[
+							
+							{
+								"name" : "0",
+								"value" : 
+								{
+									"node_data" : 
+									{
+										"args" : 
+										[
+											
+											{
+												"node_data" : 
+												{
+													"name" : "Q1_a_name"
+												},
+												"node_source" : 
+												{
+													"column" : 18,
+													"file" : "./inFile.pgy",
+													"line" : 353
+												},
+												"node_type" : "att"
+											}
+										],
+										"name" : 
+										{
+											"node_data" : "ToStringLit",
+											"node_source" : 
+											{
+												"column" : 6,
+												"file" : "./inFile.pgy",
+												"line" : 353
+											},
+											"node_type" : "identifier"
+										},
+										"t_args" : []
+									},
+									"node_source" : 
+									{
+										"column" : 0,
+										"file" : "./inFile.pgy",
+										"line" : 353
+									},
+									"node_type" : "function"
+								}
+							}
+						],
+						"node_source" : 
+						{
+							"column" : 0,
+							"file" : "./inFile.pgy",
+							"line" : 0
+						},
+						"node_type" : "named_expression_list"
+					},
+					"c_defs" : "m4_include(</base/Types/STRING.h/>)\nm4_include(</base/Types/STRING_LITERAL.h/>)\nm4_include(</base/Functions/STRING-Funcs.h/>)\nm4_include(</base/GFs/PatternMatcherOnig.h/>)\n",
+					"c_expr" : "(ToStringLit(Q1_a_name))",
+					"const_args" : 
+					[
+						
+						{
+							"node_data" : 
+							{
+								"type" : "STRING_LITERAL",
+								"value" : "\".*Panda\""
+							},
+							"node_source" : 
+							{
+								"column" : 25,
+								"file" : "./inFile.pgy",
+								"line" : 352
+							},
+							"node_type" : "literal"
+						}
+					],
+					"cst_str" : "",
+					"old_type" : "PatternMatcherOnig",
+					"state_args" : [],
+					"type" : 
+					{
+						"node_data" : 
+						{
+							"alias" : null,
+							"name" : "PatternMatcherOnig",
+							"t_args" : []
+						},
+						"node_source" : 
+						{
+							"column" : 6,
+							"file" : "./inFile.pgy",
+							"line" : 352
+						},
+						"node_type" : "gf"
+					}
+				}
+			},
+			"name" : "sel",
+			"synth" : 
+			{
+				"Q1" : []
+			},
+			"type" : "selection_wp"
+		},
+		
+		{
+			"att_map" : 
+			{
+				"Q1_a_id" : "1",
+				"Q1_a_name" : "1",
+				"Q1_a_type_id" : "1"
+			},
+			"name" : "animals",
+			"payload" : 
+			{
+				"args" : 
+				[
+					
+					{
+						"node_data" : 
+						{
+							"name" : "Q1_a_id"
+						},
+						"node_source" : 
+						{
+							"column" : 4,
+							"file" : "./inFile.pgy",
+							"line" : 341
+						},
+						"node_type" : "att"
+					},
+					
+					{
+						"node_data" : 
+						{
+							"name" : "Q1_a_type_id"
+						},
+						"node_source" : 
+						{
+							"column" : 6,
+							"file" : "./inFile.pgy",
+							"line" : 342
+						},
+						"node_type" : "att"
+					},
+					
+					{
+						"node_data" : 
+						{
+							"name" : "Q1_a_name"
+						},
+						"node_source" : 
+						{
+							"column" : 6,
+							"file" : "./inFile.pgy",
+							"line" : 343
+						},
+						"node_type" : "att"
+					}
+				],
+				"c_defs" : "m4_include(</base/Types/INT.h/>)\nm4_include(</base/Types/STRING.h/>)\nm4_include(</GI_5_CSVReader.h/>)\n",
+				"const_args" : [],
+				"file" : [ "/opt/datapath/Piggys/test/animals.txt" ],
+				"old_type" : "GI_5_CSVReader",
+				"tuples" : 0,
+				"type" : 
+				{
+					"node_data" : 
+					{
+						"alias" : null,
+						"name" : "CSVReader",
+						"t_args" : 
+						[
+							
+							{
+								"name" : "outputs",
+								"value" : 
+								{
+									"node_data" : 
+									[
+										
+										{
+											"name" : "id",
+											"value" : 
+											{
+												"node_data" : "INT",
+												"node_source" : 
+												{
+													"column" : 19,
+													"file" : "./inFile.pgy",
+													"line" : 333
+												},
+												"node_type" : "identifier"
+											}
+										},
+										
+										{
+											"name" : "type",
+											"value" : 
+											{
+												"node_data" : "INT",
+												"node_source" : 
+												{
+													"column" : 21,
+													"file" : "./inFile.pgy",
+													"line" : 334
+												},
+												"node_type" : "identifier"
+											}
+										},
+										
+										{
+											"name" : "name",
+											"value" : 
+											{
+												"node_data" : "STRING",
+												"node_source" : 
+												{
+													"column" : 21,
+													"file" : "./inFile.pgy",
+													"line" : 335
+												},
+												"node_type" : "identifier"
+											}
+										}
+									],
+									"node_source" : 
+									{
+										"column" : 20,
+										"file" : "./inFile.pgy",
+										"line" : 332
+									},
+									"node_type" : "named_arguments"
+								}
+							},
+							
+							{
+								"name" : "header_lines",
+								"value" : 
+								{
+									"node_data" : 
+									{
+										"type" : "INT",
+										"value" : "2"
+									},
+									"node_source" : 
+									{
+										"column" : 25,
+										"file" : "./inFile.pgy",
+										"line" : 337
+									},
+									"node_type" : "literal"
+								}
+							},
+							
+							{
+								"name" : "separator",
+								"value" : 
+								{
+									"node_data" : 
+									{
+										"type" : "STRING_LITERAL",
+										"value" : "\"|\""
+									},
+									"node_source" : 
+									{
+										"column" : 22,
+										"file" : "./inFile.pgy",
+										"line" : 338
+									},
+									"node_type" : "literal"
+								}
+							}
+						]
+					},
+					"node_source" : 
+					{
+						"column" : 9,
+						"file" : "./inFile.pgy",
+						"line" : 330
+					},
+					"node_type" : "gi"
+				}
+			},
+			"type" : "gi_wp"
+		}
+	]
+}

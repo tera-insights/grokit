@@ -1,0 +1,3 @@
+data = READ "orders.tbl" SEPARATOR '|' ATTRIBUTES FROM orders;
+
+STORE data INTO orders;

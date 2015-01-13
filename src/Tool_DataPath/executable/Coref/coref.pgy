@@ -1,0 +1,31 @@
+#include "coreference.pgy"
+
+LOAD nyt_data600000;
+
+initGLA = GLA:MentionsGLA
+FROM nyt_data600000
+USING  nyt_data600000.doc, nyt_data600000.para, nyt_data600000.num_word, nyt_data600000.mention, nyt_data600000.pos, nyt_data600000.ner 
+AS SELF;
+//AS
+//    stringL : HString,
+//    len     : INT,
+//    doc     : INT,
+//    para    : INT,
+//    word    : INT,
+//    pos     : HString,
+//    ner     : HString
+//;
+
+//print initGLA
+//USING stringL, len, doc, para, word, pos, ner
+//INTO "file";
+
+mygist = GIST:Coreference
+requires initGLA
+AS
+    num_entity : INT   
+;
+
+print mygist
+using num_entity
+into "num_entity";

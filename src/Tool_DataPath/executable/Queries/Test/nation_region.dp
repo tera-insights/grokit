@@ -1,0 +1,16 @@
+new scanner nation;
+new scanner region;
+
+new waypoint wJ = Join(nation.n_regionkey) :- nation, ?region;
+new waypoint wP = Print :- ?wJ;
+
+new query Q1 {
+		waypoint wJ {
+						 join region.r_regionkey;
+		}
+		waypoint wP {
+						 print nation.n_nationkey, nation.n_regionkey, region.r_name;
+		}
+}
+
+run query Q1;

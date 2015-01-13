@@ -1,0 +1,79 @@
+/* Query:
+ 
+   SELECT COUNT(*) 
+   FROM lineitem, orders, customer, nation
+   WHERE l_orderkey = o_orderkey AND c_nationkey = n_nationkey AND
+	 			 o_custkey = c_custkey AND n_name = 'ALGERIA' AND 
+				 o_orderdate > DATE '1997-03-01' AND o_orderdate <= '1997-04-07';
+
+
+   Result: 3550
+
+*/
+
+/** scanners */
+//new scanner part;
+new scanner lineitem;
+new scanner customer;
+new scanner orders;
+//new scanner supplier;
+new scanner nation;
+
+// define new waypoint
+new waypoint W3  = Select:-orders;
+new waypoint W14 = Select:-nation;
+
+
+/* a waypoint has to be declard with new before
+   it is used for a connection | topological sort */
+
+// for joins, the right hand side is terminating
+// guard it by ?
+new waypoint W6  = Join(lineitem.l_orderkey):-lineitem, ?W3;
+new waypoint W29 = Join(customer.c_nationkey):-customer, ?W14;
+new waypoint W33 = Join(orders.o_custkey):- ?W29, W6;
+
+
+// aggregates now
+new waypoint W34 = Aggregate:-W33;
+
+// print waypoint
+new waypoint W35 = Print:-?W34;
+
+
+/** the following queries are written in a different way */
+
+// forward definitions of queries
+new query Q6;
+
+waypoint W3 {
+//  query Q6 { filter (orders.o_orderdate > DATE('1997-03-01')) && (orders.o_orderdate <= DATE('1997-04-07')); }
+  query Q6 { filter (true); } 
+}
+
+waypoint W6 { 
+  query Q6 { join orders.o_orderkey; }
+}
+
+waypoint W14 { 
+  query Q6 { filter nation.n_name == 'ALGERIA'; }
+}
+
+waypoint W29 {
+  query Q6 { join nation.n_nationkey; }
+}
+
+waypoint W33 {
+  query Q6 { join customer.c_custkey; }
+}
+
+waypoint W34 {
+  query Q6 { aggregate agg_q6_1=Count(1.0); }
+}
+
+waypoint W35 {
+  query Q6 { print agg_q6_1; }
+}
+
+run query Q6;
+

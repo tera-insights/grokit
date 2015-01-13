@@ -1,0 +1,90 @@
+/* Query:
+
+   SELECT AVERAGE(l.l_extendedprice)
+	 FROM lineitem l, part p, supplier s, nation n
+	 WHERE l.l_partkey=p.p_partkey AND s.s_nationkey=n.n_nationkey AND
+	 			 l.l_suppkey=s.s_suppkey AND p.p_size >=5.0 AND p.p_size <=10.0 AND
+				 n.n_name = 'RUSSIA';
+
+	 Ansewr: 38558.837999794640
+
+*/
+/** scanners */
+new scanner part;
+new scanner lineitem;
+new scanner supplier;
+new scanner nation;
+
+// define new waypoint
+new waypoint W5  = Select:-part;
+// new waypoint W4  = Select:-lineitem;
+// new waypoint W15 = Select:-supplier;
+new waypoint W14 = Select:-nation;
+
+
+/* a waypoint has to be declard with new before
+   it is used for a connection | topological sort */
+
+// for joins, the right hand side is terminating
+// guard it by ?
+new waypoint W17 = Join(lineitem.l_partkey):-lineitem, ?W5;
+new waypoint W16 = Join(supplier.s_nationkey):-supplier, ?W14;
+
+new waypoint W18 = Join(lineitem.l_suppkey):- W17, ?W16;
+
+
+// aggregates now
+new waypoint W19 = Aggregate:-W18;
+
+// print waypoint
+new waypoint W20 = Print:-?W19;
+
+
+// forward definitions of queries
+new query Q2;
+
+/*
+waypoint W4 { 
+  query Q2 { filter 1==1; }
+}
+*/
+
+waypoint W5 {
+  query Q2 { filter (part.p_size >= 4.99999999) && (part.p_size <= 10.0000001); } 
+}
+
+waypoint W14 { 
+  query Q2 { filter nation.n_name == 'RUSSIA'; }
+}
+
+/*
+waypoint W15 {
+  query Q2 { filter 1==1; }
+}
+*/
+
+waypoint W16 {
+  query Q2 { join nation.n_nationkey; } 
+}
+
+waypoint W17 {
+  query Q2 { join part.p_partkey; }
+}
+
+waypoint W18 {
+  query Q2 { join supplier.s_suppkey; }
+}
+
+waypoint W19 {
+  query Q2 { 
+				aggregate agg_q2_1=Average(lineitem.l_extendedprice); 
+				aggregate agg_q2_2=Count(1.0); 
+	}
+}
+
+waypoint W20 {
+  query Q2 { print agg_q2_1, agg_q2_2; }
+}
+
+run query Q2;
+

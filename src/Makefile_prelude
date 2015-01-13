@@ -1,0 +1,153 @@
+# This make variable needs to be set to /bin/bash otherwise dash takes over
+# and -e is not correctly interpreted
+SHELL:=/bin/bash
+
+# The makefile generator will automatically find all of the directories in the project that
+# contain .h files, and use them to build up the .h include string...
+# However, if there are some additional include directories that are outside of the project, then
+# they should be listed here.
+INCLUDE =  -I /usr/include/libxml2/
+
+# The makefile generator will automatically find all of the directories in the project that
+# contain .m4 files, and use them to build up the .m4 include string...
+# However, if there are some additional include directories that are outside of the project, then
+# they should be listed here.
+M4INCLUDE =
+
+# The makefile that is generated will support a "make clean" that kills all of the .o files,
+# all of the executables, and all of the .cc and .h files that were generated using m4.
+# If there are any other files that you want the Makefile to remove under the "make clean"
+# command, put them here
+REMOVES = Planner/source/y.tab.c Planner/source/y.tab.h Planner/source/lex.yy.c LemonTranslator/parser/DataPathLexer.c LemonTranslator/parser/DataPathParser.c LemonTranslator/parser/DPtree.c
+
+ifndef PREFIX
+	PREFIX := /usr/local
+endif
+
+# this is the compiler to use for C++ files
+#CC := g++
+CC := clang++
+
+# Choose the standard library used by clang. Only works with clang
+ifeq ($(CC), clang++)
+CC_STDLIB := -stdlib=libstdc++
+#CC_STDLIB := -stdlib=libc++
+else
+CC_STDLIB :=
+endif
+
+# this is the compiler to use for .m4 files
+M4 = m4
+
+# This is the interpreter used for .php files
+PHP := php
+
+# Set up flags used for PHP interpreter
+
+# Set up the include directories for PHP by appending PHP/php to the current
+# include path
+PHP_INC_DIR := $(shell php -r 'echo get_include_path();')
+PHP_INC_DIR := ${PHP_INC_DIR}:PHP/php
+
+PHPFLAGS := -d "include_path=${PHP_INC_DIR}"
+
+# these are the compiler flags that are used when the final linking is done
+LINKFLAGS := -lonig -ljsoncpp
+
+# If we are using libc++ and libc++ was compiled using libc++abi, we need to do
+# some special linking
+ifeq ($(CC_STDLIB), -stdlib=libc++)
+LINKFLAGS += -nodefaultlibs -lc++ -lc++abi -lm -lc -lgcc_s
+endif
+
+# Use Google's thread-cached malloc
+#LINKFLAGS += -ltcmalloc
+
+# Link with gperftools CPU profile
+#LINKFLAGS += -lprofiler
+
+# these are the compiler flags that are used when object files are created
+CCFLAGS := -c -w -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE
+
+# Choose which C++ standard to use
+CCSTANDARD := -std=c++11
+#CCSTANDARD := -std=c++1y
+
+CCFLAGS += ${CCSTANDARD}
+CCFLAGS += ${CC_STDLIB}
+
+#LINKFLAGS += ${CCSTANDARD}
+#LINKFLAGS += ${CC_STDLIB}
+
+# debug info
+CCFLAGS += -g
+# print the debug messages
+# CCFLAGS+= -DDEBUG
+# print the messages processed by EventProcessors
+#CCFLAGS+= -DDEBUG_EVPROC
+
+# run a Valgrind-like check of the mmap memory allocator
+# CCFLAGS+= -DMMAP_CHECK
+
+# Run the MMAP check every tick of the profiler
+# CCFLAGS += -DMMAP_DIAG_TICK
+
+# switch to malloc allocation for everythign to allow Valgrind to test memory
+# WARNING: THIS DEACTIVATES DISK AND MEMORY OPTIMIZATION SO USE ONLY FOR DEBUGGING
+# CCFLAGS+=-DMMAP_IS_MALLOC
+
+# define this variable if more than 64 queries are run concurrently (less than 128)
+#CCFLAGS+= -DLONGBITSTRING
+
+# variables for string dictionary construction
+#CCFLAGS+= -DSLOW_MAP_DSTRING
+#CCFLAGS+= -DUSE_GETLINE
+
+# use NUMA memory allocation strategies
+#CCFLAGS += -DUSE_NUMA
+
+# use huge pages for memory allocation
+# CCFLAGS += -DUSE_HUGE_PAGES
+
+# use linux performance counters
+CCFLAGS += -DUSE_PERF_LINUX
+
+# start up perf counters per cpu
+# Note: This has a very negative impact on performance.
+CCFLAGS += -DPER_CPU_PROFILE
+
+# warm-up the system first
+#CCFLAGS += -DWARMUP_SYSTEM
+
+# compiler code optimization
+CCFLAGS += -O3 -march=native
+#CCFLAGS += -O0
+
+# antlr3 executable
+ANTLR = java -jar /usr/local/lib/antlr-3.3-complete.jar
+
+# yacc/lex executables
+YACC = bison
+LEX = flex
+
+# if there are any special object files that won't be compiled using C++ or m4, then rules for making them
+# won't be automatically generated, and they should be given explicitly here
+ltparser: LemonTranslator/parser/*.g 
+	parserMake.sh
+
+# Special rule to make sure changes to grokit_config.php get propagated during make
+Global/php/Constants.h.php: PHP/php/grokit_config.php
+
+# These rules will probably require superuser permissions
+install: ../tools/grokit ../tools/grokit-cli ../tools/compile-library.php
+	install -d $(ROOT)$(PREFIX)/bin
+	install -d $(ROOT)$(PREFIX)/lib/grokit/scripts
+	install ../tools/grokit $(ROOT)$(PREFIX)/bin/grokit
+	install ../tools/grokit-cli $(ROOT)$(PREFIX)/bin/grokit-cli
+	install ../tools/compile-library.php $(ROOT)$(PREFIX)/lib/grokit/scripts/
+	./installDefsScript.sh
+	touch ../lock
+
+uninstall:
+	rm $(PREFIX)/bin/grokit
+	rm $(PREFIX)/bin/grokit-cli

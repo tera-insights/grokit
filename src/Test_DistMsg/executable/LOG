@@ -1,0 +1,5 @@
+1.25276	CommReciever: New connection from host [localhost:9701]
+1.25307	CommReciever: [localhost:9701] sending hello message: {"msg":{"dest":{"hostname":"localhost","port":9701},"source":{"hostname":"timonster.terainsights.net","port":11111}},"type":1}
+
+1.25309	CommManager: New connection to host [localhost:9701] received from receiver.
+1.25314	Starting Client CommSender for address localhost:9701

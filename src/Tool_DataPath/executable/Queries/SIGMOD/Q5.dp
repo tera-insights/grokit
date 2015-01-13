@@ -1,0 +1,77 @@
+
+/** scanners */
+//new scanner part;
+//new scanner lineitem;
+new scanner customer;
+new scanner orders;
+//new scanner supplier;
+new scanner nation;
+
+// define new waypoint
+//new waypoint W5  = Select:-part;
+new waypoint W24 = Select:-customer;
+new waypoint W3  = Select:-orders;
+//new waypoint W15 = Select:-supplier;
+new waypoint W14 = Select:-nation;
+
+
+/* a waypoint has to be declard with new before
+   it is used for a connection | topological sort */
+
+// for joins, the right hand side is terminating
+// guard it by ?
+//new waypoint W17 = Join(lineitem.l_partkey):-W4, ?W5;
+//new waypoint W6  = Join(lineitem.l_orderkey):-W4, ?W3;
+new waypoint W29 = Join(customer.c_nationkey):-W24, ?W14;
+//new waypoint W16 = Join(supplier.s_nationkey):-W15, ?W14;
+
+//new waypoint W7  = Join(lineitem.l_partkey):- W6, ?W5;
+//new waypoint W18 = Join(lineitem.l_suppkey):- W17, ?W16;
+//new waypoint W25 = Join(customer.c_custkey):- W24, ?W6;
+//new waypoint W33 = Join(customer.c_custkey):- W29, ?W6;
+new waypoint W30 = Join(customer.c_custkey):- W29, ?W3;
+
+//new waypoint W26 = Join(customer.c_nationkey):- W25, ?W16;
+
+// aggregates now
+new waypoint W31 = Aggregate:-W30;
+
+// print waypoint
+new waypoint W32 = Print:-?W31;
+
+
+/** the following queries are written in a different way */
+
+// forward definitions of queries
+new query Q5;
+
+waypoint W3 {
+  query Q5 { filter (orders.o_orderdate >= DATE('1997-03-02')) && (orders.o_orderdate <= DATE('1997-05-09')); }
+}
+
+waypoint W14 { 
+  query Q5 { filter (nation.n_name == 'FRANCE' || nation.n_name == 'GERMANY'); }
+}
+
+waypoint W24 {
+  bypass Q5;
+}
+
+waypoint W29 {
+  query Q5 { join nation.n_nationkey; }
+}
+
+waypoint W30 {
+  query Q5 { join orders.o_custkey; }
+}
+
+waypoint W31 {
+  query Q5 { aggregate agg_q5_1=Average(orders.o_totalprice); }
+}
+
+waypoint W32 {
+  query Q5 { print agg_q5_1; }
+}
+
+run query Q5;
+

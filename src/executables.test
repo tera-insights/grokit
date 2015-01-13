@@ -1,0 +1,17 @@
+Test_DistMsg/executable/test:
+    -rdynamic
+    -fPIC
+    -lsqlite3
+    -lrt
+    -lboost_system-mt
+    -lboost_regex-mt
+    -lssl
+    -lcrypto
+    Bitstring
+    DataStructures
+    Data
+    DistributedMessaging
+    Global
+    IDs
+    Messaging
+    Test_DistMsg

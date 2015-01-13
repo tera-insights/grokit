@@ -1,0 +1,409 @@
+	#include <sys/mman.h>
+	#include <iostream>
+	#include <sys/types.h>
+	#include <sys/stat.h>
+	#include <fcntl.h>
+	
+	#include "Errors.h"
+	#include "Numa.h"
+	#include "NumaMemoryAllocator.h"
+	
+	void* mmap_alloc(size_t noBytes, int node){
+	  NumaMemoryAllocator& aloc=NumaMemoryAllocator::GetAllocator();
+	  return aloc.MmapAlloc(noBytes, node);
+	}
+	
+	void mmap_free(void* ptr){
+	  NumaMemoryAllocator& aloc=NumaMemoryAllocator::GetAllocator();
+	  aloc.MmapFree(ptr);
+	}
+	
+	NumaMemoryAllocator::NumaMemoryAllocator(void)
+	{
+	  // initialize the mutex
+	  pthread_mutex_init(&mutex, NULL);
+	  mHeapInitialized = false;
+	}
+	
+	
+	int NumaMemoryAllocator::BytesToPageSize(size_t bytes){
+	  // compute the size in pages
+	  int pSize = bytes >> ALLOC_PAGE_SIZE_EXPONENT;
+	  if (bytes != PageSizeToBytes(pSize) )
+	    pSize++; // extra page to get the overflow
+	 
+	  return pSize;
+	}
+	
+	size_t NumaMemoryAllocator::PageSizeToBytes(int pSize){
+	  return ((size_t) pSize) << ALLOC_PAGE_SIZE_EXPONENT;
+	}
+	
+	void NumaMemoryAllocator::HeapInit()
+	{
+	    mHeapInitialized = true;
+	#ifndef USE_NUMA
+	    int numNumaNodes = 1;
+	#else
+	    int numNumaNodes = numaNodeCount();
+	#endif
+			unsigned long nodeMask = 0;
+	    for (unsigned long long node = 0; node < numNumaNodes; node++)
+	    {
+					nodeMask = 0;
+					nodeMask |= (1 << node);
+	        NumaNode* numa = new NumaNode;
+	        mNumaNumberToNumaNodeMap[node] = numa;
+	        int pageFD = 0;
+	        void* newChunk = mmap(NULL, PageSizeToBytes(INIT_HEAP_PAGE_SIZE), PROT_READ | PROT_WRITE, MAP_FLAGS, pageFD, 0);
+	        ASSERT(newChunk != MAP_FAILED);
+#ifdef USE_NUMA
+					// now bind it to the node and touch all the pages to make sure memory is bind to the node
+					int retVal = mbind(newChunk, PageSizeToBytes(INIT_HEAP_PAGE_SIZE), MPOL_PREFERRED, &nodeMask, numNumaNodes+1, MPOL_MF_MOVE);
+					ASSERT(retVal == 0);
+					int* pInt = (int*)newChunk;
+					for (unsigned int k = 0; k < PageSizeToBytes(INIT_HEAP_PAGE_SIZE)/4; k+=(1<<(ALLOC_PAGE_SIZE_EXPONENT-2)))
+					pInt[k] = 0;
+  #endif
+
+	
+	#ifndef STORE_HEADER_IN_CHUNK
+	        ChunkInfo* chunk = NULL;
+	        if (mDeletedChunks.empty())
+	            chunk = new ChunkInfo;
+	        else
+	        {
+	            chunk = mDeletedChunks.front();
+	            mDeletedChunks.pop_front();
+	        }
+	        chunk->currentPtr = newChunk;
+	        // add new chunk entry in map
+	        mPtrToChunkInfoMap[chunk->currentPtr] = chunk;
+	#else
+	        ChunkInfo* chunk = (ChunkInfo*)newChunk;
+	        chunk->currentPtr = (void*)((char*)newChunk + sizeof(ChunkInfo));
+	#endif
+	        chunk->prevChunk = NULL;
+	        chunk->nextChunk = NULL;
+	        chunk->numaNode = numa;
+	        (chunk->sizeInfo).sizeStruct.size = INIT_HEAP_PAGE_SIZE;
+	        (chunk->sizeInfo).sizeStruct.isFree = true;
+	        UpdateFreelist(chunk);
+	    }
+	}
+	
+	void NumaMemoryAllocator::SearchFreeList(NumaNode* n, int pSize, bool& exactListFound, bool& biggerListFound,
+	                                       map<int, set<void*>*>::iterator& iter,
+	                                       map<int, set<void*>*>::reverse_iterator& r_iter)
+	{
+	    exactListFound = false;
+	    biggerListFound = false;
+	    iter = n->mSizeToFreeListMap.find(pSize);
+	    if (iter != n->mSizeToFreeListMap.end())
+	        exactListFound = true;
+	    else
+	    {
+	        r_iter = n->mSizeToFreeListMap.rbegin();
+	        if (r_iter != n->mSizeToFreeListMap.rend() && r_iter->first >= pSize)
+	            biggerListFound = true;
+	    }
+	}
+	
+	void* NumaMemoryAllocator::MmapAlloc(size_t noBytes, int node){
+	  if (noBytes == 0)
+	    return NULL;
+	
+	  pthread_mutex_lock(&mutex);
+	
+	  if (!mHeapInitialized)
+	      HeapInit();
+	#ifndef USE_NUMA
+	  node = 0;
+	#endif
+	  NumaNode* numa = NULL;
+	  map<int, NumaNode*>::iterator itNuma= mNumaNumberToNumaNodeMap.find(node);
+	  ASSERT (itNuma != mNumaNumberToNumaNodeMap.end());
+	  numa = itNuma->second;
+	
+	#ifndef STORE_HEADER_IN_CHUNK
+	  int pSize = BytesToPageSize(noBytes);
+	#else
+	  int pSize = BytesToPageSize(noBytes+sizeof(ChunkInfo));
+	#endif
+	
+	  bool exactListFound = false;
+	  bool biggerListFound = false;
+	  map<int, set<void*>*>::reverse_iterator r_iter;
+	  map<int, set<void*>*>::iterator iter;
+	
+	  SearchFreeList(numa, pSize, exactListFound, biggerListFound, iter, r_iter);
+	 
+	#ifdef USE_NUMA
+	  if (exactListFound == false && biggerListFound == false)
+	  {
+	      // If not found, search in other NUMAs
+	      // Loop until we find some numa pool which satisfy our request
+	      map<int, NumaNode*>::iterator itNumaMap;
+	      for (itNumaMap = mNumaNumberToNumaNodeMap.begin();
+	                       itNumaMap != mNumaNumberToNumaNodeMap.end() && itNumaMap->second != numa;
+	                       itNumaMap++)
+	      {
+	          NumaNode* n = itNumaMap->second;
+	          SearchFreeList(n, pSize, exactListFound, biggerListFound, iter, r_iter);
+	          if (exactListFound || biggerListFound)
+	          {
+	              numa = n;
+	              break;
+	          }
+	      }
+	  }
+	#endif
+	
+	  if (exactListFound == false && biggerListFound == false) // No space in any NUMA
+	  {
+	      // add more heap in requested numa node
+	      int pageFD = 0;
+	      void* newChunk = mmap(NULL, PageSizeToBytes(HEAP_GROW_BY_SIZE), PROT_READ | PROT_WRITE, MAP_FLAGS, pageFD, 0);
+	      ASSERT(newChunk != MAP_FAILED);
+	
+	#ifndef STORE_HEADER_IN_CHUNK
+	      ChunkInfo* chunk = NULL;
+	      if (mDeletedChunks.empty())
+	          chunk = new ChunkInfo;
+	      else
+	      {
+	          chunk = mDeletedChunks.front();
+	          mDeletedChunks.pop_front();
+	      }
+	      chunk->currentPtr = newChunk;
+	      // add new chunk entry in map
+	      mPtrToChunkInfoMap[chunk->currentPtr] = chunk;
+	#else
+	      ChunkInfo* chunk = (ChunkInfo*)newChunk;
+	      chunk->currentPtr = (void*)((char*)newChunk+sizeof(ChunkInfo));
+	#endif
+	      chunk->prevChunk = NULL;
+	      chunk->nextChunk = NULL;
+	      chunk->numaNode = numa;
+	      (chunk->sizeInfo).sizeStruct.size = INIT_HEAP_PAGE_SIZE;
+	      (chunk->sizeInfo).sizeStruct.isFree = true;
+	      UpdateFreelist(chunk);
+	      // After adding above chunk, search again
+	      SearchFreeList(numa, pSize, exactListFound, biggerListFound, iter, r_iter);
+	  }
+	
+	  void * rezPtr; // the result pointer
+	  if (biggerListFound)
+	  {
+	      ASSERT(r_iter != numa->mSizeToFreeListMap.rend());
+	      ASSERT(!r_iter->second->empty());
+	#ifndef STORE_HEADER_IN_CHUNK
+	      rezPtr = *(r_iter->second->begin());
+	      map<void*, ChunkInfo*>::iterator it = mPtrToChunkInfoMap.find(rezPtr);
+	      ASSERT(it!=mPtrToChunkInfoMap.end());
+	      ChunkInfo* chunkInfo = it->second;
+	      ASSERT(rezPtr == chunkInfo->currentPtr);
+	#else
+	      ChunkInfo* chunkInfo = (ChunkInfo*)((char*)(*(r_iter->second->begin())) - sizeof(ChunkInfo));
+	      rezPtr = chunkInfo->currentPtr;
+	#endif
+	      ASSERT((chunkInfo->sizeInfo).sizeStruct.isFree);
+	
+	#ifndef STORE_HEADER_IN_CHUNK
+	      ChunkInfo* chunk = NULL;
+	      if (mDeletedChunks.empty())
+	          chunk = new ChunkInfo;
+	      else
+	      {
+	          chunk = mDeletedChunks.front();
+	          mDeletedChunks.pop_front();
+	      }
+	      chunk->currentPtr = (void*)((char*)chunkInfo->currentPtr + PageSizeToBytes(pSize));
+	      // add new chunk entry in map
+	      mPtrToChunkInfoMap[chunk->currentPtr] = chunk;
+	#else
+	      ChunkInfo* chunk = (ChunkInfo*)((char*)chunkInfo->currentPtr + PageSizeToBytes(pSize));
+	      chunk->currentPtr = (void*)((char*)chunk + sizeof(ChunkInfo)) ;
+	#endif
+	      chunk->prevChunk = chunkInfo;
+	      chunk->nextChunk = chunkInfo->nextChunk;
+	      chunk->numaNode = numa;
+	      (chunk->sizeInfo).sizeStruct.size = (chunkInfo->sizeInfo).sizeStruct.size - pSize;
+	      (chunk->sizeInfo).sizeStruct.isFree = true;
+	      // remove from size freelist because it is occupied now
+	      RemoveFromFreelist(chunkInfo);
+	
+	      if (chunkInfo->nextChunk)
+	          chunkInfo->nextChunk->prevChunk = chunk;
+	      chunkInfo->nextChunk = chunk;
+	      (chunkInfo->sizeInfo).sizeStruct.isFree = false;
+	      (chunkInfo->sizeInfo).sizeStruct.size = pSize;
+	 
+	      // add new chunk in size freelist
+	      UpdateFreelist(chunk);
+	  }
+	  else if (exactListFound)
+	  {
+	      // we have the element
+	      set<void*>* setPtr = (*iter).second;
+	      rezPtr = *(setPtr->begin());
+	      ASSERT(!setPtr->empty());
+	      setPtr->erase(setPtr->begin()); // eliminate the front
+	      if (iter->second->empty())
+	      {
+	          mDeletedLists.push_back(setPtr);
+	          numa->mSizeToFreeListMap.erase(iter->first);
+	      }
+	      // Now mark chunk occupied
+	#ifndef STORE_HEADER_IN_CHUNK
+	      map<void*, ChunkInfo*>::iterator it = mPtrToChunkInfoMap.find(rezPtr);
+	      ASSERT(it!=mPtrToChunkInfoMap.end());
+	      ChunkInfo* chunkInfo = it->second;
+	      ASSERT(chunkInfo);
+	#else
+	      ChunkInfo* chunkInfo = (ChunkInfo*)((char*)rezPtr - sizeof(ChunkInfo));
+	#endif
+	      (chunkInfo->sizeInfo).sizeStruct.isFree = false;
+	  }
+	  else
+	      ASSERT(0);
+	
+	  pthread_mutex_unlock(&mutex);
+	
+	  return rezPtr;
+	}
+	
+	
+	void NumaMemoryAllocator::MmapFree(void* ptr){
+	    if (ptr==NULL)
+	        return;
+	 
+	    pthread_mutex_lock(&mutex);
+	
+	    Coalesce(ptr);
+	 
+	    pthread_mutex_unlock(&mutex);
+	}
+	
+	void NumaMemoryAllocator::UpdateFreelist(ChunkInfo* chunkInfo){
+	    //chunkInfo->isFree = true;
+	    ASSERT((chunkInfo->sizeInfo).sizeStruct.isFree == true);
+	    map<int, set<void*>*>::iterator it = chunkInfo->numaNode->mSizeToFreeListMap.find((chunkInfo->sizeInfo).sizeStruct.size);
+	    // Not necessary that we find size freelist for chunk pointer to be added
+	    if (it != chunkInfo->numaNode->mSizeToFreeListMap.end())
+	        it->second->insert(chunkInfo->currentPtr);
+	    else
+	    {
+	        // we did not find the list; use old one or create it
+	        set<void*>* setPtr = NULL;
+	        if (mDeletedLists.empty())
+	            setPtr = new set<void*>;
+	        else
+	        {
+	            setPtr = mDeletedLists.front();
+	            mDeletedLists.pop_front();
+	        }
+	        // update the size map with new set
+	        chunkInfo->numaNode->mSizeToFreeListMap.insert(pair<int, set<void*>*>((chunkInfo->sizeInfo).sizeStruct.size, setPtr));
+	        // insert the chunk pointer in set
+	        setPtr->insert(chunkInfo->currentPtr);
+	    }
+	}
+	
+	void NumaMemoryAllocator::RemoveFromFreelist(ChunkInfo* chunkInfo)
+	{
+	    // delete next chunk from size freelist
+	    ASSERT((chunkInfo->sizeInfo).sizeStruct.isFree == true);
+	    map<int, set<void*>*>::iterator it = chunkInfo->numaNode->mSizeToFreeListMap.find((chunkInfo->sizeInfo).sizeStruct.size);
+	    if (it != chunkInfo->numaNode->mSizeToFreeListMap.end())
+	    {
+	        ASSERT(!it->second->empty());
+	        it->second->erase(chunkInfo->currentPtr);
+	        if (it->second->empty())
+	        {
+	            mDeletedLists.push_back(it->second);
+	            chunkInfo->numaNode->mSizeToFreeListMap.erase((chunkInfo->sizeInfo).sizeStruct.size);
+	        }
+	    }
+	}
+	
+	void NumaMemoryAllocator::Coalesce(void* ptr)
+	{
+	    // find the chunk and insert the freed memory in the freelist
+	#ifndef STORE_HEADER_IN_CHUNK
+	    map<void*, ChunkInfo*>::iterator it = mPtrToChunkInfoMap.find(ptr);
+	    ASSERT(it!=mPtrToChunkInfoMap.end());
+	    ChunkInfo* chunkInfo = it->second;
+	#else
+	    ChunkInfo* chunkInfo = (ChunkInfo*)((char*)ptr-sizeof(ChunkInfo));
+	#endif
+	    ASSERT(chunkInfo);
+	    ASSERT((chunkInfo->sizeInfo).sizeStruct.isFree == false);
+	
+	    // Merge with previous chunk
+	    if (chunkInfo->prevChunk && (chunkInfo->prevChunk->sizeInfo).sizeStruct.isFree)
+	    {
+	        // remove from size freelist before size updates
+	        RemoveFromFreelist(chunkInfo->prevChunk);
+	        // Update previous chunk
+	        (chunkInfo->prevChunk->sizeInfo).sizeStruct.size = (chunkInfo->prevChunk->sizeInfo).sizeStruct.size + (chunkInfo->sizeInfo).sizeStruct.size;
+	        chunkInfo->prevChunk->nextChunk = chunkInfo->nextChunk;
+	        //Update next chunk
+	        if (chunkInfo->nextChunk)
+	            chunkInfo->nextChunk->prevChunk = chunkInfo->prevChunk;
+	    }
+	        // Merge with next chunk
+	    if (chunkInfo->nextChunk && (chunkInfo->nextChunk->sizeInfo).sizeStruct.isFree)
+	    {
+	        ChunkInfo* next = chunkInfo->nextChunk;
+	        RemoveFromFreelist(next);
+	        if (chunkInfo->prevChunk && (chunkInfo->prevChunk->sizeInfo).sizeStruct.isFree)
+	        {
+	           // update previous chunk details
+	           (chunkInfo->prevChunk->sizeInfo).sizeStruct.size = (chunkInfo->prevChunk->sizeInfo).sizeStruct.size + (chunkInfo->nextChunk->sizeInfo).sizeStruct.size;
+	           chunkInfo->prevChunk->nextChunk = chunkInfo->nextChunk->nextChunk;
+	           // update next to next chunk
+	           if (chunkInfo->nextChunk->nextChunk)
+	               chunkInfo->nextChunk->nextChunk->prevChunk = chunkInfo->prevChunk;
+	        }
+	        else
+	        {
+	           // update next to next chunk
+	           if (chunkInfo->nextChunk->nextChunk)
+	               chunkInfo->nextChunk->nextChunk->prevChunk = chunkInfo;
+	           // update current chunk
+	           (chunkInfo->sizeInfo).sizeStruct.size = (chunkInfo->sizeInfo).sizeStruct.size + (chunkInfo->nextChunk->sizeInfo).sizeStruct.size;
+	           chunkInfo->nextChunk = chunkInfo->nextChunk->nextChunk;
+	        }
+	#ifndef STORE_HEADER_IN_CHUNK
+	        // erase from map
+	        map<void*, ChunkInfo*>::iterator itc = mPtrToChunkInfoMap.find(next->currentPtr);
+	        ASSERT(itc != mPtrToChunkInfoMap.end());
+	        mPtrToChunkInfoMap.erase(itc);
+	        //delete next chunk
+	        mDeletedChunks.push_back(next);
+	#endif
+	    }
+	
+	    if (chunkInfo->prevChunk && (chunkInfo->prevChunk->sizeInfo).sizeStruct.isFree)
+	    {
+	        UpdateFreelist(chunkInfo->prevChunk);
+	#ifndef STORE_HEADER_IN_CHUNK
+	        //delete current chunk
+	        mDeletedChunks.push_back(chunkInfo);
+	        //remove from map
+	        mPtrToChunkInfoMap.erase(it);
+	#endif
+	    }
+	    else
+	    {
+	        (chunkInfo->sizeInfo).sizeStruct.isFree = true;
+	        UpdateFreelist(chunkInfo);
+	    }
+	}
+	
+	NumaMemoryAllocator::~NumaMemoryAllocator(void){
+	    // dealocate the mutex
+	    pthread_mutex_destroy(&mutex);
+	    // it would be nice to deallocate the memory with munmap as well
+	}

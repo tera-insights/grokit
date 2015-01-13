@@ -1,0 +1,34 @@
+/* Query:
+	 select AVG(l_orderkey), AVG(l_quantity), 
+	 AVG(l_discount), COUNT(*) 
+	 from lineitem where l_quantity>30 AND l_discount < 0.03;
+
+	 Result:
+	 3001589.692048397212 | 40.4943821939276117 | 0.01000819438234652319 | 655327
+
+*/
+
+new scanner lineitem;
+
+new waypoint ll = Select :- lineitem;
+new waypoint agg = Aggregate :- ll;
+new waypoint wP = Print :- ?agg;
+
+new query Q1 {
+		waypoint ll {
+//			filter (lineitem.l_quantity > 30.0000001) && (lineitem.l_discount < 0.02999999);
+			       filter lineitem.l_shipdate > DATE(1992, 2,2);
+    }
+		waypoint agg{
+//						 aggregate a = Average(lineitem.l_orderkey);
+//						 aggregate b = Average(lineitem.l_quantity);
+//						 aggregate c = Average(lineitem.l_discount);
+						 aggregate d = Count(1.0);
+		}
+		waypoint wP {
+//						 print lineitem.l_orderkey, lineitem.l_quantity, lineitem.l_discount ;
+							 print d;	
+	}
+}
+
+run query Q1;

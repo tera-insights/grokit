@@ -1,0 +1,21 @@
+temp = read "/home/cgrant/nytmentionspy600000.csv" separator ',' attributes from nyt_data600000;
+
+store temp into nyt_data600000;
+
+// another file below this line
+
+// load nyt_data;
+
+//initGLA = GLA:MentionsGLA
+//from data
+//using attributes-here
+//as self;
+
+//mygist = GIST:Coreference
+//requires initGLA
+//as output-attributes-here;
+
+//print mygist
+//using attributes-here
+//as header
+//into "file";

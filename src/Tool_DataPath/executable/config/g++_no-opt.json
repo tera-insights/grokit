@@ -1,0 +1,17 @@
+{
+  "general" : {
+    "debug" : false
+  },
+  "c++": {
+    "compiler" : "g++",
+    "standard" : "c++11",
+    "flags" : [
+      "-fPIC",
+      "-g",
+      "-D_FILE_OFFSET_BITS=64",
+      "-DDEBUG"
+    ],
+    "optimizations" : [
+    ]
+  }
+}

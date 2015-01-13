@@ -1,0 +1,81 @@
+#include "MMappedCompressibleStorage.h"
+#include "Errors.h"
+#include "MmapAllocator.h"
+
+MMappedCompressibleStorage::MMappedCompressibleStorage(void* _data, int _dataSize, bool isCompressed){
+	storage = new CompressibleStorageUnit(_data, _dataSize, isCompressed);
+}
+
+char* MMappedCompressibleStorage::
+GetData (int posToStartFrom, int &numBytesRequested, int haveWritten){
+
+	FATALIF( haveWritten, "You are not supposed to write in this kind of storage");
+
+	if (posToStartFrom >= storage->num_bytes)
+	{
+		cout << "Requested start position is greater than storage end point\n";
+		return NULL;
+	}
+
+	// Make posToStartFrom+numBytesRequested multiple of 64K or multiple of pages TBD
+
+	// detect end point and change numBytesRequested
+	if (posToStartFrom + numBytesRequested > storage->num_bytes)
+		numBytesRequested = storage->num_bytes - posToStartFrom;
+
+	// decompress up to what is needed if data is in compressed state
+	if (storage->compressed){
+		storage->DecompressUpTo(posToStartFrom + numBytesRequested);
+	}
+
+	// give user access to decompressed data
+	return (char*)(storage->bytes) + posToStartFrom;
+}
+
+char* MMappedCompressibleStorage:: GetCompressedData() {
+	return storage->cbytes;
+}
+
+ColumnStorage* MMappedCompressibleStorage :: CreateShallowCopy () {
+
+	MMappedCompressibleStorage *returnVal = new MMappedCompressibleStorage;
+	returnVal->storage = storage;
+	return returnVal;
+}
+
+void MMappedCompressibleStorage :: Finalize () {
+	// Simply free storage unit
+	storage->Kill();
+	delete storage;
+}
+
+ColumnStorage *MMappedCompressibleStorage :: Done (int num, int haveWritten) {
+
+	// What this is supposed to do for our case?
+	return 0;
+}
+
+void MMappedCompressibleStorage :: Detach () {
+	// Make a deep copy of every storage item. TBD
+	// Can we detach with some flag technique instead of lot of copy
+
+}
+
+int MMappedCompressibleStorage :: GetNumBytes () {
+  return storage->num_bytes;
+}
+
+int MMappedCompressibleStorage :: GetNumCompressedBytes () {
+  return storage->num_compressed_bytes;
+}
+
+void MMappedCompressibleStorage :: Compress() {
+	storage->Compress();
+}
+MMappedCompressibleStorage :: ~MMappedCompressibleStorage () {
+
+	// this "if" statement should be in the destructor for any ColumnStorage implementation!
+  if (IsLoneCopy ())
+    Finalize ();
+}
+

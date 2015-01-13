@@ -1,0 +1,23 @@
+new scanner lineitem;
+
+new waypoint gl = GLA :- lineitem;
+new waypoint gl2 = GLA :- gl;
+new waypoint pr = Print :- ?gl2;
+
+new query Q1 {
+
+		waypoint gl {
+			 gla (v:DOUBLE) = RandAvgGLA [] ( 2.0*lineitem.l_discount );
+		}
+
+    waypoint gl2 {
+			 gla (c:BIGINT, s:DOUBLE, a:DOUBLE) = AverageGLA [] ( v );
+		}
+
+		waypoint pr {
+			 print c,s,a;	
+		}
+
+}
+
+run query Q1;

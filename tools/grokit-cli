@@ -1,0 +1,103 @@
+#!/bin/bash
+
+# Functions
+function runQuery {
+    local FILEPATH=$(readlink -f $1)
+    local EXT=${FILEPATH##*.}
+
+    if [[ $EXT == 'pgy' ]]; then
+        local TYPE=piggy
+    elif [[ $EXT == 'R' ]]; then
+        local TYPE=r
+    else
+        echo "{ \"status\": 1, \"msg\": \"File has an unknown extension $EXT, only .pgy and .R are supported\"}"
+        exit 1
+    fi
+
+    echo $(curl -s -o - -X POST -H "Content-Type: text/plain" --data-binary @$FILEPATH http://localhost:9000/run/$TYPE)
+}
+
+function viewQuery {
+    local JOBID=$1
+    local FILEPATH=$(readlink -f $2)
+
+    # TODO: Maybe use a form instead
+    local ret=$(curl -s -X POST -H "Content-Type: text/plain" --data-binary $FILEPATH http://localhost:9000/result/ready/path/$JOBID)
+    local eCode=$?
+
+    echo <<EOF
+{
+    "status" : $eCode,
+    "msg"    : $ret
+}
+EOF
+}
+
+function sendError {
+    local JOBID=$1
+    local FILEPATH=$(readlink -f $2)
+
+    local ret=$(curl -s -X POST -H "Content-Type: text/plain" --data-binary $FILEPATH http://localhost:9000/result/error/path/$JOBID)
+    local eCode=$?
+    echo <<EOF
+{
+    "status" : $eCode,
+    "msg"    : $ret
+}
+EOF
+}
+
+function askIntermediate {
+    local JOBID=$1
+    local FILEPATH=$(readlink -f $2)
+
+    local ret=$(curl -s -X POST -H "Content-Type: application/json" --data-binary @$FILEPATH http://localhost:9000/run/intermediate/$JOBID)
+    local eCode=$?
+
+    echo $ret > $FILEPATH
+}
+
+function getSchema {
+    local FILEPATH=$(readlink -f $1)
+    local JOBID=$2
+
+    local ret=""
+    local eCode=-1
+    if [[ "t${JOBID}" == "t" ]]; then
+        ret=$(curl -s -X GET http://localhost:9000/schema/getAll)
+        eCode=$?
+    else
+        ret=$(curl -s -X GET http://localhost:9000/schema/get/${JOBID})
+        eCode=$?
+    fi
+
+    echo $ret > $FILEPATH
+}
+
+# Main Script
+echo $0 $@ >&2
+
+COMMAND=$1
+shift 1
+
+case $COMMAND in
+    run)
+        echo $(runQuery $@)
+        ;;
+    view)
+        echo $(viewQuery $@)
+        ;;
+    error)
+        echo $(sendError $@)
+        ;;
+    ask)
+        echo $(askIntermediate $@)
+        ;;
+    schema)
+        echo $(getSchema $@)
+        ;;
+    *)
+        echo "{ \"status\": 1, \"msg\": \"Unsupported command $COMMAND\" }"
+        exit -1
+esac
+

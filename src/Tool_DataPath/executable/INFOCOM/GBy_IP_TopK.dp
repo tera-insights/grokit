@@ -1,0 +1,31 @@
+/** This query adds up all the flows per source IP and computes the total 
+    amount of data 
+
+*/
+
+new scanner flows;
+
+/** Group By GLA */
+new waypoint gby = GLA :- flows;
+
+/** TopK GLA */
+new waypoint topk = GLA :- gby;
+
+new waypoint pr = Print :- ?topk;
+
+new query Q1 {
+    waypoint gby {
+       gla (ip:IPV4ADDR, f:DOUBLE) = GBy_IP_Sum [] (flows.SIP, flows.FSize);
+    }
+
+    waypoint topk {
+       gla (dummy:FLOAT, ip2:IPV4ADDR, f2:DOUBLE) = TopK_IP_Sum [10] (f, ip, f);
+    }
+    
+    waypoint pr {
+       print ip2, f2;
+    }
+    
+}
+
+run query Q1;

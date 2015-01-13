@@ -1,0 +1,227 @@
+
+/** scanners */
+new scanner part;
+new scanner lineitem;
+new scanner customer;
+new scanner orders;
+new scanner supplier;
+new scanner nation;
+
+// define new waypoint
+new waypoint W5  = Select:-part;
+new waypoint W4  = Select:-lineitem;
+new waypoint W24 = Select:-customer;
+new waypoint W3  = Select:-orders;
+new waypoint W15 = Select:-supplier;
+new waypoint W14 = Select:-nation;
+
+
+/* a waypoint has to be declard with new before
+   it is used for a connection | topological sort */
+
+// for joins, the right hand side is terminating
+// guard it by ?
+new waypoint W17 = Join(lineitem.l_partkey):-W4, ?W5;
+new waypoint W6  = Join(lineitem.l_orderkey):-W4, ?W3;
+new waypoint W29 = Join(customer.c_nationkey):-W24, ?W14;
+new waypoint W16 = Join(supplier.s_nationkey):-W15, ?W14;
+
+new waypoint W7  = Join(lineitem.l_partkey):- W6, ?W5;
+new waypoint W18 = Join(lineitem.l_suppkey):- W17, ?W16;
+new waypoint W25 = Join(customer.c_custkey):- W24, ?W6;
+new waypoint W33 = Join(customer.c_custkey):- W29, ?W6;
+new waypoint W30 = Join(customer.c_custkey):- W29, ?W3;
+
+new waypoint W26 = Join(customer.c_nationkey):- W25, ?W16;
+
+// aggregates now
+new waypoint W10 = Aggregate:-W4;
+new waypoint W21 = Aggregate:-W17;
+new waypoint W36 = Aggregate:-W6;
+new waypoint W8  = Aggregate:-W7;
+new waypoint W19 = Aggregate:-W18;
+new waypoint W34 = Aggregate:-W33;
+new waypoint W31 = Aggregate:-W30;
+new waypoint W27 = Aggregate:-W26;
+
+// print waypoint
+new waypoint W11 = Print:-?W10;
+new waypoint W22 = Print:-?W21;
+new waypoint W37 = Print:-?W36;
+new waypoint W9  = Print:-?W8;
+new waypoint W20 = Print:-?W19;
+new waypoint W35 = Print:-?W34;
+new waypoint W32 = Print:-?W31;
+new waypoint W28 = Print:-?W27;
+
+
+/** Example of code for one query in a lump */
+new query Q1 {
+    // code for Q1 for each waypoint
+    // order of waypoints does not matter
+    waypoint W4 {
+    	filter lineitem.l_shipdate > DATE('1998-09-01');
+    }   
+    waypoint W10 {
+    	aggregate agg_q1_1=Count(1.0);
+	aggregate agg_q1_2=Average(lineitem.l_discount);
+	aggregate agg_q1_3=Average(lineitem.l_extendedprice);
+	aggregate agg_q1_4=Average(lineitem.l_quantity);
+	aggregate agg_q1_5=Sum(((lineitem.l_extendedprice * (1.000000 - lineitem.l_discount)) * (1.000000 + lineitem.l_tax)));
+	aggregate agg_q1_6=Sum((lineitem.l_extendedprice * (1.000000 - lineitem.l_discount)));
+	aggregate agg_q1_7=Sum(lineitem.l_quantity); 
+   }	
+   waypoint W11 {
+   	print agg_q1_1, agg_q1_2, agg_q1_3, agg_q1_4, 
+	      agg_q1_5, agg_q1_6, agg_q1_7;
+   }
+}
+
+/** the following queries are written in a different way */
+
+// forward definitions of queries
+new query Q0, Q2, Q3, Q4, Q5, Q6, Q7;
+
+waypoint W3 {
+  query Q0 { filter (orders.o_orderdate >= DATE('1997-2-20'))  && (orders.o_orderdate<DATE('1997-3-24')); }
+  query Q4 { filter (orders.o_orderdate>=DATE('1997-03-01')) && (orders.o_orderdate<DATE('1997-04-07')); }
+  query Q5 { filter (orders.o_orderdate >= DATE('1997-03-02')) && (orders.o_orderdate <= DATE('1997-05-09')); }
+  query Q6 { filter (orders.o_orderdate > DATE('1997-03-01')) && (orders.o_orderdate <= DATE('1997-04-07')); }
+  query Q7 { filter (orders.o_orderdate > DATE('1997-02-01')) && (orders.o_orderdate <= DATE('1997-05-07')); }
+}
+
+waypoint W4 { 
+  bypass Q0, Q2, Q3, Q4, Q6, Q7;
+}
+
+waypoint W5 {
+  bypass Q0;
+  query Q2 { filter (part.p_size >= 5.000000) && (part.p_size <= 10.000000); } 
+  query Q3 { filter (part.p_size == 13.000000); }
+}
+
+waypoint W6 { 
+  query Q0 { join orders.o_orderkey; }
+  query Q4 { join orders.o_orderkey; }
+  query Q6 { join orders.o_orderkey; }
+  query Q7 { join orders.o_orderkey; }
+}
+
+waypoint W7 {
+  query Q0 { join part.p_partkey; }
+}
+
+waypoint W8 {
+  query Q0 { aggregate agg_q0_1=Average((lineitem.l_extendedprice * (1.000000 - lineitem.l_discount))); }
+}
+
+waypoint W9 {
+  query Q0 { print agg_q0_1; }
+}
+
+waypoint W14 { 
+  query Q2 { filter nation.n_name == 'RUSSIA'; }
+  query Q4 { filter nation.n_name == 'JAPAN'; }
+  query Q5 { filter (nation.n_name == 'FRANCE' || nation.n_name == 'GERMANY'); }
+  query Q6 { filter nation.n_name == 'ALGERIA'; }
+}
+
+waypoint W15 {
+  bypass Q2, Q4;
+}
+
+waypoint W16 {
+  query Q2 { join nation.n_nationkey; } 
+  query Q4 { join nation.n_nationkey; } 
+}
+
+waypoint W17 {
+  query Q2 { join part.p_partkey; }
+  query Q3 { join part.p_partkey; }
+}
+
+waypoint W18 {
+  query Q2 { join supplier.s_suppkey; }
+}
+
+waypoint W19 {
+  query Q2 { aggregate agg_q2_1=Average(lineitem.l_extendedprice); }
+}
+
+waypoint W20 {
+  query Q2 { print agg_q2_1; }
+}
+
+waypoint W21 {
+  query Q3 { 
+    aggregate agg_q3_1=Sum( ( (MATCH('%PROMO%', part.p_type)) ? ((lineitem.l_extendedprice * (1.000000 - lineitem.l_discount))) : (0.000000) ) ); 
+    aggregate agg_q3_2=Sum( (lineitem.l_extendedprice * (1.000000 - lineitem.l_discount)) );
+  }
+}
+
+waypoint W22 {
+  query Q3 { print ((100.000000 * agg_q3_1) / agg_q3_2); }	
+} 
+
+waypoint W24 {
+  bypass Q4, Q5, Q6;
+}
+
+waypoint W25 {
+  query Q4 { join orders.o_custkey; }
+}
+
+waypoint W26 {
+  query Q4 { join supplier.s_nationkey; }
+}
+
+waypoint W27 {
+  query Q4 {
+    aggregate agg_q4_1=Sum(( (nation.n_name == 'JAPAN') ? ((lineitem.l_extendedprice * (1.000000 - lineitem.l_discount))) : (0.000000) ));
+    aggregate agg_q4_2=Sum((lineitem.l_extendedprice * (1.000000 - lineitem.l_discount)));
+  } 
+}
+
+waypoint W28 {
+  query Q4 { print (agg_q4_1 / agg_q4_2); }
+}
+
+waypoint W29 {
+  query Q5 { join nation.n_nationkey; }
+  query Q6 { join nation.n_nationkey; }
+}
+
+waypoint W30 {
+  query Q5 { join orders.o_custkey; }
+}
+
+waypoint W31 {
+  query Q5 { aggregate agg_q5_1=Average(orders.o_totalprice); }
+}
+
+waypoint W32 {
+  query Q5 { print agg_q5_1; }
+}
+
+waypoint W33 {
+  query Q6 { join orders.o_custkey; }
+}
+
+waypoint W34 {
+  query Q6 { aggregate agg_q6_1=Count(1.0); }
+}
+
+waypoint W35 {
+  query Q6 { print agg_q6_1; }
+}
+
+waypoint W36 {
+  query Q7 { aggregate agg_q7_1=Sum((lineitem.l_extendedprice * (1.000000 - lineitem.l_discount))); }
+}
+
+waypoint W37 {
+  query Q7 { print agg_q7_1; }
+}
+
+run query Q0, Q1, Q2, Q3, Q4, Q5, Q6, Q7;
+

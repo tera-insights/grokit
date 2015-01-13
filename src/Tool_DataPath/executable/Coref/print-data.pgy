@@ -1,0 +1,11 @@
+LOAD nyt_data1;
+
+PRINT nyt_data1
+USING
+	nyt_data1.doc,
+	nyt_data1.para,	
+	nyt_data1.num_word,
+	nyt_data1.mention,
+	nyt_data1.pos,
+	nyt_data1.ner
+INTO "print-coref1.csv";

@@ -1,0 +1,59 @@
+
+/*
+SELECT DISTINCT s.s_name
+FROM supplier AS s, part AS p, partsupp AS ps
+WHERE (s.s_suppkey = ps.ps_suppkey) AND
+    (p.p_partkey = ps.ps_partkey) AND
+    (p.p_mfgr = 'Manufacturer#4') AND
+    (ps.ps_supplycost < 350.0)
+
+ANSWER: 9964 rows (1.51 sec)
+
+*/
+
+/** scanners */
+new scanner supplier;
+new scanner part;
+new scanner partsupp;
+
+// define new waypoint
+new waypoint p = Select:-part;
+
+new waypoint ps = Select:-partsupp;
+
+new waypoint wJ = Join(supplier.s_suppkey) :- supplier, ?ps;
+
+new waypoint wJ2 = Join(part.p_partkey) :- p, ?wJ;
+
+// aggregates now
+new waypoint dist = Distinct:-wJ2;
+
+// print waypoint
+new waypoint pr = Print:-?agg;
+
+/** Example of code for one query in a lump */
+new query Q1 {
+    // code for Q1 for each waypoint
+    // order of waypoints does not matter
+    waypoint p {
+	filter (part.p_mfgr = 'Manufacturer#4');
+    }
+    waypoint l {
+	filter (partsupp.ps_supplycost < 350.0);
+    }
+    waypoint wJ {
+	join partsupp.ps_suppkey;
+    }
+    waypoint wJ2 {
+	join partsupp.ps_partkey;
+    }
+    waypoint dist {
+	Distinct ag_1 = supplier.s_name;
+   }	
+   waypoint pr {
+   	print ag_1;
+   }
+}
+
+run query Q1;
+

@@ -1,0 +1,47 @@
+
+/** scanners */
+new scanner part;
+new scanner lineitem;
+
+// define new waypoint
+new waypoint W5  = Select:-part;
+
+
+/* a waypoint has to be declard with new before
+   it is used for a connection | topological sort */
+
+// for joins, the right hand side is terminating
+// guard it by ?
+new waypoint W17 = Join(lineitem.l_partkey):-lineitem, ?W5;
+
+// aggregates now
+new waypoint W10 = Aggregate:-W17;
+
+// print waypoint
+new waypoint W11 = Print:-?W10;
+
+
+// forward definitions of queries
+new query Q3;
+
+waypoint W5 {
+  query Q3 { filter (part.p_size == 13.000000); }
+}
+
+waypoint W17 {
+  query Q3 { join part.p_partkey; }
+}
+
+waypoint W10 {
+  query Q3 { 
+    aggregate agg_q3_1=Sum( ( (MATCH('%PROMO%', part.p_type)) ? ((lineitem.l_extendedprice * (1.000000 - lineitem.l_discount))) : (0.000000) ) ); 
+    aggregate agg_q3_2=Sum( (lineitem.l_extendedprice * (1.000000 - lineitem.l_discount)) );
+  }
+}
+
+waypoint W11 {
+  query Q3 { print ((100.000000 * agg_q3_1) / agg_q3_2); }	
+} 
+
+run query Q3;
+

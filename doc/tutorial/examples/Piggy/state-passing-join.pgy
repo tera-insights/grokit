@@ -1,0 +1,24 @@
+//! [load]
+LOAD person;
+LOAD address;
+//! [load]
+
+//! [join-rhs]
+join_rhs = GLA:JoinRHS
+FROM address
+USING address.id, address.street
+AS SELF;
+//! [join-rhs]
+
+//! [join-lhs]
+join_lhs = GT:JoinLHS
+FROM person
+REQUIRES join_rhs
+USING person.id, person.name
+AS id:BIGINT, name:STRING, streetAddr:STRING;
+//! [join-lhs]
+
+//! [print]
+PRINT join_lhs
+USING name, streetAddr;
+//! [print]

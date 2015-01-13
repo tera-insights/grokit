@@ -1,0 +1,3 @@
+data = READ "customer.tbl" SEPARATOR '|' ATTRIBUTES FROM customer;
+
+STORE data INTO customer;

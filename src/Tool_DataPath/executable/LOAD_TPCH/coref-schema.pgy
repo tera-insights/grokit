@@ -1,0 +1,12 @@
+create relation nyt_data600000 (
+       doc            : INT ,
+       para           : INT ,
+       num_word       : INT ,
+       mention        : VARCHAR ,
+       pos            : VARCHAR ,
+       ner            : VARCHAR
+);
+
+FLUSH;
+
+QUIT;

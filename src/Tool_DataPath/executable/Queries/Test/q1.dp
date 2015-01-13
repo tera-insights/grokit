@@ -1,0 +1,55 @@
+
+/*
+SELECT SUM (ps.ps_supplycost)
+FROM part AS p, supplier AS s, partsupp AS ps
+WHERE (p.p_partkey = ps.ps_partkey) AND
+    (s.s_suppkey = ps.ps_suppkey) AND
+    (s.s_acctbal > 2500.0)
+
+ANSWER: 2.74243e+08 (5.91 sec)
+*/
+
+/** scanners */
+new scanner supplier;
+new scanner part;
+new scanner partsupp;
+
+// define new waypoint
+new waypoint s = Select:-supplier;
+
+/* a waypoint has to be declard with new before
+   it is used for a connection | topological sort */
+
+new waypoint jPPS = Join(partsupp.ps_partkey) :- partsupp, ?part;
+new waypoint jSPS = Join(partsupp.ps_suppkey) :- jPPS, ?s;
+
+// aggregates now
+new waypoint agg = Aggregate:-jSPS;
+
+// print waypoint
+new waypoint pr = Print:-?agg;
+
+/** Example of code for one query in a lump */
+new query Q1 {
+    // code for Q1 for each waypoint
+    // order of waypoints does not matter
+    waypoint s {
+	filter supplier.s_acctbal > 2500.0;
+    }   
+		waypoint jPPS {
+						 join part.p_partkey;
+		}
+    waypoint jSPS {
+						 join supplier.s_suppkey;
+    }
+    waypoint agg {
+	aggregate agg_q1_1=Sum(partsupp.ps_supplycost); 
+   }	
+   waypoint pr {
+   	print agg_q1_1;
+   }
+}
+
+
+run query Q1;
+

@@ -1,0 +1,3 @@
+data = READ "partsupp.tbl" SEPARATOR '|' ATTRIBUTES FROM partsupp;
+
+STORE data INTO partsupp;

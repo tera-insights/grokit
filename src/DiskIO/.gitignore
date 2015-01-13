@@ -1,0 +1,7 @@
+headers/ChunkReaderWriter.h
+headers/DiskIOData.h
+headers/DiskIOMessages.h
+headers/HDThread.h
+source/DiskArrayImp-SQL.cc
+source/DiskMemoryAllocator-SQL.cc
+source/FileMetadata-SQL.cc

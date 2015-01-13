@@ -1,0 +1,3 @@
+data = READ "region.tbl" SEPARATOR '|' ATTRIBUTES FROM region;
+
+STORE data INTO region;
