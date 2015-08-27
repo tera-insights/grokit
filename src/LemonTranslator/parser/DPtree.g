@@ -8,6 +8,10 @@ options {
 }
 
 @header {
+#ifndef _empty
+    #define _empty NULL
+#endif
+
 #ifdef _DPtree_H
 
  #include <iostream>
