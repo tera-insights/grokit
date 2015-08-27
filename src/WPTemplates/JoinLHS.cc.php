@@ -161,7 +161,8 @@ int JoinLHSWorkFunc_<?=$wpName?>(WorkDescription &workDescription, ExecEngineDat
 
                 // see if we got attribute
                 if (lastLen > 0) {
-                    <?=attOptimizedDeserialize($att, $att."RHSobj", "serializeHere", "lenSoFar")?>;
+                    Deserialize(serializeHere + lenSoFar, <?=$att?>RHSobj);
+                    //<?=attOptimizedDeserialize($att, $att."RHSobj", "serializeHere", "lenSoFar")?>;
                     <?=$att?>RHS = &<?=$att?>RHSobj;
                     lenSoFar += lastLen;
                 } else {

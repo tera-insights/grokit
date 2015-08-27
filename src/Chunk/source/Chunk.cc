@@ -147,3 +147,14 @@ int Chunk :: GetNumTuples() {
 
     return mbitColumn.GetNumTuples();
 }
+
+
+void Chunk :: MakeReadonly(){
+  // scans all the columns and make them readonly
+  for (int i = numCols - 1; i >= 0; i--) {
+        // if this column is used, copy it
+        if (cols[i] != 0) {
+            cols[i] -> MakeReadonly();
+          } 
+    }
+}

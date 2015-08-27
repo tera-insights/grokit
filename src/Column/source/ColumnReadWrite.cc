@@ -21,7 +21,7 @@ using namespace std;
 #include <string.h>
 
 // min bytes to get length is randomly 8 by default, but interface need to be updated later by asking the object itself
-ColumnReadWrite :: ColumnReadWrite (Column &iterateMe, int stepSize) : it (iterateMe, 8, stepSize) {
+ColumnReadWrite :: ColumnReadWrite (Column &iterateMe, uint64_t stepSize) : it (iterateMe, 8, stepSize) {
 
 	if (it.IsInvalid ())
 		return;
@@ -34,7 +34,7 @@ ColumnReadWrite :: ColumnReadWrite (Column &iterateMe, int stepSize) : it (itera
 	it.EnsureFirstObjectSpace(8);
 }
 
-ColumnReadWrite :: ColumnReadWrite (Column &iterateMe, int fragmentStart, int fragmentEnd, int stepSize) : it (iterateMe, fragmentStart, fragmentEnd, 8, stepSize) {
+ColumnReadWrite :: ColumnReadWrite (Column &iterateMe, uint64_t fragmentStart, uint64_t fragmentEnd, uint64_t stepSize) : it (iterateMe, fragmentStart, fragmentEnd, 8, stepSize) {
 
 	if (it.IsInvalid ())
 		return;
@@ -47,7 +47,7 @@ ColumnReadWrite :: ColumnReadWrite (Column &iterateMe, int fragmentStart, int fr
 	it.EnsureFirstObjectSpace(8);
 }
 
-inline int ColumnReadWrite :: AtUnwrittenByte () {
+inline uint64_t ColumnReadWrite :: AtUnwrittenByte () {
 	return it.AtUnwrittenByte ();
 }
 
@@ -59,7 +59,7 @@ void ColumnReadWrite :: Done (Column &iterateMe) {
 	it.Done (iterateMe);
 }
 
-void ColumnReadWrite :: write (char* data, int size) {
+void ColumnReadWrite :: write (char* data, uint64_t size) {
 
 	if (it.IsInvalid ())
 		return;
@@ -77,7 +77,7 @@ void ColumnReadWrite :: write (char* data, int size) {
 	it.Advance();
 }
 
-void ColumnReadWrite :: read (char* data, int size) {
+void ColumnReadWrite :: read (char* data, uint64_t size) {
 
 	if (it.IsInvalid ())
 		return;

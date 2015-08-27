@@ -58,6 +58,52 @@ function _defineNumericOperators($namespacePrefix, $numericTypes, $ops, $boolOps
     }
 }
 
+function _defineStdMathFunction($name, $args, $ret, $lib) {
+    $f = function() use ($name, $args, $ret, $lib) {
+        $inputs = [];
+        $count = 0;
+        foreach($args as $arg) {
+            $inputs['arg' . $count] = lookupType($arg);
+            $count += 1;
+        }
+        $retType = lookupType($ret);
+        $hash = \grokit\hashComplex(['BASE::' . $name, $args, $ret]);
+?>
+inline <?=$retType?> <?=$name?>( <?=typed_args($inputs)?> ) {
+    return std::<?=$name?>(<?=args($inputs)?>);
+}
+<?
+        return [
+            'kind'              => 'FUNCTION',
+            'name'              => $name,
+            'input'             => $inputs,
+            'result'            => $retType,
+            'deterministic'     => true,
+            'system_headers'    => $lib,
+            'hash'              => $hash,
+        ];
+    };
+
+    declareFunction($name, $args, $f);
+}
+
+function _defineStdMath2Arg($name, $types, $headers) {
+    $n = \count($types);
+    for( $leftInd = 0; $leftInd < $n; $leftInd += 1 ) {
+        $left = $types[$leftInd];
+        $ret = $left;
+
+        _defineStdMathFunction($name, [$left, $left], $ret, $headers);
+
+        for( $rightInd = 0; $rightInd < $leftInd; $rightInd += 1 ) {
+            $right = $types[$rightInd];
+
+            _defineStdMathFunction($name, [$left, $right], $ret, $headers);
+            _defineStdMathFunction($name, [$right, $left], $ret, $headers);
+        }
+    }
+}
+
 _defineNumericOperators(
     'base::',
     [ 'BYTE', 'SMALLINT', 'INT', 'BIGINT', 'FLOAT', 'DOUBLE' ],
@@ -144,4 +190,26 @@ declareFunction('ToString', ['BASE::BYTE'], function() {
         'system_headers'    => [ 'string' ],
     ];
 });
+
+_defineStdMathFunction('abs', ['BASE::DOUBLE'], 'BASE::DOUBLE', ['cmath']);
+_defineStdMathFunction('abs', ['BASE::FLOAT'], 'BASE::FLOAT', ['cmath']);
+_defineStdMathFunction('abs', ['BASE::BYTE'], 'BASE::INT', ['cmath']);
+_defineStdMathFunction('abs', ['BASE::SHORT'], 'BASE::INT', ['cmath']);
+_defineStdMathFunction('abs', ['BASE::INT'], 'BASE::INT', ['cmath']);
+_defineStdMathFunction('abs', ['BASE::BIGINT'], 'BASE::BIGINT', ['cmath']);
+
+_defineStdMathFunction('pow', ['BASE::DOUBLE', 'BASE::DOUBLE'], 'BASE::DOUBLE', ['cmath']);
+_defineStdMathFunction('pow', ['BASE::DOUBLE', 'BASE::FLOAT'], 'BASE::DOUBLE', ['cmath']);
+_defineStdMathFunction('pow', ['BASE::FLOAT', 'BASE::DOUBLE'], 'BASE::DOUBLE', ['cmath']);
+_defineStdMathFunction('pow', ['BASE::DOUBLE', 'BASE::BIGINT'], 'BASE::DOUBLE', ['cmath']);
+_defineStdMathFunction('pow', ['BASE::FLOAT', 'BASE::FLOAT'], 'BASE::FLOAT', ['cmath']);
+_defineStdMathFunction('pow', ['BASE::FLOAT', 'BASE::BIGINT'], 'BASE::DOUBLE', ['cmath']);
+_defineStdMathFunction('pow', ['BASE::DOUBLE', 'BASE::INT'], 'BASE::DOUBLE', ['cmath']);
+_defineStdMathFunction('pow', ['BASE::INT', 'BASE::DOUBLE'], 'BASE::DOUBLE', ['cmath']);
+_defineStdMathFunction('pow', ['BASE::FLOAT', 'BASE::INT'], 'BASE::DOUBLE', ['cmath']);
+_defineStdMathFunction('pow', ['BASE::INT', 'BASE::FLOAT'], 'BASE::DOUBLE', ['cmath']);
+ 
+_defineStdMathFunction('sqrt', ['BASE::DOUBLE'], 'BASE::DOUBLE', ['cmath']);
+_defineStdMathFunction('sqrt', ['BASE::FLOAT'], 'BASE::FLOAT', ['cmath']);
+
 ?>

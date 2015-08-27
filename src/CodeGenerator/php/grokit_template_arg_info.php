@@ -86,6 +86,8 @@ namespace grokit {
 
         if( is_array($val) ) {
             hash_update( $hasher, '[' );
+            // Ensure array is sorted by keys
+            ksort($val);
 
             foreach( $val as $name => $v ) {
                 hash_update( $hasher, $name );

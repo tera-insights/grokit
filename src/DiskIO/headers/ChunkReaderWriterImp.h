@@ -62,7 +62,7 @@ class ChunkReaderWriterImp : public EventProcessorImp {
         typedef std::vector<ClusterRange> ClusterRangeList;
 
         // the file scanner will get the messages when the job is done
-        ChunkReaderWriterImp(const char* _scannerName, int _numCols, EventProcessor& _execEngine);
+        ChunkReaderWriterImp(const char* _scannerName, uint64_t _numCols, EventProcessor& _execEngine);
         virtual ~ChunkReaderWriterImp();
 
         // method to get the number of chunks

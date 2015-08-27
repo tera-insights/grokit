@@ -1,7 +1,7 @@
 <?
 
 function FACTOR( array $t_args ) {
-    $rawDict = get_first_key( $t_args, ['dict', 0] );
+    $rawDict = get_first_key( $t_args, ['dictionary', 'dict', 0] );
 
     // Double the quotes so that we escape them in SQLite, and add backslashes
     // to them so that we escape them in C++.

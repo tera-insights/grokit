@@ -21,10 +21,10 @@ TableScanID fileScannerId;
 // works on (only comitted chunks)
 // until the bulk loader is implemented, this is set to the total number of
 // chunks on the disk
-unsigned int currentNoChunks;
+uint64_t currentNoChunks;
 
 // counter for requests
-int nextRequest;
+uint64_t nextRequest;
 
 //metadata file manager
 FileMetadata metadataMgr;
@@ -42,4 +42,4 @@ EventProcessor execEngine;
 off_t totalPages;
 
 //////////////// Helper functions
-int NewRequest(void);
+uint64_t NewRequest(void);

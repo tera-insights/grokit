@@ -6,8 +6,8 @@ function BITSET( array $t_args ) {
     $values = $t_args['values'];
     $indicies = array_keys($values);
 
-    $maxIndex = max($indicies);
-    $minIndex = min($indicies);
+    $maxIndex = \max($indicies);
+    $minIndex = \min($indicies);
     grokit_assert($maxIndex < 64, 'Highest index of bitset must be less than 64');
     grokit_assert($minIndex >= 0, 'Indicies of bitset must be >= 0');
 
@@ -27,7 +27,7 @@ function BITSET( array $t_args ) {
     }
 
     $nBits = floor(pow(2, ceil(log($maxIndex + 1,2))));
-    $nBits = max(8, $nBits);
+    $nBits = \max(8, $nBits);
     $nHex = $nBits / 4;
 
     $storageType = "uint{$nBits}_t";
@@ -77,16 +77,20 @@ public:
     /***** Comparison Opeators *****/
     bool operator ==( const <?=$className?> & o ) const;
     bool operator !=( const <?=$className?> & o ) const;
+    bool operator <( const <?=$className?> & o ) const;
+    bool operator >( const <?=$className?> & o ) const;
+    bool operator <=( const <?=$className?> & o ) const;
+    bool operator >=( const <?=$className?> & o ) const;
 
     /***** Conversion *****/
-    void toJson( Json::Value & dest ) const;
-    void fromJson( const Json::Value & src );
+    void ToJson( Json::Value & dest ) const;
+    void FromJson( const Json::Value & src );
 
     /***** Accessors *****/
 <?  $methods[] = [ 'Bits', [ ], $methodIntType, true ]; ?>
     StorageType Bits(void) const;
 
-<?  $methods[] = [ 'IsSet', [ 'base::BYTE' ], 'base::bool', true ];  ?>
+<?  $methods[] = [ 'IsSet', ['base::BYTE' ], 'base::bool', true ];  ?>
     // Whether or not a bit is set by index
     bool IsSet(unsigned char index) const;
 
@@ -120,6 +124,26 @@ bool <?=$className?> :: operator != (const <?=$className?> & o ) const {
 }
 
 inline
+bool <?=$className?> :: operator < (const <?=$className?> & o ) const {
+    return (bits == (bits & o.bits)) && (bits != o.bits);
+}
+
+inline
+bool <?=$className?> :: operator > (const <?=$className?> & o ) const {
+    return (bits == (bits | o.bits)) && (bits != o.bits);
+}
+
+inline
+bool <?=$className?> :: operator <= (const <?=$className?> & o ) const {
+    return bits == (bits & o.bits);
+}
+
+inline
+bool <?=$className?> :: operator >= (const <?=$className?> & o ) const {
+    return bits == (bits | o.bits);
+}
+
+inline
 auto <?=$className?> :: Bits( void ) const -> StorageType {
     return bits;
 }
@@ -131,12 +155,12 @@ bool <?=$className?>::IsSet(unsigned char index) const {
 }
 
 inline
-void <?=$className?> :: toJson( Json::Value & dest ) const {
+void <?=$className?> :: ToJson( Json::Value & dest ) const {
     dest = (Json::Int64) bits;
 }
 
 inline
-void <?=$className?> :: fromJson( const Json::Value & src ) {
+void <?=$className?> :: FromJson( const Json::Value & src ) {
     bits = (StorageType) src.asInt64();
 }
 
@@ -169,12 +193,12 @@ int ToString( const @type & c, char * buffer ) {
 
 inline
 void ToJson( const @type & src, Json::Value & dest ) {
-    src.toJson(dest);
+    src.ToJson(dest);
 }
 
 inline
 void FromJson( const Json::Value & src, @type & dest ) {
-    dest.fromJson(src);
+    dest.FromJson(src);
 }
 
 <?  $globalContents .= ob_get_clean(); ?>
@@ -183,7 +207,7 @@ void FromJson( const Json::Value & src, @type & dest ) {
     return [
         'kind'              => 'TYPE',
         'name'              => $className,
-        'binary_operators'  => [ '==', '!=' ],
+        'binary_operators'  => [ '==', '!=', '>', '<', '>=', '<=' ],
         'system_headers'    => [ 'cinttypes' ],
         'global_content'    => $globalContents,
         'complex'           => false,

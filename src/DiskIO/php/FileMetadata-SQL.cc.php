@@ -39,7 +39,7 @@ using namespace std;
 
 // ======================== FileMetadata class definitions ===================
 
-FileMetadata::FileMetadata(const char *_relName, int _numCols):
+FileMetadata::FileMetadata(const char *_relName, uint64_t _numCols):
     relName(NULL),
     relID(-1),
     newRelation(false),
@@ -115,6 +115,8 @@ EOT
 ?>
 ;
 
+    // Commit possible changes to relations.
+<?php	grokit\sql_commit(); ?>
     // first decide if this relation is new or old
 <?php
 grokit\sql_statement_scalar( <<<'EOT'
@@ -248,8 +250,8 @@ void FileMetadata::Print(void){
     printf("\n Chunkit = %d,   relID = %d,    Numtuples = %d", chunkit, relID, chunkMetaD[chunkit].numTuples);
   }
 
-  for (int chunkit = 0; chunkit < chunkMetaD.size(); chunkit++) {
-    for (int colit = 0; colit < chunkMetaD[chunkit].colMetaData.size(); colit++) {
+  for (uint64_t chunkit = 0; chunkit < chunkMetaD.size(); chunkit++) {
+    for (uint64_t colit = 0; colit < chunkMetaD[chunkit].colMetaData.size(); colit++) {
       printf("\n Chunkit = %d, colit = %d, relID = %d, Startpage = %d, size pages = %d, sizeBytes = %d, startpageCompr = %d, sizePageCompr = %d, sizeBytesCompr = %d",
          chunkit, colit, relID, chunkMetaD[chunkit].colMetaData[colit].startPage, chunkMetaD[chunkit].colMetaData[colit].sizePages, chunkMetaD[chunkit].colMetaData[colit].sizeBytes, chunkMetaD[chunkit].colMetaData[colit].startPageCompr, chunkMetaD[chunkit].colMetaData[colit].sizePagesCompr, chunkMetaD[chunkit].colMetaData[colit].sizeBytesCompr); fflush(stdout);
     }
@@ -263,7 +265,7 @@ void FileMetadata::DeleteRelation(std::string name) {
 grokit\sql_open_database( 'GetMetadataDB() ' );
 ?>
 
-    int relID;
+    uint64_t relID;
     const char * relName = name.c_str();
 <?php
 grokit\sql_statement_scalar( <<<'EOT'
@@ -372,7 +374,7 @@ EOT
     return true;
 }
 
-void FileMetadata::DeleteContentSQL(int relID, sqlite3 * db) {
+void FileMetadata::DeleteContentSQL(uint64_t relID, sqlite3 * db) {
     // delete all previous info on this relation
 <?  grokit\sql_existing_database( 'db' ); ?>
 
@@ -444,7 +446,7 @@ grokit\sql_open_database( 'GetMetadataDB() ' );
       cout << "CREATING A NEW RELATION" << endl;
 
       DiskArray& diskArray = DiskArray::GetDiskArray();
-      int arrayID = diskArray.getArrayID();
+      uint64_t arrayID = diskArray.getArrayID();
 
 <?php
 grokit\sql_statements_norez( <<<'EOT'
@@ -483,7 +485,7 @@ EOT
 , [ 'int', 'int', 'int', 'int', 'int', ], [ ]);
 ?>
 ;
-            for (int chunkit = 0; chunkit < chunkMetaD.size(); chunkit++) {
+            for (uint64_t chunkit = 0; chunkit < chunkMetaD.size(); chunkit++) {
               ChunkMetaD::ClusterRange cRange = chunkMetaD[chunkit].getClusterRange();
 <?php
 grokit\sql_instantiate_parameters([
@@ -508,8 +510,8 @@ EOT
 , [ 'int', 'int', 'int', 'int', 'int', 'int', 'int', 'int', 'int', ], [ ]);
 ?>
 ;
-            for (int chunkit = 0; chunkit < chunkMetaD.size(); chunkit++) {
-                for (int colit = 0; colit < chunkMetaD[chunkit].colMetaData.size(); colit++) {
+            for (uint64_t chunkit = 0; chunkit < chunkMetaD.size(); chunkit++) {
+                for (uint64_t colit = 0; colit < chunkMetaD[chunkit].colMetaData.size(); colit++) {
 <?php
 grokit\sql_instantiate_parameters( [ 'colit', 'chunkit', 'relID', 'chunkMetaD[chunkit].colMetaData[colit].startPage', 'chunkMetaD[chunkit].colMetaData[colit].sizePages', 'chunkMetaD[chunkit].colMetaData[colit].sizeBytes', 'chunkMetaD[chunkit].colMetaData[colit].startPageCompr', 'chunkMetaD[chunkit].colMetaData[colit].sizePagesCompr', 'chunkMetaD[chunkit].colMetaData[colit].sizeBytesCompr', ] );
 ?>
@@ -531,10 +533,10 @@ EOT
 , [ 'int', 'int', 'int', 'int', ], [ ]);
 ?>
 ;
-            for (int chunkit = 0; chunkit < chunkMetaD.size(); chunkit++) {
-                for (int colit = 0; colit < chunkMetaD[chunkit].colMetaData.size(); colit++) {
+            for (uint64_t chunkit = 0; chunkit < chunkMetaD.size(); chunkit++) {
+                for (uint64_t colit = 0; colit < chunkMetaD[chunkit].colMetaData.size(); colit++) {
                     // iterate through ranges
-                    for (int i = 0; i < chunkMetaD[chunkit].colMetaData[colit].fragments.startPositions.size(); i++) {
+                    for (uint64_t i = 0; i < chunkMetaD[chunkit].colMetaData[colit].fragments.startPositions.size(); i++) {
 <?php
 grokit\sql_instantiate_parameters( [ 'relID', 'chunkit', 'colit', 'chunkMetaD[chunkit].colMetaData[colit].fragments.startPositions[i]', ] );
 ?>

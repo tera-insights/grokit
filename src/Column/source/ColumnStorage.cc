@@ -18,14 +18,15 @@
 
 DistributedCounter ColumnStorage :: idCount(0); // initialize the id counter at 0
 
-int ColumnStorage :: IsLoneCopy () {
+uint64_t ColumnStorage :: IsLoneCopy () {
 	FATALIF(refCount->GetCounter()==0, "Why counter is zero !!!");
 	return (refCount->GetCounter() == 1);
 }
 
-ColumnStorage :: ColumnStorage () {
-	refCount = new DistributedCounter(1); // 1 copy
-	myID = idCount.Increment(1); // next id
+ColumnStorage :: ColumnStorage () :
+    refCount(new DistributedCounter(1)),
+    myID(idCount.Increment(1))
+{
 }
 
 ColumnStorage :: ~ColumnStorage () {
@@ -50,7 +51,7 @@ void ColumnStorage :: SetCopyOf (ColumnStorage &makeCopyOfMe) {
 	myID = makeCopyOfMe.myID;
 }
 
-int ColumnStorage :: GetVersionID () {
+uint64_t ColumnStorage :: GetVersionID () {
 	return myID;
 }
 

@@ -61,7 +61,7 @@ void DiskMemoryAllocator::CreateNewChunk(ChunkList* l) {
     }
 }
 
-off_t DiskMemoryAllocator::DiskAlloc(off_t pSize, int relID){
+off_t DiskMemoryAllocator::DiskAlloc(off_t pSize, uint64_t relID){
 
     //assert (pSize != 0);
     if (pSize == 0)
@@ -70,7 +70,7 @@ off_t DiskMemoryAllocator::DiskAlloc(off_t pSize, int relID){
     pthread_mutex_lock(&mutex);
     off_t result = -1;
 
-    map<int, ChunkList*>::iterator it = mRelationIDToChunkList.find(relID);
+    map<uint64_t, ChunkList*>::iterator it = mRelationIDToChunkList.find(relID);
     if (it == mRelationIDToChunkList.end()) {
         /*If chunk list is not found w.r.t relation ID, we need to create first
             chunk and add it to the list. Use free chunks if already present in the
@@ -107,15 +107,15 @@ off_t DiskMemoryAllocator::DiskAlloc(off_t pSize, int relID){
 }
 
 
-void DiskMemoryAllocator::DiskFree(int relID){
+void DiskMemoryAllocator::DiskFree(uint64_t relID){
 
     pthread_mutex_lock(&mutex);
 
-    map<int, ChunkList*>::iterator it = mRelationIDToChunkList.find(relID);
+    map<uint64_t, ChunkList*>::iterator it = mRelationIDToChunkList.find(relID);
     assert (it != mRelationIDToChunkList.end());
 
     ChunkList* l = it->second;
-    for (int i = 0; i < (l->listOfChunks).size(); i++) {
+    for (uint64_t i = 0; i < (l->listOfChunks).size(); i++) {
         mFreeChunks.push_back((l->listOfChunks)[i]);
     }
     delete it->second;
@@ -131,9 +131,9 @@ DiskMemoryAllocator::~DiskMemoryAllocator(void){
 
 off_t DiskMemoryAllocator::AllocatedSpace() {
     off_t allocated = 0;
-    for (map<int, ChunkList*>::iterator it = mRelationIDToChunkList.begin(); it != mRelationIDToChunkList.end(); ++it) {
+    for (map<uint64_t, ChunkList*>::iterator it = mRelationIDToChunkList.begin(); it != mRelationIDToChunkList.end(); ++it) {
         ChunkList* l = it->second;
-        for (int i = 0; i < (l->listOfChunks).size(); i++) {
+        for (uint64_t i = 0; i < (l->listOfChunks).size(); i++) {
             allocated += ((l->listOfChunks)[i]->nextFreePage - (l->listOfChunks)[i]->startPage);
         }
     }
@@ -145,9 +145,9 @@ off_t DiskMemoryAllocator::AllocatedSpace() {
 // requests.
 off_t DiskMemoryAllocator::FragmentedSpace() {
     off_t fragmented = 0;
-    for (map<int, ChunkList*>::iterator it = mRelationIDToChunkList.begin(); it != mRelationIDToChunkList.end(); ++it) {
+    for (map<uint64_t, ChunkList*>::iterator it = mRelationIDToChunkList.begin(); it != mRelationIDToChunkList.end(); ++it) {
         ChunkList* l = it->second;
-        for (int i = 0; i < (l->listOfChunks).size(); i++) { // iterate one less if last chunk not to be counted
+        for (uint64_t i = 0; i < (l->listOfChunks).size(); i++) { // iterate one less if last chunk not to be counted
             fragmented += (l->listOfChunks)[i]->startPage + ((l->listOfChunks)[i]->size - (l->listOfChunks)[i]->nextFreePage);
         }
     }
@@ -204,13 +204,13 @@ EOT
 ?>
 ;
     // iterate allocated chunks
-    for (map<int, ChunkList*>::iterator it = mRelationIDToChunkList.begin(); it != mRelationIDToChunkList.end(); ++it) {
-      int rel = it->first;
+    for (map<uint64_t, ChunkList*>::iterator it = mRelationIDToChunkList.begin(); it != mRelationIDToChunkList.end(); ++it) {
+      uint64_t rel = it->first;
             ChunkList* l = it->second;
-            for (int i = 0; i < (l->listOfChunks).size(); i++) {
-                int startPg = ((l->listOfChunks)[i]->startPage);
-                int sz = ((l->listOfChunks)[i]->size);
-                int n = (l->listOfChunks)[i]->nextFreePage;
+            for (uint64_t i = 0; i < (l->listOfChunks).size(); i++) {
+                uint64_t startPg = ((l->listOfChunks)[i]->startPage);
+                uint64_t sz = ((l->listOfChunks)[i]->size);
+                uint64_t n = (l->listOfChunks)[i]->nextFreePage;
                 //printf("startPg = %d, sz = %d, n = %d, rel = %d, diskArrayID = %d, lastPage = %d\n", startPg, sz, n, rel, mDiskArrayID, mLastPage);
 <?php
 grokit\sql_instantiate_parameters( [ 'mDiskArrayID', 'rel', 'startPg', 'sz', 'n', 'mLastPage', ] );
@@ -219,10 +219,10 @@ grokit\sql_instantiate_parameters( [ 'mDiskArrayID', 'rel', 'startPg', 'sz', 'n'
             }
     }
         for (list<ChunkInfo*>::iterator iter = mFreeChunks.begin(); iter != mFreeChunks.end(); ++iter) {
-            int rel = -1;
-            int startPg = (*iter)->startPage;
-            int sz = (*iter)->size;
-            int n = (*iter)->nextFreePage;
+            uint64_t rel = -1;
+            uint64_t startPg = (*iter)->startPage;
+            uint64_t sz = (*iter)->size;
+            uint64_t n = (*iter)->nextFreePage;
             //printf("-1 startPg = %d, sz = %d, n = %d, rel = %d, diskArrayID = %d, lastPage = %d\n", startPg, sz, n, rel, mDiskArrayID, mLastPage);
 <?php
 grokit\sql_instantiate_parameters( [ 'mDiskArrayID', 'rel', 'startPg', 'sz', 'n', 'mLastPage', ] );
@@ -277,7 +277,7 @@ EOT
         c->nextFreePage = nextFreePage;
         mLastPage = LastPage;
         if (relID != -1) {
-            map<int, ChunkList*>::iterator it = mRelationIDToChunkList.find(relID);
+            map<uint64_t, ChunkList*>::iterator it = mRelationIDToChunkList.find(relID);
             if (it == mRelationIDToChunkList.end()) {
                 ChunkList* l = new ChunkList;
                 (l->listOfChunks).push_back(c);
@@ -297,12 +297,12 @@ grokit\sql_end_statement_table();
     // cout << "\nLOADDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD" << mLastPage << endl;
 /*
     // Now place the biggest free chunk at the end for every relation
-    for (map<int, ChunkList*>::iterator it = mRelationIDToChunkList.begin(); it != mRelationIDToChunkList.end(); ++it) {
-        int rel = it->first;
+    for (map<uint64_t, ChunkList*>::iterator it = mRelationIDToChunkList.begin(); it != mRelationIDToChunkList.end(); ++it) {
+        uint64_t rel = it->first;
         ChunkList* l = it->second;
-        int maxSizeIndex = -1;
+        uint64_t maxSizeIndex = -1;
         off_t maxSize = -1;
-        for (int i = 0; i < (l->listOfChunks).size(); i++) {
+        for (uint64_t i = 0; i < (l->listOfChunks).size(); i++) {
             off_t startPg = ((l->listOfChunks)[i]->startPage);
             off_t sz = ((l->listOfChunks)[i]->size);
             off_t n = (l->listOfChunks)[i]->nextFreePage;

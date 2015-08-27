@@ -92,11 +92,13 @@ public:
     bool IsValid();
 
     // Create partial deep copy up to position given
-    void CreatePartialDeepCopy (Column& fromMe, int curPosInColumn);
+    void CreatePartialDeepCopy (Column& fromMe, uint64_t curPosInColumn);
 
     // Get the mode (readonly or writeonly)
     bool IsWriteMode ();
-
+    // make the column readonly. It should have been write only up to this point
+    void MakeReadonly();
+    
     // Give fragment handle as it may have several APIs in future for iterator use and not
     // needed to add all APIs in column
     Fragments& GetFragments ();

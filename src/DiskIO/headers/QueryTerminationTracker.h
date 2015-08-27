@@ -43,7 +43,7 @@
 
 class QueryTerminationTracker {
     private:
-        unsigned int counter; // the counter; when 0 the query is done
+        uint64_t counter; // the counter; when 0 the query is done
 
         // private constructors so we have to swap it
         QueryTerminationTracker(QueryTerminationTracker&);
@@ -51,7 +51,7 @@ class QueryTerminationTracker {
 
     public:
         // create a tracker set to have the given number of chunks
-        QueryTerminationTracker(unsigned int noChunks);
+        QueryTerminationTracker(uint64_t noChunks);
 
         // swap two trackers
         void swap (QueryTerminationTracker &withMe);

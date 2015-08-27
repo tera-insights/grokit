@@ -203,7 +203,7 @@ actionBody
         ->  ^(JOIN ^(ATTS $l1) $r1 TERMCONN $r2) ^(QUERRY__ ID[$fi,ParserHelpers::qry.c_str()] ^(JOIN inStmt ^(ATTS $l2)))
     | gla=glaDef par=parameterClause? (FROM inp=identName) st=stateArgs (USING nexp=namedExpressionList)? (AS rez=glaRez)?
         -> ^(GLA__ $inp) ^(QUERRY__ ID[$gla.start,ParserHelpers::qry.c_str()] ^(GLA__ $par $st $rez $nexp $gla ))
-    | gt=gtDef ct=constArgs (FROM? inp=identName) st=stateArgs USING nexp=namedExpressionList AS res=attListOptTypes
+    | gt=gtDef ct=constArgs (FROM? inp=identName) st=stateArgs (USING nexp=namedExpressionList)? (AS res=attListOptTypes)?
         -> ^(GT__ $inp) ^(QUERRY__ ID[$gt.start, ParserHelpers::qry.c_str()] ^(GT__ $ct $st $res $nexp $gt))
     | gist=gistDef ct=constArgs st=stateArgs AS rez=glaRez
         -> ^(GIST_WP) ^(QUERRY__ ID[ParserHelpers::qry.c_str()] ^(GIST__ $ct $st $rez $gist))

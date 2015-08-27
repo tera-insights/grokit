@@ -27,9 +27,10 @@ SCRIPTS_DIR=${LIBS_DIR}/scripts
 function printUsage {
     echo "Usage: grokit [options] <command> [file]"
     echo "Supported commands are:"
-    echo "      run"
-    echo "      debug"
-    echo "      makelib"
+    echo "      run         Run the query normally"
+    echo "      debug       Run the query through the debugger"
+    echo "      memprof     Run the query through the Massif memory profiler"
+    echo "      makelib     Check and compile the specified Grokit library"
     echo
     echo "Options:"
     echo "  -e              File to output errors to"
@@ -133,6 +134,8 @@ function getYesOrNo {
 }
 
 function runQuery {
+    local cur_dir=$(readlink -f .)
+
     cd $DP_DIR
 
     if [ $NO_OPTS == 1 ]; then
@@ -145,19 +148,21 @@ function runQuery {
         rm ./grokit_error.json
     fi
 
-    if [ $debug == 1 ]; then
-        # Run through the debugger
-        if [ $USE_GDB == 1 ]; then
-            gdb --args ./dp $DP_OPTS $1
-        else
-            lldb -- ./dp $DP_OPTS $1
-        fi
-    else
-        # Just run normally
-        ./dp $DP_OPTS $1
-    fi
-
-    local ret=$?
+    case $dp_run_mode in
+        standard)
+            ./dp $DP_OPTS $1
+            ;;
+        debug)
+            if [ $USE_GDB == 1 ]; then
+                gdb --args ./dp $DP_OPTS $1
+            else
+                lldb -- ./dp $DP_OPTS $1
+            fi
+            ;;
+        memprof)
+            valgrind --tool=massif --massif-out-file="$cur_dir/grokit.massif.%p" ./dp $DP_OPTS $1
+            ;;
+    esac
 
     # Copy error file
     if [ -e ./grokit_error.json ]; then
@@ -369,7 +374,7 @@ if (( $# < 1 )); then
     exit -1
 fi
 
-debug=0
+dp_run_mode="standard"
 
 DP_OPTS="-q"
 if [ $READ_ONLY == 1 ]; then
@@ -392,8 +397,17 @@ DP_OPTS="$DP_OPTS -e"
 
 case $1 in
     debug)
-        debug=1
-        ;&
+        dp_run_mode="debug"
+        ensureBuilt
+        getFile $2
+        executeDatapath $FILE
+        ;;
+    memprof)
+        dp_run_mode="memprof"
+        ensureBuilt
+        getFile $2
+        executeDatapath $FILE
+        ;;
     run)
         ensureBuilt
         getFile $2

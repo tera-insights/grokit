@@ -1,0 +1,10 @@
+prefix=/usr
+exec_prefix=${prefix}
+libdir=/usr/lib64
+includedir=${prefix}/include
+
+Name: Antlr 3 C Runtime
+Description: The C runtime for the Antlr parser generator
+Version: 3.4
+Cflags: -I${includedir}
+Libs: -L${libdir} -lantlr3c

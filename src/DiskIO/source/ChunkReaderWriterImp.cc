@@ -33,7 +33,7 @@
 #include "Debug.h"
 
 
-ChunkReaderWriterImp::ChunkReaderWriterImp(const char* _scannerName, int _numCols,
+ChunkReaderWriterImp::ChunkReaderWriterImp(const char* _scannerName, uint64_t _numCols,
         EventProcessor& _execEngine):
     metadataMgr(_scannerName, _numCols), diskArray(DiskArray::GetDiskArray())
 #ifdef  DEBUG_EVPROC
@@ -58,7 +58,7 @@ ChunkReaderWriterImp::ChunkReaderWriterImp(const char* _scannerName, int _numCol
     RegisterMessageProcessor(ChunkClusterUpdate::type, &ClusterUpdateFunc, 6);
 }
 
-int ChunkReaderWriterImp::NewRequest(){ return ++nextRequest; }
+uint64_t ChunkReaderWriterImp::NewRequest(){ return ++nextRequest; }
 
 ChunkReaderWriterImp::~ChunkReaderWriterImp() {
 }
@@ -81,6 +81,8 @@ MESSAGE_HANDLER_DEFINITION_BEGIN(ChunkReaderWriterImp, ChunkRWJobDone, MegaJobFi
     CRWRequest req;
     evProc.requests.Remove(key, dummy, req);
 
+    // chunk will be make readonly in the Table waypoint
+
     // and send it
     HoppingDataMsgMessage_Factory (evProc.execEngine, req.get_chunkID(), req.get_token(), req.get_hMsg());
 
@@ -96,7 +98,7 @@ MESSAGE_HANDLER_DEFINITION_BEGIN(ChunkReaderWriterImp, ReadChunk, ChunkRead){
     DiskRequestDataContainer dRequests; // the page requests for each thread
 
     // no numa for now
-    // int numaNode = msg.chunk.GetNumaNode();
+    // uint64_t numaNode = msg.chunk.GetNumaNode();
 
     // create the chunk
     Chunk chunk;
@@ -187,7 +189,7 @@ static off_t RawListToDiskRequest(off_t startPage,
     off_t curr = startPage;
 
     FOREACH_TWL(el, in){
-        // int bytes = in.Current().sizeInBytes;  // not used
+        // uint64_t bytes = in.Current().sizeInBytes;  // not used
         off_t pages = el.sizeInPages;
         void* data = el.data;
         DiskRequestData req(curr,	pages, data);
@@ -211,7 +213,7 @@ MESSAGE_HANDLER_DEFINITION_BEGIN(ChunkReaderWriterImp, WriteChunk, ChunkWrite){
     msg.chunk.SwapBitmap(bSIter);
     //msg.chunk.SwapBitmap(bString);
     //BStringIterator bSIter(bString);
-    int numTuples = bSIter.GetNumTuples();
+    uint64_t numTuples = bSIter.GetNumTuples();
 
     // If there are no tuples to write, just toss the chunk away
     if( numTuples == 0 ) {
@@ -233,7 +235,7 @@ MESSAGE_HANDLER_DEFINITION_BEGIN(ChunkReaderWriterImp, WriteChunk, ChunkWrite){
     FATALIF(msg.colsToProcess.Length()==0, "No columns received for chunkID %d, numtuples = %d", _chunkId, numTuples);
 #endif
 
-    int nextCol = 0;
+    uint64_t nextCol = 0;
     // go through all the columns and produce the allocation and the
     // disk requests
     FOREACH_TWL(colD, msg.colsToProcess){
@@ -305,7 +307,7 @@ MESSAGE_HANDLER_DEFINITION_BEGIN(ChunkReaderWriterImp, WriteChunk, ChunkWrite){
 
             FATALIF( (end-startPage) > sizePages,
                     "Sizes of used and allocated disk space do not match. startP=%d\tend=%d\tsize=%d\n",
-                    (int)startPage, (int)end, (int)sizePages);
+                    (uint64_t)startPage, (uint64_t)end, (uint64_t)sizePages);
         }
 
         if (sizePagesCompr != 0) {

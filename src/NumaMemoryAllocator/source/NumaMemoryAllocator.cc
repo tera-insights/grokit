@@ -18,6 +18,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <string.h>
 
 #include "MmapAllocator.h"
 #include "Errors.h"
@@ -30,6 +31,16 @@ void* mmap_alloc_imp(size_t noBytes, int node, const char* f, int l){
 	NumaMemoryAllocator& aloc=NumaMemoryAllocator::GetAllocator();
 	void* rez= aloc.MmapAlloc(noBytes, node, f, l);
 	return rez;
+}
+
+void mmap_prot_read_imp(void* ptr, const char* f, int l){
+	NumaMemoryAllocator& aloc=NumaMemoryAllocator::GetAllocator();
+	aloc.MmapChangeProt(ptr, PROT_READ);
+}
+
+void mmap_prot_readwrite_imp(void* ptr, const char* f, int l){
+	NumaMemoryAllocator& aloc=NumaMemoryAllocator::GetAllocator();
+	aloc.MmapChangeProt(ptr, PROT_READ | PROT_WRITE);
 }
 
 void mmap_free_imp(void* ptr, const char* f, int l){
@@ -109,6 +120,9 @@ NumaMemoryAllocator::NumaMemoryAllocator(void)
 	mHeapInitialized = false;
 }
 
+int NumaMemoryAllocator::SizeAlloc(void* ptr){ 
+	return sizeMap[ptr]; 
+}
 
 int NumaMemoryAllocator::BytesToPageSize(size_t bytes){
 	// compute the size in pages
@@ -276,6 +290,7 @@ void* NumaMemoryAllocator::MmapAlloc(size_t noBytes, int node, const char* f, in
 				perror("NumaMemoryAllocator");
 				FATAL("The memory allocator could not allocate memory");
 			}
+      SYS_MMAP_PROT(newChunk, PageSizeToBytes(hash_seg_size), PROT_READ | PROT_WRITE);
 			fixedSizeOccupiedList.insert(newChunk);
 			pthread_mutex_unlock(&mutex);
 			return newChunk;
@@ -284,6 +299,7 @@ void* NumaMemoryAllocator::MmapAlloc(size_t noBytes, int node, const char* f, in
 		void* res = (*is);
 		fixedSizeList.erase(is);
 		fixedSizeOccupiedList.insert(res);
+    SYS_MMAP_PROT(res, PageSizeToBytes(hash_seg_size), PROT_READ | PROT_WRITE);
 		pthread_mutex_unlock(&mutex);
 		return res;
 	}
@@ -335,7 +351,7 @@ void* NumaMemoryAllocator::MmapAlloc(size_t noBytes, int node, const char* f, in
 			reqSize = pSize;
 		// add more heap in requested numa node
 	  void* newChunk = SYS_MMAP_ALLOC(PageSizeToBytes(reqSize) );
-	  FATALIF( !SYS_MMAP_CHECK(newChunk), "Run out of memory in Numa Allocator");
+	  FATALIF( !SYS_MMAP_CHECK(newChunk), "Run out of memory in Numa Allocator. Requested: %d MB", reqSize / 2);
 
 #ifndef STORE_HEADER_IN_CHUNK
 		ChunkInfo* chunk = NULL;
@@ -457,6 +473,9 @@ void* NumaMemoryAllocator::MmapAlloc(size_t noBytes, int node, const char* f, in
 	FATALIF(it!=sizeMap.end(), "Allocating already allocated pointer %p.", rezPtr);
 	// record the allocation in sizeMap
 	sizeMap.insert(pair<void*, int>(rezPtr, pSize));
+	// now mark the page as Write-Only
+	WARNINGIF(SYS_MMAP_PROT(rezPtr, PageSizeToBytes(pSize), PROT_READ | PROT_WRITE) == -1, 
+		"Changing protection of page at address %p size %d failed with message %s", rezPtr, pSize, strerror(errno));
 
 #ifdef MMAP_CHECK
 	memChk.Insert(rezPtr, noBytes, f, l);
@@ -466,6 +485,32 @@ void* NumaMemoryAllocator::MmapAlloc(size_t noBytes, int node, const char* f, in
 	return rezPtr;
 }
 
+
+void NumaMemoryAllocator::MmapChangeProt(void* ptr, int prot) {
+  // Uncomment the line below to bypass the protection
+  // return;
+
+	if (ptr==NULL) {
+		return;
+    }
+    pthread_mutex_lock(&mutex);
+    set<void*>::iterator is = fixedSizeOccupiedList.find(ptr);
+    if (is != fixedSizeOccupiedList.end()) {
+    	SYS_MMAP_PROT(ptr, PageSizeToBytes(BytesToPageSize(HASH_SEG_SIZE)), prot);
+	} else {
+   	    // must be in the siseMap then
+   	    // see if the pointer is allocated
+		FATALIF(sizeMap.size()==0, "I found the size map in MmapProt to be 0. This means that mmap_free was called before mmap_alloc");
+
+     	// find the size and insert the freed memory in the
+		SizeMap::iterator it=sizeMap.find(ptr);
+		FATALIF(it==sizeMap.end(), "Changing the protection of unallocated pointer %p.", ptr);
+    	// change protection
+		WARNINGIF( SYS_MMAP_PROT(ptr, PageSizeToBytes(it->second), prot) == -1,
+			"Changing protection of page at address %p size %d failed with message %s", ptr, it->second, strerror(errno));
+	}
+	pthread_mutex_unlock(&mutex);
+}
 
 void NumaMemoryAllocator::MmapFree(void* ptr){
 	if (ptr==NULL) {
@@ -490,6 +535,10 @@ void NumaMemoryAllocator::MmapFree(void* ptr){
 	// find the size and insert the freed memory in the
 	SizeMap::iterator it=sizeMap.find(ptr);
 	FATALIF(it==sizeMap.end(), "Deallocating unallocated pointer %p.", ptr);
+
+	// change the protectin to NONE to make sure nobody uses it without allocating
+	SYS_MMAP_PROT(ptr, it->second, PROT_NONE);
+
 	// delete the element from the sizeMap.
 	sizeMap.erase(it);
 

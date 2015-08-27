@@ -21,6 +21,8 @@
 
 #include "Constants.h"
 
+#include <cstdint>
+
 // this will decide how many fragments we need to partition a bucket into
 #define NUM_FRAGMENT_BITS 5
 
@@ -29,10 +31,10 @@
 
 
 // this is the data type used to store actual data in the hash table
-#define VAL_TYPE unsigned long long int
+#define VAL_TYPE uint64_t
 
 // this is the data type used to index the hash table... the hash functions should take this as an arg
-#define HT_INDEX_TYPE unsigned long long int
+#define HT_INDEX_TYPE uint64_t
 
 
 // this is the number of bits needed to index all of the entried in a hash table segment

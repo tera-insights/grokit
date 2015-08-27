@@ -27,11 +27,11 @@ protected:
 	// these are the standard pure virtual functions any ColumnStorage must provide
 	ColumnStorage *CreateShallowCopy ();
 	void Finalize ();
-	char *GetData (int posToStartFrom, int &numBytesRequested, int haveWritten);
-	ColumnStorage *Done (int numBytes, int haveWritten);
+	char *GetData (uint64_t posToStartFrom, uint64_t &numBytesRequested, uint64_t haveWritten);
+	ColumnStorage *Done (uint64_t numBytes, uint64_t haveWritten);
 	void Detach ();
-	int GetNumBytes ();
-	int GetNumCompressedBytes ();
+	uint64_t GetNumBytes ();
+	uint64_t GetNumCompressedBytes ();
 
 public:
 
@@ -48,7 +48,7 @@ public:
 	//      _dataSize: size of data in bytes
 	//      isCompressed: is data compressed
 	// Note : _dataSize is ignored if isCompressed = true since it is read from compressed header
-	MMappedCompressibleStorage (void* _data, int _dataSize, bool isCompressed);
+	MMappedCompressibleStorage (void* _data, uint64_t _dataSize, bool isCompressed);
 
 	MMappedCompressibleStorage () : storage(NULL) {}
 

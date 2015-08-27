@@ -34,7 +34,7 @@
     /////////////////////
     // Stripping facility
     struct StripePair {
-        unsigned int numStripe;
+        unsigned uint64_t numStripe;
         off_t numPage;
     };
 

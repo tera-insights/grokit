@@ -23,6 +23,7 @@
 #include "TwoWayList.h"
 #include "TwoWayList.cc"
 
+#include <cstddef>
 
 /**
   if Event processing debuging is needed uncomment the followint
@@ -49,6 +50,9 @@ constructor with the same arguments as the real EventProcessor.
 In order to allow for simple manipulation of objects
 */
 class EventProcessor {
+    private:
+        static const constexpr size_t DEFAULT_STACK_SIZE = 8L * 1024L * 1024L;
+
     public:
         // Copying is allowed, this is just a shallow front-end class
         EventProcessor(const EventProcessor&) noexcept;
@@ -105,7 +109,7 @@ class EventProcessor {
         // Since the application
         // WARNING: this method only starts one thread, not all the allowed threads
         // it has to be executed repeteadly to start multiple threads
-        bool ForkAndSpin(int node=NUMA_ALL_NODES);
+        bool ForkAndSpin(int node=NUMA_ALL_NODES, size_t stack_size=DEFAULT_STACK_SIZE);
 
         // kill the event processor (the threads running inside it)
         void Seppuku(void);

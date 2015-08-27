@@ -106,7 +106,7 @@ class DiskArrayImp : public EventProcessorImp {
         /////////////////////
         // Stripping facility
         struct StripePair {
-            unsigned int numStripe;
+            uint64_t numStripe;
             off_t numPage;
         };
 
@@ -169,10 +169,10 @@ class DiskArrayImp : public EventProcessorImp {
 
         // method to allocate pages. Behaves atomically. Should be called to
         // determine where to write info.
-        off_t AllocatePages(off_t _noPages, int relID);
+        off_t AllocatePages(off_t _noPages, uint64_t relID);
 
         // method to delete all content of a relation
-        void DeleteRelationSpace(int relID);
+        void DeleteRelationSpace(uint64_t relID);
 
         // statistics
         void PrintStatistics(void);
@@ -184,7 +184,7 @@ class DiskArrayImp : public EventProcessorImp {
         void Flush(sqlite3* db);
 
         // get the ID
-        int getArrayID(void){ return meta.arrayID; }
+        uint64_t getArrayID(void){ return meta.arrayID; }
 
         // ask about the amount of IO
         off_t NumPagesProcessed(void);
@@ -205,7 +205,7 @@ inline 	off_t DiskArrayImp::NumPagesProcessed(void){
 }
 
 inline 	off_t DiskArrayImp::NumPagesDelta(void){
-    int rez=totalPages-pagesAtLastCall;
+    uint64_t rez=totalPages-pagesAtLastCall;
     pagesAtLastCall=totalPages;
     return rez;
 }
@@ -213,7 +213,7 @@ inline 	off_t DiskArrayImp::NumPagesDelta(void){
 
 inline void DiskArrayImp::Flush(sqlite3* db){ diskSpaceMng.Flush(db); }
 
-inline void DiskArrayImp::DeleteRelationSpace(int relID){
+inline void DiskArrayImp::DeleteRelationSpace(uint64_t relID){
     diskSpaceMng.DiskFree(relID);
 }
 
@@ -221,7 +221,7 @@ inline off_t DiskArrayImp::PageAllign (off_t _noPages){
     return ( _noPages + ((1<<meta.pageMultExp)-1)) & ~((1<<meta.pageMultExp)-1);
 }
 
-inline off_t DiskArrayImp::AllocatePages(off_t _noPages, int relID){
+inline off_t DiskArrayImp::AllocatePages(off_t _noPages, uint64_t relID){
 
     // first allign the page request
     _noPages =  PageAllign(_noPages);

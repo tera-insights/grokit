@@ -913,7 +913,7 @@ gistRule
             Json::Value jStates;
         }
     : ^(GIST__
-            ctAttList[jCtArgs]
+            objectParameters[jCtArgs]
             stateArgs[reqStateSources, jStates]
             res=glaRez[outAtts, jRez]
             gistDef

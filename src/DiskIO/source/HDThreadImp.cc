@@ -54,7 +54,7 @@ void HDThreadImp::CreateStripe(char* fileName, uint64_t arrayHash, int32_t strip
     // add more for future versions
 
     // write the header in the indicated file
-    int fd = open(fileName, O_RDWR | O_CREAT | O_LARGEFILE, S_IRUSR | S_IWUSR);
+    uint64_t fd = open(fileName, O_RDWR | O_CREAT | O_LARGEFILE, S_IRUSR | S_IWUSR);
     if (fd == -1){
         perror("Stripe creation:");
         FATAL("Error in creation of the stripe %s\n", fileName);
@@ -70,7 +70,7 @@ void HDThreadImp::CreateStripe(char* fileName, uint64_t arrayHash, int32_t strip
 }
 
 HDThreadImp::HDThreadImp(const char *_fileName, uint64_t arrayHash, EventProcessor &_dispatcher,
-        int _frequencyUpdate, bool _isReadOnly) :
+        uint64_t _frequencyUpdate, bool _isReadOnly) :
 #ifdef DEBUG_EVPROC
     EventProcessorImp(true, _fileName),
 #endif
@@ -83,7 +83,7 @@ HDThreadImp::HDThreadImp(const char *_fileName, uint64_t arrayHash, EventProcess
 
     // read the header from the file. The reading is done with the file opened in a "normal" way
     // write the header in the indicated file
-    int fd = open(fileName, O_RDONLY | O_LARGEFILE, S_IRUSR | S_IWUSR);
+    uint64_t fd = open(fileName, O_RDONLY | O_LARGEFILE, S_IRUSR | S_IWUSR);
     if (fd == -1){
         perror("Stripe initialization:");
         FATAL("Error in initialization of the stripe %s\n", fileName);
@@ -110,7 +110,7 @@ HDThreadImp::HDThreadImp(const char *_fileName, uint64_t arrayHash, EventProcess
     exp2 = 0.0;
     counter = 0;
 
-    int options = isReadOnly ? (O_RDONLY | O_CREAT | O_LARGEFILE)
+    uint64_t options = isReadOnly ? (O_RDONLY | O_CREAT | O_LARGEFILE)
         :(O_RDWR | O_CREAT | O_LARGEFILE);
 
 #ifdef MMAP_IS_MALLOC // unoptimized IO to allow missaligned malloc pages
@@ -128,7 +128,7 @@ HDThreadImp::HDThreadImp(const char *_fileName, uint64_t arrayHash, EventProcess
     RegisterMessageProcessor(MegaJob::type, &HDThreadImp::ExecuteJob, 1);
 }
 
-int HDThreadImp::DiskNo(void){
+uint64_t HDThreadImp::DiskNo(void){
     FATALIF( header.magic != HD_MAGIC_NO, "Working with uninitialized stripe" );
     return header.stripeId;
 }
@@ -179,11 +179,12 @@ MESSAGE_HANDLER_DEFINITION_BEGIN(HDThreadImp, ExecuteJob, MegaJob){
         // now perform the operation
         if (msg.operation == WRITE) {
 
+            FATALIF(evProc.isReadOnly, "Attempting to write data to read-only disk")
             PROFILING2_START;
             if (write (evProc.fileDescriptor, where, PAGES_TO_BYTES(numPG) ) == -1){
                 perror("HDThread:");
                 FATAL("Writting of file %s at position %ld of size %ld for job %d failed. Mem: %lx",
-                        evProc.fileName, page, PAGES_TO_BYTES(numPG),  (int)msg.requestId, where);
+                        evProc.fileName, page, PAGES_TO_BYTES(numPG),  (uint64_t)msg.requestId, where);
             }
 
             PROFILING2_END;
@@ -194,7 +195,7 @@ MESSAGE_HANDLER_DEFINITION_BEGIN(HDThreadImp, ExecuteJob, MegaJob){
             if (read (evProc.fileDescriptor, where, PAGES_TO_BYTES(numPG)) == -1) {
                 perror("HDThread:");
                 FATAL("Reading of file %s at position %ld of size %d for job %d failed. Mem: %lx",
-                        evProc.fileName, page, PAGES_TO_BYTES(numPG), (int)msg.requestId, where);
+                        evProc.fileName, page, PAGES_TO_BYTES(numPG), (uint64_t)msg.requestId, where);
             }
             PROFILING2_END;
             PROFILING2_SINGLE("byr", PAGES_TO_BYTES(numPG), "disk");

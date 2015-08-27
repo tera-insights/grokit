@@ -280,6 +280,10 @@ protected:
     // is called.
     void SetTokensRequested( off_t requestType, int numTokens, int priority = 1 );
 
+    // Returns the number of tokens that will be requested for the given request type
+    // when GenerateTokenRequests is called.
+    int GetTokensRequested( off_t requestType ) const;
+
     // Lets the waypoint know that a request for a particular token type was
     // completed successfully, decrementing the number of outstanding requests.
     void TokenRequestCompleted( off_t requestType );

@@ -84,7 +84,7 @@ declareOperator('//', ['base::BIGINT', 'base::BIGINT'], function($args) {
 });
 
 // Define the constructors from the various other types.
-foreach( [ 'BYTE', 'SMALLINT', 'INT', 'FLOAT', 'DOUBLE' ] as $type ) {
+foreach( [ 'BYTE', 'SMALLINT', 'INT', 'BIGINT', 'FLOAT', 'DOUBLE' ] as $type ) {
     $fullType = 'base::' . $type;
     $call = function($args, $targs = []) use ($fullType) {
         $arg = lookupType($fullType);

@@ -23,10 +23,10 @@ class ColumnIteratorDict
     public:
         // creates a column iterator for the given column... the requests for data that
         // are sent to the column are of size stepSize.  iterateMe is consumed.
-        ColumnIteratorDict (Column &iterateMe, int stepSize = COLUMN_ITERATOR_STEP);
+        ColumnIteratorDict (Column &iterateMe, uint64_t stepSize = COLUMN_ITERATOR_STEP);
 
         // This iterates from [fragmentStart, fragmentEnd]
-        ColumnIteratorDict (Column &iterateMe, int fragmentStart, int fragmentEnd, int stepSize = COLUMN_ITERATOR_STEP);
+        ColumnIteratorDict (Column &iterateMe, uint64_t fragmentStart, uint64_t fragmentEnd, uint64_t stepSize = COLUMN_ITERATOR_STEP);
 
         ColumnIteratorDict ();
         // destructor... if there is a column left in the ColumnIteratorDict, it will be
@@ -49,7 +49,7 @@ inline ColumnIteratorDict<DataType>::ColumnIteratorDict(void):ColumnIterator<Dat
 
 
 template <class DataType>
-inline ColumnIteratorDict<DataType>::ColumnIteratorDict (Column &iterateMe, int stepSize):ColumnIterator<DataType>(iterateMe, stepSize){
+inline ColumnIteratorDict<DataType>::ColumnIteratorDict (Column &iterateMe, uint64_t stepSize):ColumnIterator<DataType>(iterateMe, stepSize){
     // ensure the dictionary is readable/available
     DictionaryManager::EnsureReadAccess(DataType::DictionaryName,
             Dictionary::GetDictionary(DataType::DictionaryName));

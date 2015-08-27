@@ -25,26 +25,32 @@
 #include "FileMetadata.h"
 #include "DistributedCounter.h" // REMOVE
 
+#include <list>
+#include <utility>
+
 // this macro controls in-place decompression
 //#define DECOMPRESS_IN_PLACE 1
 
 class MMappedStorage : public ColumnStorage {
 
 private:
-	
+
+    using StorageList = TwoWayList<StorageUnit>;
+
 	// the contigous storage of decompressed data is made of concatenation
 	// of elements of storage
-	TwoWayList <StorageUnit> storage;
-	
+	StorageList storage;
+
 	// total size in bytes
-	int numBytes;
+	uint64_t numBytes;
 	// This is size after compressing data. This is not the size of compressed data
 	// received from disk
-	int numCompressedBytes;
+	uint64_t numCompressedBytes;
 
 	// the bridge is used to allow a "flat view" outside but broken inside
 	StorageUnit bridge;
 	bool bridgeEmpty; // is the bridge empty? This is used to avoid killing bridge
+  uint64_t bridgeSize; // the amount of memory allocated for the bridge
 
 	// compressed data from the disk
 	CompressedStorageUnit cstorage;
@@ -55,21 +61,25 @@ private:
 	bool isWriteMode;
 
 	// numa node
-	int numa;
+	uint64_t numa;
 
 public:
 
 	// these are the standard pure virtual functions any MMappedStorage must provide
 	MMappedStorage *CreateShallowCopy ();
-	
+
 	// Finalize is empty. We can dealocate in destructor
 	void Finalize(){}
 
-	char *GetData (int posToStartFrom, int &numBytesRequested);
-	MMappedStorage *Done (int numBytes);
+	char *GetData (uint64_t posToStartFrom, uint64_t &numBytesRequested);
+	MMappedStorage *Done (uint64_t numBytes);
+
+	// function to mark the storage as readonly (to make sure it does not get changed)
+	void MakeReadonly();
+	
 	//void Detach ();
-	MMappedStorage *CreatePartialDeepCopy (int position);
-	int GetNumBytes ();
+	MMappedStorage *CreatePartialDeepCopy (uint64_t position);
+	uint64_t GetNumBytes ();
 
 public:
 
@@ -106,11 +116,11 @@ public:
 	// This receives storage from outside, either compressed or uncompressed
 	// Hence it is read only storage. Passing allocated space considering it blank
 	// will not work
-	MMappedStorage (void *myData, int numBytes, int numCompressedBytes, int numaNode = 0);
+	MMappedStorage (void *myData, uint64_t numBytes, uint64_t numCompressedBytes, uint64_t numaNode = 0);
 
 	// Special constructor to read a partial chunk
 	// Arguments:
-	//    myData: allocated data of size numPages; 
+	//    myData: allocated data of size numPages;
 	//    preEmptyPages, postEmptyPages: size in pages of pre and post invalid regions
 	//		frag: metadata details about the fragment (this chunk may be partial fragment)
 	//
@@ -118,15 +128,27 @@ public:
 	// ------------------------------------------------------------------
 	// | preEempty (NULL) | myData (numPages mapped) | postEmpty (NULL) |
 	// ------------------------------------------------------------------
-	MMappedStorage (void *myData, int preEmptyPages, int numPages, 
-									int postEmptyPages, int numaNode = 0);
+	MMappedStorage (void *myData, uint64_t preEmptyPages, uint64_t numPages,
+            uint64_t postEmptyPages, uint64_t numaNode = 0);
 
 	// This is blank storage, used for writing from scratch
 	// Hence it is write only mode
-	MMappedStorage (int numaNode = 0);
+	MMappedStorage (uint64_t numaNode = 0);
 
 	void swap(MMappedStorage& withMe){
-	  SWAP_memmove(MMappedStorage, withMe)
+        using std::swap;
+
+        ColumnStorage::swap(withMe);
+
+        swap(storage, withMe.storage);
+        swap(numBytes, withMe.numBytes);
+        swap(numCompressedBytes, withMe.numCompressedBytes);
+        swap(bridge, withMe.bridge);
+        swap(bridgeEmpty, withMe.bridgeEmpty);
+        swap(cstorage, withMe.cstorage);
+        swap(decompress, withMe.decompress);
+        swap(isWriteMode, withMe.isWriteMode);
+        swap(numa, withMe.numa);
 	}
 
 	// destruct
@@ -135,5 +157,10 @@ public:
 
 inline
 bool MMappedStorage :: IsWriteMode () {return isWriteMode;}
+
+inline
+void swap(MMappedStorage& a, MMappedStorage& b) {
+    a.swap(b);
+}
 
 #endif

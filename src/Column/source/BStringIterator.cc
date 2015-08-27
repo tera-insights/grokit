@@ -27,7 +27,7 @@
 using namespace std;
 
 // 2nd argument is 0 for inner iterator because this is fixed type size
-BStringIterator :: BStringIterator (Column &iterateMe, Bitstring& pattern, uint64_t sizeofPattern, int stepSize) :
+BStringIterator :: BStringIterator (Column &iterateMe, Bitstring& pattern, uint64_t sizeofPattern, uint64_t stepSize) :
     it(iterateMe, 0, stepSize),
     startCount(0),
     endCount(0),
@@ -104,7 +104,7 @@ BStringIterator :: BStringIterator (Column &iterateMe, Bitstring& pattern, uint6
     }
 
 
-BStringIterator :: BStringIterator (Column &iterateMe, int _numTuples, int _objLen, int stepSize) :
+BStringIterator :: BStringIterator (Column &iterateMe, uint64_t _numTuples, uint64_t _objLen, uint64_t stepSize) :
     it(iterateMe, 0, stepSize),
     startCount(0),
     endCount(0),
@@ -138,7 +138,7 @@ BStringIterator :: BStringIterator (Column &iterateMe, int _numTuples, int _objL
 }
 
 void
-BStringIterator :: SetFragmentRange (int start, int end) {
+BStringIterator :: SetFragmentRange (uint64_t start, uint64_t end) {
 
     assert(!it.IsInvalid());
     //assert(!(startCount > 0));
@@ -164,7 +164,7 @@ BStringIterator :: SetFragmentRange (int start, int end) {
 }
 
 /*
-   BStringIterator :: BStringIterator (Column &iterateMe, int fragmentStart, int fragmentEnd, int _numTuples, int _objLen, int stepSize) :
+   BStringIterator :: BStringIterator (Column &iterateMe, uint64_t fragmentStart, uint64_t fragmentEnd, uint64_t _numTuples, uint64_t _objLen, uint64_t stepSize) :
    it (iterateMe, fragmentStart, fragmentEnd, 0, stepSize) {
 
    if (it.IsInvalid ())

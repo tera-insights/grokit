@@ -20,6 +20,7 @@ require_once 'GLA_PostFinalize.cc.php';
 require_once 'GLA.cc.php';
 
 require_once 'GT.cc.php';
+require_once 'GIST.cc.php';
 require_once 'JoinLHS.cc.php';
 require_once 'JoinLHSHash.cc.php';
 require_once 'JoinRHS.cc.php';

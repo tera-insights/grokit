@@ -21,7 +21,7 @@ void CPUWorkerPool :: AddWorker (CPUWorker &addMe) {
     myWorkers.Add (addMe);
 }
 
-CPUWorkerPool :: CPUWorkerPool (int numWorkers) {
+CPUWorkerPool :: CPUWorkerPool (int numWorkers, size_t stack_size) {
 
     for (int i = 0; i < numWorkers; i++) {
 
@@ -29,7 +29,7 @@ CPUWorkerPool :: CPUWorkerPool (int numWorkers) {
         CPUWorker temp;
 
         // start him going
-        temp.ForkAndSpin ();
+        temp.ForkAndSpin (NUMA_ALL_NODES, stack_size);
 
         // and add him to the pool for later use
         myWorkers.Add (temp);

@@ -379,6 +379,10 @@ function sql_open_database( $db ) {
 <?php
 }
 
+function sql_commit() {
+    sql_statements_norez('"END TRANSACTION; BEGIN TRANSACTION;"');
+}
+
 // Gives access to the database object so that it can be passed to another
 // code snippet.
 function sql_database_object() {

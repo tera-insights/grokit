@@ -484,7 +484,7 @@ bool GLAWayPointImp :: FinalizeComplete( QueryExitContainer& whichOnes, HistoryL
         //cout<<"Finalized recvd for fragmentNo: "<<frag<<endl;
     }
 
-    return true;
+    return false;
 }
 
 void GLAWayPointImp :: GotChunkToProcess ( CPUWorkToken & token, QueryExitContainer& whichOnes, ChunkContainer& chunk, HistoryList& lineage) {
@@ -634,13 +634,22 @@ void GLAWayPointImp :: ProcessAckMsg (QueryExitContainer &whichOnes, HistoryList
         }
     }END_FOREACH;
 
-    LOG_ENTRY_P(2, "Fragment %d of %s query %s PROCESSED",
-                frag, GetID().getName().c_str(), queries.GetStr().c_str());
-
     queriesFinalizing.Difference(compQ);
     queriesToPostFinalize.Union(compQ);
 
-    // need more tokens to resend the dropped stuff
+    // Simple linear rampup for tokens requested. If we get an ACK,
+    // increase the number of tokens requested up to half the threads
+    // in the system.
+    int curReqs = GetTokensRequested(CPUWorkToken::type);
+    int toReq = std::min(NUM_EXEC_ENGINE_THREADS / 2, curReqs + 1);
+    if (toReq > curReqs) {
+        SetTokensRequested(CPUWorkToken::type, toReq);
+    }
+
+    LOG_ENTRY_P(2, "Fragment %d of %s query %s PROCESSED, max tokens set to %d",
+                frag, GetID().getName().c_str(), queries.GetStr().c_str(), toReq);
+
+    // need more tokens to generate more chunks
     GenerateTokenRequests();
 }
 
@@ -713,9 +722,20 @@ void GLAWayPointImp :: ProcessDropMsg (QueryExitContainer &whichOnes, HistoryLis
     queryFragmentMap.OROne(frag, queries);
     queriesFinalizing.Union(queries);
 
-    LOG_ENTRY_P(2, "Fragment %d of %s query %s DROPPED",
-                frag, GetID().getName().c_str(), queries.GetStr().c_str());
 
+
+    // Simple linear backoff.
+    // If we get a drop, decrease the number of tokens we request by 2, to
+    // a minimum of 1.
+    // We back off faster than we ramp up.
+    int curReqs = GetTokensRequested(CPUWorkToken::type);
+    int toReq = std::max(1, curReqs - 2);
+    if (toReq < curReqs) {
+        SetTokensRequested(CPUWorkToken::type, toReq);
+    }
+
+    LOG_ENTRY_P(2, "Fragment %d of %s query %s DROPPED, max tokens set to %d",
+                frag, GetID().getName().c_str(), queries.GetStr().c_str(), toReq);
 
     // need more tokens to resend the dropped stuff
     GenerateTokenRequests();

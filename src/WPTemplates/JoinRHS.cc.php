@@ -20,7 +20,7 @@ int JoinRHSWorkFunc_<?=$wpName?> (WorkDescription &workDescription, ExecEngineDa
 
     // this is the area where all of the records are serialized to;
     // 10K bytes are initially used for this
-    void *serializeHere = (void *) malloc (10000);
+    char *serializeHere = (char *) malloc (10000);
     int storageSize = 10000;
 
     // go to the work description and get the input chunk
@@ -91,7 +91,7 @@ int JoinRHSWorkFunc_<?=$wpName?> (WorkDescription &workDescription, ExecEngineDa
             if (bytesUsed > storageSize) {
                 storageSize = bytesUsed;
                 free (serializeHere);
-                serializeHere = (void *) malloc (storageSize);
+                serializeHere = (char *) malloc (storageSize);
             }
 
             // do the serialization...
@@ -106,16 +106,18 @@ int JoinRHSWorkFunc_<?=$wpName?> (WorkDescription &workDescription, ExecEngineDa
 ?>
             if (myInBString.Overlaps(QueryIDSet(<?=$qrys?>, true))){
 
-                bytesUsed = <?=attSerializedSize($att, $att)?>;
+                //bytesUsed = <?=attSerializedSize($att, $att)?>;
+		bytesUsed = SerializedSize(<?=$att?>);
                 if (bytesUsed > storageSize) {
                     storageSize = bytesUsed;
                     free (serializeHere);
-                    serializeHere = (void *) malloc (storageSize);
+                    serializeHere = (char *) malloc (storageSize);
                 }
 
                 // and record the serialized value
-                location =  <?=attOptimizedSerialize($att, $att, "serializeHere")?>;
-                serializedSegments[index].Append (<?=$slot?>, location, bytesUsed);
+                //location =  <?=attOptimizedSerialize($att, $att, "serializeHere")?>;
+		Serialize(serializeHere, <?=$att?>);
+                serializedSegments[index].Append (<?=$slot?>,(void *) serializeHere, bytesUsed);
             }
     <? } /*foreach attribute*/ ?>
         }

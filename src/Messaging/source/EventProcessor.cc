@@ -70,9 +70,9 @@ void EventProcessor::ProcessMessage(Message& msg) {
     }
 }
 
-bool EventProcessor::ForkAndSpin(int node) {
+bool EventProcessor::ForkAndSpin(int node, size_t stack_size) {
     if (evProc != nullptr) {
-        return evProc->ForkAndSpin(node);
+        return evProc->ForkAndSpin(node, stack_size);
     }
 
     return false;

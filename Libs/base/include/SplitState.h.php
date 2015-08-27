@@ -38,7 +38,7 @@ private:
     BoolArray writeLocked;
 
     // Random number generator
-    std::mt19937 rng;
+    std::mt19937_64 rng;
 
 public:
 
@@ -54,7 +54,15 @@ public:
         writeLocked.fill(false);
 
         std::random_device rd;
-        rng.seed(rd());
+
+        // 64-bits of seed
+        uint32_t seed_vals[2];
+        seed_vals[0] = rd();
+        seed_vals[1] = rd();
+
+        std::seed_seq seed(seed_vals, seed_vals + 2);
+
+        rng.seed(seed);
     }
 
     // Destructor
@@ -79,39 +87,41 @@ public:
             }
         }
 
-        UniqueLock lock(myMutex);
-        // now, try them one-at-a-time, in random order
-        while (1) {
+        {   UniqueLock lock(myMutex); // Acquire lock
 
-            // try each of the desired hash table segments, in random order
-            for (int i = 0; i < numWanted; i++) { //>
+            // now, try them one-at-a-time, in random order
+            while (1) {
 
-                // randomly pick one of the guys in the list
-                int rangeSize = numWanted - i;
-                int whichIndex = i + (rng() % rangeSize);
+                // try each of the desired hash table segments, in random order
+                for (int i = 0; i < numWanted; i++) { //>
 
-                // move him into the current slot
-                int whichToChoose = goodOnes[whichIndex];
-                goodOnes[whichIndex] = goodOnes[i];
-                goodOnes[i] = whichToChoose;
+                    // randomly pick one of the guys in the list
+                    std::uniform_int_distribution<int> dist(i, numWanted-1);
+                    int whichIndex = dist(rng);
 
-                // try him
-                if (!writeLocked[whichToChoose]) {
+                    // move him into the current slot
+                    int whichToChoose = goodOnes[whichIndex];
+                    goodOnes[whichIndex] = goodOnes[i];
+                    goodOnes[i] = whichToChoose;
 
-                    // he is open, so write lock him
-                    writeLocked[whichToChoose] = true;
+                    // try him
+                    if (!writeLocked[whichToChoose]) {
 
-                    // and return him
-                    checkMeOut = stateArray[whichToChoose];
-                    stateArray[whichToChoose] = nullptr;
-                    return whichToChoose;
+                        // he is open, so write lock him
+                        writeLocked[whichToChoose] = true;
+
+                        // and return him
+                        checkMeOut = stateArray[whichToChoose];
+                        stateArray[whichToChoose] = nullptr;
+                        return whichToChoose;
+                    }
                 }
-            }
 
-            // if we got here, then every one that we want is write locked.  So
-            // we will go to sleep until one of them is unlocked, at which point
-            // we will wake up and try again...
-            signalVar.wait(lock);
+                // if we got here, then every one that we want is write locked.  So
+                // we will go to sleep until one of them is unlocked, at which point
+                // we will wake up and try again...
+                signalVar.wait(lock);
+            }
         }
     }
 

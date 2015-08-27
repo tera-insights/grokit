@@ -34,10 +34,10 @@ class Iterator {
 
         // creates a column iterator for the given column... the requests for data that
         // are sent to the column are of size stepSize.  iterateMe is consumed.
-        Iterator (Column &iterateMe, int minByteToGetLength, int stepSize = COLUMN_ITERATOR_STEP);
+        Iterator (Column &iterateMe, uint64_t minByteToGetLength, uint64_t stepSize = COLUMN_ITERATOR_STEP);
 
         // We only iterate through [fragmentStart, fragmentEnd]
-        Iterator (Column &iterateMe, int fragmentStart, int fragmentEnd, int minByteToGetLength, int stepSize = COLUMN_ITERATOR_STEP);
+        Iterator (Column &iterateMe, uint64_t fragmentStart, uint64_t fragmentEnd, uint64_t minByteToGetLength, uint64_t stepSize = COLUMN_ITERATOR_STEP);
 
         Iterator ();
         // destructor... if there is a column left in the ColumnIterator, it will be
@@ -59,7 +59,7 @@ class Iterator {
 
         // returns true if the object under the cursor has never been written to and so
         // it should not be read (it is undefined what happens if you read it)
-        int AtUnwrittenByte ();
+        uint64_t AtUnwrittenByte ();
 
         // create deep copy
         void CreateDeepCopy (Iterator& fromMe);
@@ -80,35 +80,35 @@ class Iterator {
         void copy (Iterator& copyMe);
 
         // Explicitly set the object length
-        void SetObjLen (int len);
+        void SetObjLen (uint64_t len);
 
         // Get the object length
-        int GetObjLen();
+        uint64_t GetObjLen();
 
         // Get the data stream handle
         char* GetData ();
 
         // Advance by given amount
-        void AdvanceBy (int len);
+        void AdvanceBy (uint64_t len);
 
         // If I am write only iterator.
         bool IsWriteOnly ();
 
         // get the first invalid byte in the stream
-        int GetFirstInvalidByte ();
+        uint64_t GetFirstInvalidByte ();
 
         /** Below Ensure functions are to consolidate all logic at once place with easy interface
           for other iterators
          **/
 
         // This makes sure we have objLen or asked number of bytes available with us
-        void EnsureFirstObjectSpace (int len = -1);
+        void EnsureFirstObjectSpace (uint64_t len = -1);
 
         // This makes sure we have write space for the object we are going to write
         void EnsureWriteSpace ();
 
         // Ensure len amount of space and increment by increment
-        void EnsureSpace (int len, int increment);
+        void EnsureSpace (uint64_t len, uint64_t increment);
 
         // Ensure header space and increment by stepSize
         void EnsureHeaderSpace ();
@@ -120,10 +120,10 @@ class Iterator {
         void MarkFragment ();
 
         // Set fragment range
-        void SetFragmentRange (int start, int end);
+        void SetFragmentRange (uint64_t start, uint64_t end);
 
         // Get the number of fragments
-        int GetNumFragments();
+        uint64_t GetNumFragments();
 
         //lace with this column
         void ConvertFromCol(Column& realColumn);
@@ -140,18 +140,18 @@ void swap( Iterator & a, Iterator & b ) {
 }
 
 inline
-void Iterator :: SetObjLen (int len) {
+void Iterator :: SetObjLen (uint64_t len) {
     //FATALIF(len < 0, "\n cuspos = %d, firstInvalidByte=%d, last objlen=%d, crappy length=%d", curPosInColumn, firstInvalidByte, objLen, len);
     objLen = len;
 }
 
 inline
-int Iterator :: GetFirstInvalidByte () {
+uint64_t Iterator :: GetFirstInvalidByte () {
     return firstInvalidByte;
 }
 
 inline
-int Iterator :: GetObjLen () {
+uint64_t Iterator :: GetObjLen () {
     return objLen;
 }
 
@@ -166,7 +166,7 @@ char* Iterator :: GetData () {
 }
 
 inline
-int Iterator :: AtUnwrittenByte () {
+uint64_t Iterator :: AtUnwrittenByte () {
     return (curPosInColumn >= colLength || colLength == 0 );
 }
 
@@ -191,7 +191,7 @@ void Iterator :: Advance () {
 }
 
 inline
-void Iterator :: AdvanceBy (int len) {
+void Iterator :: AdvanceBy (uint64_t len) {
 
     // advance our position
     curPosInColumn += len;
@@ -199,11 +199,11 @@ void Iterator :: AdvanceBy (int len) {
 }
 
 inline
-void Iterator :: EnsureSpace (int len, int increment) {
+void Iterator :: EnsureSpace (uint64_t len, uint64_t increment) {
 
     //printf("\nEnsurespace, curPosInColumn = %d, len = %d, increment=%d, firstInvalidByte=%d, curPosInColumn + len+%d", curPosInColumn, len, increment, firstInvalidByte, curPosInColumn + len); fflush(stdout);
     if (curPosInColumn + len > firstInvalidByte) {
-        int requestLen = increment;
+        uint64_t requestLen = increment;
         if (requestLen < objLen)
             requestLen = objLen;
         myData = myColumn.GetNewData (curPosInColumn, requestLen);
@@ -238,7 +238,7 @@ void Iterator :: MarkFragment () {
 }
 
 inline
-int Iterator :: GetNumFragments() {
+uint64_t Iterator :: GetNumFragments() {
 
     return myColumn.GetFragments().GetNumFragments();
 }
@@ -270,7 +270,7 @@ void Iterator :: CheckpointRestore () {
     //	myMinByteToGetLength = c_myMinByteToGetLength;
     //	isInValid = c_isInValid;
     //
-    //int requestLen = bytesToRequest;
+    //uint64_t requestLen = bytesToRequest;
     //myData = myColumn.GetNewData (curPosInColumn, requestLen);
     //firstInvalidByte = curPosInColumn + requestLen;
     //Advance();

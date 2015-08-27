@@ -23,14 +23,14 @@ DistributedCounter* refCount; // reference counter
 static DistributedCounter idCount; // id conter
 //used to give all shallow copies of the same object the same ID.
 
-int myID; // the id of this instance
+uint64_t myID; // the id of this instance
 protected:
 
 	// does book-keeping so that *this will be treated as a shallow copy of makeCopyOfMe
 	void SetCopyOf (ColumnStorage &makeCopyOfMe);
 
 	// returns the unique ID of this storage
-	int GetVersionID ();
+	uint64_t GetVersionID ();
 
 	// tellse the storage to do the book-keeping necessary so it will not be treated
 	// as a shallow copy of anyone

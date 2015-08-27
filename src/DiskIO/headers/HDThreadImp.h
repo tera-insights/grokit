@@ -79,15 +79,15 @@ class HDThreadImp : public EventProcessorImp {
         static void CreateStripe(char* fileName, uint64_t arrayHash, int32_t stripeId, uint64_t offset);
 
     private:
-        int fileDescriptor;
+        uint64_t fileDescriptor;
         Header header;
         char *fileName;
 
         bool isReadOnly;
 
         // Statistics
-        int frequencyUpdate; // how often to send a message up to the diskArray
-        int counter; // how many pages we sent throught the life of the thread
+        uint64_t frequencyUpdate; // how often to send a message up to the diskArray
+        uint64_t counter; // how many pages we sent throught the life of the thread
         const double alpha; // the factor used to maintain running averages and variance
         // the update rule is exp = new*alpha+old_exp * (1-alpha);
         // the value should be between 0 and 1. Preferred value 1/frequencyUpdate
@@ -100,11 +100,11 @@ class HDThreadImp : public EventProcessorImp {
         void UpdateStatistics(double time);
 
     public:
-        HDThreadImp(const char *_fileName, uint64_t arrayHash, EventProcessor &_diskArray, int _frequencyUpdate, bool isReadOnly = false);
+        HDThreadImp(const char *_fileName, uint64_t arrayHash, EventProcessor &_diskArray, uint64_t _frequencyUpdate, bool isReadOnly = false);
         virtual ~HDThreadImp();
 
         // which stripe is this?
-        int DiskNo(void);
+        uint64_t DiskNo(void);
 
         /** Message handler for the MegaJobs (reading/writing pages that form a Chunk)*/
         MESSAGE_HANDLER_DECLARATION(ExecuteJob)

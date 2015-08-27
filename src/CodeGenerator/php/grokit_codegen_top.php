@@ -274,8 +274,10 @@ EOT
         foreach( $wps as $wpast ) {
             // Get the waypoint's name from the node
             $wpname = ast_get( $wpast, NodeKey::NAME );
-
             $type = ast_get($wpast, NodeKey::TYPE);
+
+            //fwrite( STDERR, "====== Waypoint $wpname - $type ======\n");
+
             switch( $type ) {
             case NodeType::PRINT_WP:
                 $gRes = parsePrintWP( $wpast, $wpname, $header);
@@ -300,6 +302,10 @@ EOT
             case NodeType::GT_WP:
                 $gRes = parseGTWP( $wpast, $wpname, $header );
                 $waypoints[$wpname] = 'gt';
+                break;
+            case NodeType::GIST_WP:
+                $gRes = parseGISTWP( $wpast, $wpname, $header );
+                $waypoints[$wpname] = 'gist';
                 break;
             case NodeType::SCAN_WP:
                 $gRes = parseScanWP( $wpast, $wpname, $header );
@@ -463,6 +469,71 @@ EOT
         $res->addFile($filename, $name );
         _startFile( $filename );
         GTGenerate( $name, $queries, $attMap );
+        _endFile( $filename, $myHeaders);
+
+        // Pop LibraryManager again to get rid of this waypoint's declarations
+        LibraryManager::Pop();
+
+        return $res;
+    }
+
+    function parseGISTWP( $ast, $name, $header ) {
+        // Push LibraryManager so we can undo this waypoint's definitions.
+        ob_start();
+        LibraryManager::Push();
+
+        /***************   PROCESS AST   ***************/
+
+        $attMap = ast_get($ast, NodeKey::ATT_MAP);
+        $payload = ast_get($ast, NodeKey::PAYLOAD );
+
+        $queries = [];
+
+        // Info to return
+        $res = new GenerationInfo;
+
+        foreach( $payload as $query => $qInfo ) {
+
+            $gistSpec = parseGIST( ast_get($qInfo, NodeKey::TYPE) );
+            $output = parseAttributeList( ast_get($qInfo, NodeKey::VALUE) );
+            $cargs = parseJsonAst( ast_get($qInfo, NodeKey::CARGS) );
+            $sargs = parseStateList( ast_get($qInfo, NodeKey::SARGS), $query );
+            $retState = ast_get($qInfo, NodeKey::STATE);
+
+            $reqStates = [];
+            foreach( $sargs as $val ) {
+                $reqStates[$val->name()] = $val->type();
+            }
+
+            $gist = $gistSpec->apply(extractTypes($output), $reqStates);
+            //fwrite(STDERR, "GIST outputs: " . print_r($gist->output()) . PHP_EOL);
+            correlateAttributes($output, $gist->output());
+
+            $info = [ 'gist' => $gist, 'output' => $output,
+                'cargs' => $cargs, 'states' => $sargs, 'retState' => $retState ];
+
+            $queries[$query] = $info;
+
+
+            $res->addJob( $query, $name );
+            $res->absorbAttrList($output);
+            $res->absorbStateList($sargs);
+
+            $res->absorbInfo($gist);
+
+            StateRegistry::addState($name, $query, $gist);
+        }
+
+        /*************** END PROCESS AST ***************/
+
+        // Get this waypoint's headers
+        $myHeaders = $header . PHP_EOL . ob_get_clean();
+
+        // Only one file at the moment
+        $filename = $name . '.cc';
+        $res->addFile($filename, $name );
+        _startFile( $filename );
+        GISTGenerate( $name, $queries, $attMap );
         _endFile( $filename, $myHeaders);
 
         // Pop LibraryManager again to get rid of this waypoint's declarations

@@ -19,10 +19,7 @@ class LOCATION {
   // The radius of the Earth at the equator, measured in km.
   static constexpr const double kRadius = 6378.137;
 
-  static constexpr const double kPi = 3.14159265358979323846;
-
-  static constexpr const double kInvPi = 0.318309886183790671538;
-
+  // The ratio between a degree and a radian.
   static constexpr const double kRatio = 0.01745329251994329576923;
 
   // The latitudinal angle measured in radians. Positive values correspond to
@@ -66,10 +63,10 @@ class LOCATION {
 <?  $constructors[] = [['base::double', 'base::double', 'base::double',
                         'base::double', 'base::double', 'base::double'], true];  ?>
   constexpr LOCATION(double lat_degree, double lat_minute, double lat_second,
-                     double long_degree, double long_minute, double long_second,
+                     double lng_degree, double lng_minute, double lng_second,
                      double elevation = 0)
       : latitude((lat_degree + lat_minute / 60 + lat_second / 3600) * kRatio),
-        longitude((long_degree + long_minute / 60 + long_second / 3600) * kRatio),
+        longitude((lng_degree + lng_minute / 60 + lng_second / 3600) * kRatio),
         elevation(elevation) {
   }
 
@@ -104,7 +101,7 @@ class LOCATION {
   }
 };
 
-<?  $functions[] = ['Hash', ['@type', '@type'], 'BASE::DOUBLE', true, false]; ?>
+<?  $functions[] = ['Haversine', ['@type', '@type'], 'BASE::DOUBLE', true, false]; ?>
 inline double Haversine(const LOCATION loc_1, const LOCATION loc_2) {
   return loc_1.Haversine(loc_2);
 }

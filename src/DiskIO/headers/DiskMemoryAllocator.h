@@ -34,7 +34,7 @@ class DiskMemoryAllocator {
     pthread_mutex_t mutex; // to guard the implementation
 
     // This manager is specific to disk array ID
-    int mDiskArrayID;
+    uint64_t mDiskArrayID;
 
     // Keeps track of global last free page of infinite capacity
     off_t mLastPage;
@@ -53,7 +53,7 @@ class DiskMemoryAllocator {
 
     // relation ID pointing to list of chunks associated with this relation
     // last chunk will fill free page request
-    std::map<int, ChunkList*> mRelationIDToChunkList;
+    std::map<uint64_t, ChunkList*> mRelationIDToChunkList;
 
     // Keep freed chunks for future use
     std::list<ChunkInfo*> mFreeChunks;
@@ -67,17 +67,17 @@ class DiskMemoryAllocator {
     DiskMemoryAllocator();
 
     // set the disk arrayID at a latter type
-    void SetArrayID(int diskArrayID);
+    void SetArrayID(uint64_t diskArrayID);
 
     // functin to allocate
-    off_t DiskAlloc(off_t noPages, int relID);
+    off_t DiskAlloc(off_t noPages, uint64_t relID);
 
     // function to deallocate complete relation
-    void DiskFree(int relID);
+    void DiskFree(uint64_t relID);
 
     // method to switch the space from one relation to another relation
     // used to "glue" relations together
-    void StealSpace(int oldRelID, int newRelID);
+    void StealSpace(uint64_t oldRelID, uint64_t newRelID);
 
     void Flush(sqlite3* db);
 
@@ -93,7 +93,7 @@ class DiskMemoryAllocator {
     ~DiskMemoryAllocator(void);
 };
 
-inline void DiskMemoryAllocator::SetArrayID(int diskArrayID){
+inline void DiskMemoryAllocator::SetArrayID(uint64_t diskArrayID){
     mDiskArrayID = diskArrayID;
 }
 

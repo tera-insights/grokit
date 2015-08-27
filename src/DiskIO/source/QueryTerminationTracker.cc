@@ -24,7 +24,7 @@ QueryTerminationTracker :: QueryTerminationTracker() {
 	counter = UINT_MAX ;
 }
 
-QueryTerminationTracker :: QueryTerminationTracker(unsigned int noChunks) {
+QueryTerminationTracker :: QueryTerminationTracker(uint64_t noChunks) {
 	counter = noChunks;
 }
 
@@ -46,7 +46,7 @@ bool QueryTerminationTracker :: ProcessChunk(ChunkID &cID){
 }
 
 void QueryTerminationTracker :: swap (QueryTerminationTracker &withMe) {
-	unsigned int temp = counter;
+	uint64_t temp = counter;
 	counter = withMe.counter;
 	withMe.counter = temp;
 }

@@ -801,6 +801,7 @@ namespace grokit {
             $ret['finalize_as_state'] = $this->finalize_as_state;
             $ret['post_finalize'] = $this->post_finalize;
             $ret['chunk_boundary'] = $this->chunk_boundary;
+            $ret['intermediates'] = $this->intermediates;
 
             return $ret;
         }
@@ -894,6 +895,11 @@ namespace grokit {
     class GIST_Info extends GeneralizedObject  {
 
         private $output = [];
+        private $result_type;
+        private $iterable = false;
+        private $intermediates = false;
+        private $finalize_as_state = false;
+        private $chunk_boundary = false;
 
         public function __construct( $hash, $name, $value, array $args, array $oArgs ) {
             parent::__construct(InfoKind::T_GIST, $hash, $name, $value, $args, $oArgs[0]);
@@ -902,18 +908,66 @@ namespace grokit {
                 'No outputs declared for ' . $this );
 
             $this->output = $args['output'];
+
+            grokit_assert( array_key_exists( 'result_type', $args ),
+                'No result type declared for ' . $this );
+
+            $this->result_type = $args['result_type'];
+            if( ! is_array($this->result_type) ) {
+                $this->result_type = [ $this->result_type ];
+            }
+            if( array_key_exists( 'iterable', $args ) ) {
+                $this->iterable = $args['iterable'];
+            }
+
+            if( array_key_exists( 'intermediates' , $args ) ) {
+                $this->intermediates = $args['intermediates'];
+            }
+
+            if( array_key_exists( 'finalize_as_state', $args ) ) {
+                $this->finalize_as_state = $args['finalize_as_state'];
+            }
+
+            if( array_key_exists( 'chunk_boundary', $args ) ) {
+                $this->chunk_boundary = $args['chunk_boundary'];
+            }
         }
 
         public function summary() {
             $ret = parent::summary();
 
             $ret['output'] = squash($this->output);
+            $ret['result_type'] = $this->result_type;
+            $ret['iterable'] = $this->iterable;
+            $ret['intermediates'] = $this->intermediates;
+            $ret['finalize_as_state'] = $this->finalize_as_state;
+            $ret['chunk_boundary'] = $this->chunk_boundary;
 
             return $ret;
         }
 
+        public function lookup() {
+            $outputs = [];
+            foreach( $this->output as $name => $type ) {
+                $outputs[$name] = is_type($type) ? $type->lookup() : $type;
+            }
+
+            $sargs = [];
+            foreach( $this->req_states() as $name => $type ) {
+                $sargs[$name] = $type->lookup();
+            }
+
+            return lookupGIST($this->name(), $this->template_args(), $outputs, $sargs, null, $this->hash());
+        }
+
         // Getters
-        public function ouptut() { return $this->output; }
+        public function output() { return $this->output; }
+        public function outputs() { return $this->output; }
+        public function result_type() { return $this->result_type; }
+        public function iterable() { return $this->iterable; }
+        public function intermediates() { return $this->intermediates; }
+        public function finalize_as_state() { return $this->finalize_as_state; }
+        public function chunk_boundary() { return $this->chunk_boundary; }
 
         /*
          * $outputs should be an array of TypeInfo objects giving the types of

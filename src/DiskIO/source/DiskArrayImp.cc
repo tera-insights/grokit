@@ -76,10 +76,10 @@ DiskArrayImp::~DiskArrayImp() {
     stats.clear();
 
     //kill the HDThreads event processors
-    for (int i = 0; i < meta.HDNo; i++) {
+    for (uint64_t i = 0; i < meta.HDNo; i++) {
         DieMessage_Factory(hds[i]);
     }
-    for (int i = 0; i < meta.HDNo; i++) {
+    for (uint64_t i = 0; i < meta.HDNo; i++) {
         hds[i].WaitForProcessorDeath();
     }
     //and free the memory
@@ -161,7 +161,7 @@ MESSAGE_HANDLER_DEFINITION_BEGIN(DiskArrayImp, DoDiskOperation, DiskOperation){
 
     // tell each disk to do its work
     // some of the requests are empty but that should be fine
-    for (int i=0; i<evProc.meta.HDNo; i++){
+    for (uint64_t i=0; i<evProc.meta.HDNo; i++){
         // have to copy the requestor otherwise swap will give us an empty one
         EventProcessor copy;
         copy.copy(msg.requestor);

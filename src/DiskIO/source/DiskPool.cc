@@ -30,7 +30,7 @@ void DiskPool::Stop(){
 
 }
 
-TableScanID DiskPool::AddFile(string name, int numCols){
+TableScanID DiskPool::AddFile(string name, uint64_t numCols){
     // do we have the file started?
     TableScanID id(name);
 
@@ -86,7 +86,7 @@ void DiskPool::ReadRequest(ChunkID& id, WayPointID &requestor, bool useUncompres
     FATALIF(token.Type() != DiskWorkToken::type, "I got a fake disk token in read");
 
 
-    off_t chunkID = (int) id; // conversin to int
+    off_t chunkID = (uint64_t) id; // conversin to uint64_t
     TableScanID tId = id.GetTableScanId();
 
     FATALIF( !files.IsThere(tId), "Sending a read request to unknown file");

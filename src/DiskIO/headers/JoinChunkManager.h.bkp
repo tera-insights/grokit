@@ -35,10 +35,10 @@ class ChunkFloor;
 		similarly all rhs needs to be merged into one for final processing. This behaves as one component of cross product.
 */
 struct ChunkTile {
-	vector<int> lhs;
-	vector<int> rhs;
-	int tileID;
-	int subbucketNo;
+	vector<uint64_t> lhs;
+	vector<uint64_t> rhs;
+	uint64_t tileID;
+	uint64_t subbucketNo;
 
 	ChunkTile& operator=(const ChunkTile& tile) {
 		lhs = tile.lhs;
@@ -59,10 +59,10 @@ struct ChunkTile {
 class ChunkMetaData {
 
 	// Keep sub bucket to floor mapping
-	map<int, ChunkFloor*> mySubBucketToFloorMap;
+	map<uint64_t, ChunkFloor*> mySubBucketToFloorMap;
 
 	// Keeps chunk ID to floor mapping to identify correct floor once received from disk
-	map<int, ChunkFloor*> myChunkIDToChunkFloor;
+	map<uint64_t, ChunkFloor*> myChunkIDToChunkFloor;
 
 public:
 
@@ -71,10 +71,10 @@ public:
 	~ChunkMetaData ();
 
 	// This is called before sending left hash chunk to disk for bookkeeping. This will just update above data members
-	void ChunkToDisk (int subbucket, int chunkID, bool isLeftJoin);
+	void ChunkToDisk (uint64_t subbucket, uint64_t chunkID, bool isLeftJoin);
 
 	// This is called when a chunk is received from disk. Just identify the correct floor and make a call to that floor
-	void ChunkFromDisk (int chunkID);
+	void ChunkFromDisk (uint64_t chunkID);
 
 	// Get the tiles to work on, false if no tiles but it can become true later on so keep checking availability
 	// Here we need which floor has some leftover tiles and make a call to that floor, this may need to be called in loop
@@ -94,34 +94,34 @@ public:
 class ChunkFloor {
 
 	// Chunks written on disk
-	set<int> leftChunksToDisk;
-	set<int> rightChunksToDisk;
+	set<uint64_t> leftChunksToDisk;
+	set<uint64_t> rightChunksToDisk;
 
 	// Chunk received from disk so far
-	set<int> leftChunksFromDisk;
-	set<int> rightChunksFromDisk;
+	set<uint64_t> leftChunksFromDisk;
+	set<uint64_t> rightChunksFromDisk;
 
 	// These are used to create tiles
-	typedef map<int, set<int> > Floor;
+	typedef map<uint64_t, set<uint64_t> > Floor;
 	Floor myFloor; // left -> right array (chunk received from disk are arranged in floors (rectangles))
 
 	// map from tile IDs to ChunkTile
-	map<int, ChunkTile*> tileIDToChunkTile;
+	map<uint64_t, ChunkTile*> tileIDToChunkTile;
 
 	// Tiles IDs which are still to be processed, this also includes IDs which are returned
 	// due to insufficient cpu resource
-	set<int> tilesPending;
+	set<uint64_t> tilesPending;
 
 public:
 
 	ChunkFloor ();
 
 	// This updates leftChunksToDisk and rightChunksToDisk sets for future reference
-	void ChunkToDisk (int chunkID, bool isLeftJoin);
+	void ChunkToDisk (uint64_t chunkID, bool isLeftJoin);
 
 	// This updates myRect by knowing if its left join chunk or right one. Rectangle is created in adjacency
 	// list form. One side of rectangle is left join chunks and other side is right join chunks
-	void ChunkFromDisk (int chunkID);
+	void ChunkFromDisk (uint64_t chunkID);
 
 	// This basically picks a small rectangle called tile. Each side of tile will be merged later and processed
 	// If not enough CPU resource to process it, it can be sent back using its tile ID. When rectangle is formed
@@ -136,7 +136,7 @@ public:
 	bool GetTile(ChunkTile& tileOut);
 
 	// If not enough CPU resource to process the tile, it can be sent back using its tile ID
-	void UnprocessedTile(int tileID);
+	void UnprocessedTile(uint64_t tileID);
 
 	// Is this floor done?
 	bool IsEmpty();

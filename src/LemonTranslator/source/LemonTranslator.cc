@@ -85,7 +85,7 @@ namespace {
             atts.Advance();
         }
     }
- 
+
     template<class T>
     void ListToVector(TwoWayList<T>& in, std::vector<T>& out)
     {
@@ -613,8 +613,11 @@ bool LemonTranslator::AddGIST(WayPointID wpID, QueryID query,
     LT_Waypoint* WP = NULL;
     SlotContainer atts; // dummy
     set<SlotID> attr;
-    if (GetWaypointAttr(wpID, atts, attr, WP) == false) return false;
-    return WP->AddGIST(query, resultAtts, reqStates, info);
+    bool gotWP = GetWaypointAttr(wpID, atts, attr, WP);
+    if (!gotWP)
+        return false;
+    bool success = WP->AddGIST(query, resultAtts, reqStates, info);
+    return success;
 }
 
 // Selection, Join. Queries added one by one

@@ -31,10 +31,10 @@ public:
 
 	// creates a column iterator for the given column... the requests for data that
 	// are sent to the column are of size stepSize.  iterateMe is consumed.
-	ColumnReadWrite (Column &iterateMe, int stepSize = COLUMN_ITERATOR_STEP);
+	ColumnReadWrite (Column &iterateMe, uint64_t stepSize = COLUMN_ITERATOR_STEP);
 
 	// This will iterate from [start, end)
-	ColumnReadWrite (Column &iterateMe, int start, int end, int stepSize = COLUMN_ITERATOR_STEP);
+	ColumnReadWrite (Column &iterateMe, uint64_t start, uint64_t end, uint64_t stepSize = COLUMN_ITERATOR_STEP);
 
 	ColumnReadWrite () {};
 	// destructor... if there is a column left in the ColumnReadWrite, it will be
@@ -47,19 +47,19 @@ public:
 	void Done (Column &iterateMe);
 
 	// this is not needed as this interface is more like systems read and write
-	// void Advance (int size);
+	// void Advance (uint64_t size);
 
 	// add a new data object into the column at the current position, overwriting the
 	// bytes that are already there.
-	void write (char* data, int size);
+	void write (char* data, uint64_t size);
 
 	// Just make sure we have enough data in column and return the pointer. User is requested
 	// not to modify the data of column
-	void read (char* data, int size);
+	void read (char* data, uint64_t size);
 
 	// returns true if the object under the cursor has never been written to and so
 	// it should not be read (it is undefined what happens if you read it)
-	int AtUnwrittenByte ();
+	uint64_t AtUnwrittenByte ();
 
 /**
   create deep copy from 'fromMe'. Everything is created new down the hierarchy,

@@ -213,8 +213,14 @@ class NumaMemoryAllocator {
     // functin to allocate
     void* MmapAlloc(size_t noBytes, int numaNode = 0, const char* file = NULL, int line=-1);
 
+    // change the protection to prot: must be a combination of PROT_READ and PROT_WRITE
+    void MmapChangeProt(void* ptr, int prot);
+
     // function to deallocate
     void MmapFree(void* ptr);
+
+    // function to get size of allocated memory
+    int SizeAlloc(void* ptr);
 
     // Tells the size which is still allocated
     size_t AllocatedPages();

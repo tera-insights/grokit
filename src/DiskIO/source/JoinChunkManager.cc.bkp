@@ -5,23 +5,23 @@
 using namespace std;
 
 // ID generator
-static int IDgen = 0;
+static uint64_t IDgen = 0;
 
 ChunkMetaData :: ChunkMetaData () {
 }
 
 ChunkMetaData :: ~ChunkMetaData () {
 
-	map<int, ChunkFloor*>::const_iterator it = mySubBucketToFloorMap.begin();
+	map<uint64_t, ChunkFloor*>::const_iterator it = mySubBucketToFloorMap.begin();
 	for (; it != mySubBucketToFloorMap.end(); ++it) {
 		if (it->second) delete it->second;
 	}
 }
 
-void ChunkMetaData :: ChunkToDisk (int subbucket, int chunkID, bool isLeft) {
+void ChunkMetaData :: ChunkToDisk (uint64_t subbucket, uint64_t chunkID, bool isLeft) {
 
 	ChunkFloor* Floor = NULL;
-	map<int, ChunkFloor*>::const_iterator it = mySubBucketToFloorMap.find (subbucket);
+	map<uint64_t, ChunkFloor*>::const_iterator it = mySubBucketToFloorMap.find (subbucket);
 	if (it == mySubBucketToFloorMap.end()) {
 		Floor = new ChunkFloor;
 		mySubBucketToFloorMap[subbucket] = Floor;
@@ -34,9 +34,9 @@ void ChunkMetaData :: ChunkToDisk (int subbucket, int chunkID, bool isLeft) {
 	myChunkIDToChunkFloor[chunkID] = Floor;
 }
 
-void ChunkMetaData :: ChunkFromDisk (int chunkID) {
+void ChunkMetaData :: ChunkFromDisk (uint64_t chunkID) {
 
-	map<int, ChunkFloor*>::const_iterator it = myChunkIDToChunkFloor.find (chunkID);
+	map<uint64_t, ChunkFloor*>::const_iterator it = myChunkIDToChunkFloor.find (chunkID);
 	assert (it != myChunkIDToChunkFloor.end());
 	// send to the correct floor
 	(it->second)->ChunkFromDisk (chunkID);
@@ -44,7 +44,7 @@ void ChunkMetaData :: ChunkFromDisk (int chunkID) {
 
 bool ChunkMetaData :: GetTile (ChunkTile& tileOut) {
 
-	for (map<int, ChunkFloor*>::const_iterator it = mySubBucketToFloorMap.begin(); it != mySubBucketToFloorMap.end(); ++it) {
+	for (map<uint64_t, ChunkFloor*>::const_iterator it = mySubBucketToFloorMap.begin(); it != mySubBucketToFloorMap.end(); ++it) {
 		if (!(it->second)->IsEmpty()) { // If floor still has some tiles left (still not done)
 			(it->second)->GetTile (tileOut);
 			return true;
@@ -54,7 +54,7 @@ bool ChunkMetaData :: GetTile (ChunkTile& tileOut) {
 }
 
 void ChunkMetaData :: PrintRectangles () {
-	for (map<int, ChunkFloor*>::const_iterator it = mySubBucketToFloorMap.begin(); it != mySubBucketToFloorMap.end(); ++it) {
+	for (map<uint64_t, ChunkFloor*>::const_iterator it = mySubBucketToFloorMap.begin(); it != mySubBucketToFloorMap.end(); ++it) {
 		(it->second)->PrintRectangle ();
 	}
 }
@@ -67,11 +67,11 @@ void ChunkFloor :: CreateTile () {
 	ChunkTile* tile = new ChunkTile;
 	bool gotTile = false;
 	bool firstTime = true;
-	int i = 0 /* zero always*/;
+	uint64_t i = 0 /* zero always*/;
 	for (Floor::iterator it = myFloor.begin(); it != myFloor.end() && i < LHSSIZE; /*++it*/++i) {
-		int j = 0 /* zero always */;
+		uint64_t j = 0 /* zero always */;
 		gotTile = false;
-		for (set<int>::iterator iter = (it->second).begin(); iter != (it->second).end() && j < RHSSIZE; ++iter, ++j) {
+		for (set<uint64_t>::iterator iter = (it->second).begin(); iter != (it->second).end() && j < RHSSIZE; ++iter, ++j) {
 			gotTile = true;
 			if (firstTime)
 				(tile->rhs).push_back(*iter);
@@ -98,7 +98,7 @@ void ChunkFloor :: CreateTile () {
 	}
 
 	if (gotTile) {
-		int ID = IDgen++;
+		uint64_t ID = IDgen++;
 		tileIDToChunkTile[ID] = tile;
 		tilesPending.insert(ID);
 		tile->tileID = ID;
@@ -106,25 +106,25 @@ void ChunkFloor :: CreateTile () {
 	}
 }
 
-void ChunkFloor :: ChunkToDisk (int chunkID, bool isLeft) {
+void ChunkFloor :: ChunkToDisk (uint64_t chunkID, bool isLeft) {
 
 	if (isLeft) {
-		set<int>::const_iterator it = leftChunksToDisk.find (chunkID);
+		set<uint64_t>::const_iterator it = leftChunksToDisk.find (chunkID);
 		assert (it == leftChunksToDisk.end()); // shouldn't be seeing same chunk ID to disk twice
 		leftChunksToDisk.insert (chunkID);
 	} else {
-		set<int>::const_iterator it = rightChunksToDisk.find (chunkID);
+		set<uint64_t>::const_iterator it = rightChunksToDisk.find (chunkID);
 		assert (it == rightChunksToDisk.end()); // shouldn't be seeing same chunk ID to disk twice
 		rightChunksToDisk.insert (chunkID);
 	}
 }
 
-void ChunkFloor :: ChunkFromDisk (int chunkID) {
+void ChunkFloor :: ChunkFromDisk (uint64_t chunkID) {
 
 	bool isLeft = false;
-	set<int>::const_iterator it = leftChunksToDisk.find (chunkID);
+	set<uint64_t>::const_iterator it = leftChunksToDisk.find (chunkID);
 	if (it == leftChunksToDisk.end()) {
-		set<int>::const_iterator iter = rightChunksToDisk.find (chunkID);
+		set<uint64_t>::const_iterator iter = rightChunksToDisk.find (chunkID);
 		assert(iter != rightChunksToDisk.end());
 	} else {
 		isLeft = true;
@@ -155,9 +155,9 @@ bool ChunkFloor :: GetTile (ChunkTile& tileOut) {
 	// If returned tiles exist, send them first
 	if (!tilesPending.empty()) {
 		// If returned tiles exist, send them first (pick the first one)
-		set<int>::iterator it = tilesPending.begin();
+		set<uint64_t>::iterator it = tilesPending.begin();
 		// Look into map to get ChunkTile object
-		map<int, ChunkTile*>::iterator iter = tileIDToChunkTile.find(*it);
+		map<uint64_t, ChunkTile*>::iterator iter = tileIDToChunkTile.find(*it);
 		assert(iter != tileIDToChunkTile.end());
 		tileOut.lhs = (iter->second)->lhs;
 		tileOut.rhs = (iter->second)->rhs;
@@ -175,7 +175,7 @@ bool ChunkFloor :: GetTile (ChunkTile& tileOut) {
 	return false;
 }
 
-void ChunkFloor :: UnprocessedTile(int ID) {
+void ChunkFloor :: UnprocessedTile(uint64_t ID) {
 	tilesPending.insert(ID);
 }
 
@@ -188,7 +188,7 @@ void ChunkFloor :: PrintRectangle () {
 	for (Floor::iterator it = myFloor.begin(); it != myFloor.end(); ++it) {
 		cout << "\n";
 		cout << "Left " << it->first << " " << "Rights ";
-		for (set<int>::iterator iter = (it->second).begin(); iter != (it->second).end(); ++iter) {
+		for (set<uint64_t>::iterator iter = (it->second).begin(); iter != (it->second).end(); ++iter) {
 			cout << " " << (*iter);
 		}
 	}

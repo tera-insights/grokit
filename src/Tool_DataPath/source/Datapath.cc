@@ -21,6 +21,7 @@
   the main program has nothing better to do anyways (ways mostly).
   */
 
+#include <algorithm>
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -30,6 +31,8 @@
 #include <iostream>
 #include <unistd.h>
 #include <cinttypes>
+
+#include <sys/resource.h>
 
 #include "Errors.h"
 #include "Message.h"
@@ -76,6 +79,10 @@ int main(int argc, char** argv){
     bool batchMode = false;
     bool compileOnly = false;
 
+    const rlim_t kStackSize = 64L * 1024L * 1024L;  // min stack size = 64 MB
+    rlimit rl;
+    int result;
+
     if (argc == 1) {
         cout << "dp: main DataPath executable" << endl;
         cout << "Command line options:" << endl;
@@ -88,6 +95,26 @@ int main(int argc, char** argv){
 
     external_commands_init();
     opterr = 0;
+
+    // Attempt to increase stack size
+    result = getrlimit(RLIMIT_STACK, &rl);
+    if (result == 0)
+    {
+        if (rl.rlim_cur < kStackSize &&
+            (rl.rlim_max == RLIM_INFINITY || rl.rlim_max >= kStackSize))
+        {
+            rl.rlim_cur = (rl.rlim_max == RLIM_INFINITY) ? kStackSize :
+                std::min(kStackSize, rl.rlim_max);
+
+            result = setrlimit(RLIMIT_STACK, &rl);
+            if (result != 0)
+            {
+                fprintf(stderr, "error: setrlimit returned result = %d\n", result);
+            } else {
+                printf("stack size set to %ld KiB\n", rl.rlim_cur / 1024L);
+            }
+        }
+    }
 
     int c;
     while ((c = getopt (argc, argv, "bde:rqost")) != -1){

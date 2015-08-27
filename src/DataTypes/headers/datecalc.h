@@ -118,7 +118,7 @@ public:
 	// Remarks:
 	//	This function is used in constructing dates to ensure that 2 digit
 	//	 years (00-99) are implicitly converted to a 4 digit year. See class
-	//	remarks for details on this conversion. 
+	//	remarks for details on this conversion.
 	// Result: Returns the 4 digit year using an implicit century conversion.
 	static Int32 EnsureYearWithCentury( Int32 year );
 

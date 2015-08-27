@@ -72,7 +72,7 @@ struct <?=$classname?> {
 
 function Segmenter( array $t_args, array $input, array $output, array $given_states) {
     $resType = [ 'fragment', 'multi' ];
-    $system_headers = [ 'array', 'vector', 'memory', 'cinttypes' ];
+    $system_headers = [ 'array', 'vector', 'memory', 'cinttypes', 'unordered_map' ];
     $user_headers = [ 'HashFunctions.h' ];
     $lib_headers = [];
 
@@ -95,7 +95,7 @@ function Segmenter( array $t_args, array $input, array $output, array $given_sta
 
     $libraries = $gla->libraries();
 
-    $innerRes = get_first_value($gla->result_type(), ['multi', 'fragment']);
+    $innerRes = get_first_value($gla->result_type(), ['fragment', 'multi']);
     $innerInputs = $gla->input();
     $innerOutput = $gla->output();
     $input = array_merge([ $keyName => $keyType ], $innerInputs);
@@ -153,15 +153,13 @@ public:
         int fragmentNum;
 
         InnerGLA::Iterator * innerIter;
-        int fragNo;
-        int nFrags;
 
     public:
-        Iterator( InnerGLA * _gla, int _fragmentNum ) : gla(_gla), fragmentNum(_fragmentNum) {
-            fragNo = 0;
-            nFrags = gla->GetNumFragments();
-
-            innerIter = gla->Finalize(fragNo);
+        Iterator( InnerGLA * _gla, int _fragmentNum, int _innerFrag ) :
+            gla(_gla), fragmentNum(_fragmentNum),
+            innerIter(nullptr)
+        {
+            innerIter = gla->Finalize(_innerFrag);
         }
 
         ~Iterator(void) {
@@ -172,25 +170,7 @@ public:
         }
 
         bool GetNextResult( <?=typed_ref_args($gla->output())?> ) {
-            bool haveRes = false;
-            bool resPossible = fragNo < nFrags; //>
-
-            while( !haveRes && resPossible ) {
-                if( innerIter->GetNextResult(<?=args($gla->output())?>) ) {
-                    haveRes = true;
-                } else {
-                    fragNo++;
-                    resPossible = fragNo < nFrags; //>
-                    delete innerIter;
-                    innerIter = nullptr;
-
-                    if( resPossible ) {
-                        innerIter = gla->Finalize(fragNo);
-                    }
-                }
-            }
-
-            return haveRes;
+            return innerIter->GetNextResult(<?=args($gla->output())?>);
         }
 
         int FragmentNumber() {
@@ -226,8 +206,16 @@ private:
     GLA_Array localState;
 
     // Iteration state for multi result type
+    int numFrags;
     int multiFragNo;
     Iterator * multiIter;
+
+<?php if($innerRes == 'fragment') { ?>
+    using frag_info = std::pair<int, int>;
+    using frag_map_t = std::unordered_map<int, frag_info>;
+    frag_map_t fragMap;
+<?php } ?>
+
 
 <?  foreach($savedArgs as $name => $type) { ?>
     const <?=$type?> <?=$name?>;
@@ -239,8 +227,12 @@ public:
     <?=$className?>( <?=const_typed_ref_args($cArgs)?> ) :
         constState(const_state)
         , localState()
+        , numFrags(0)
         , multiFragNo(0)
         , multiIter(nullptr)
+<?  if ($innerRes == 'fragment') { ?>
+        , fragMap()
+<?  } ?>
 <?  foreach($savedArgs as $name => $type) { ?>
         , <?=$name?>(<?=$name?>)
 <?  } // foreach constructor arg to save ?>
@@ -312,22 +304,34 @@ public:
             delete multiIter;
 
         multiFragNo = 0;
+<?  if ($innerRes == 'fragment') {?>
+        frag_info fInfo = fragMap[multiFragNo];
+        multiIter = new Iterator(globalStates.Peek(fInfo.first), multiFragNo,
+            fInfo.second);
+<?  } else { ?>
         multiIter = new Iterator(globalStates.Peek(multiFragNo), multiFragNo);
+<?  } ?>
     }
 
     bool GetNextResult(<?=typed_ref_args($output)?>) {
         bool gotResult = false;
         SplitState & globalStates = constState.segments;
 
-        while( (NUM_STATES > multiFragNo && multiIter != nullptr) && !gotResult ) {
+        while( (multiFragNo < numFrags && multiIter != nullptr) && !gotResult ) {
             gotResult = multiIter->GetNextResult(<?=args($output)?>);
 
             if( !gotResult ) {
                 multiFragNo++;
                 delete multiIter;
 
-                if( NUM_STATES > multiFragNo ) {
+                if( numFrags > multiFragNo ) {
+<?  if ($innerRes == 'fragment') {?>
+                    frag_info fInfo = fragMap[multiFragNo];
+                    multiIter = new Iterator(globalStates.Peek(fInfo.first), multiFragNo,
+                        fInfo.second);
+<?  } else { ?>
                     multiIter = new Iterator(globalStates.Peek(multiFragNo), multiFragNo);
+<?  } ?>
                 } else {
                     multiIter = nullptr;
                 }
@@ -338,12 +342,34 @@ public:
     }
 
     int GetNumFragments(void) {
-        return NUM_STATES;
+<?  if ($innerRes == 'fragment') {?>
+        SplitState & globalStates = constState.segments;
+        numFrags = 0;
+
+        for (int i = 0; i < NUM_STATES; i++) {
+            int curFrags = globalStates.Peek(i)->GetNumFragments();
+
+            for (int curFrag = 0; curFrag < curFrags; curFrag++) {
+                fragMap[numFrags] = frag_info(i, curFrag);
+
+                numFrags++;
+            }
+        }
+<?  } else { ?>
+        numFrags = NUM_STATES;
+<?  } ?>
+        return numFrags;
     }
 
     Iterator * Finalize( int fragment ) {
         SplitState & globalStates = constState.segments;
+
+<?  if ($innerRes == 'fragment') { ?>
+        frag_info info = fragMap[fragment];
+        return new Iterator(globalStates.Peek(info.first), fragment, info.second);
+<?  } else { ?>
         return new Iterator(globalStates.Peek(fragment), fragment);
+<?  } ?>
     }
 
     bool GetNextResult( Iterator * it, <?=typed_ref_args($output)?> ) {

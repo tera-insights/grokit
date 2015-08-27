@@ -33,12 +33,12 @@
     The metadata is kept in the following relations:
 
     Relations -- info on relations such as name, etc
-    relID:int, relName:text,  numColumns:int, freeChunkID:int
+    relID:uint64_t, relName:text,  numColumns:uint64_t, freeChunkID:uint64_t
     Chunks -- info on chunks (what relation they belong to, etc.)
-    chunkID:int, relID:int, numTuples:int
+    chunkID:uint64_t, relID:uint64_t, numTuples:uint64_t
     Columns -- info on columns/chunk (storage)
-    colNo:int, relID:int, chunkID:int, startPage:int, sizeInPages:int, columnType:int,
-    varStartPage:int
+    colNo:uint64_t, relID:uint64_t, chunkID:uint64_t, startPage:uint64_t, sizeInPages:uint64_t, columnType:uint64_t,
+    varStartPage:uint64_t
 
     **/
 
@@ -66,7 +66,7 @@ class Fragments {
         friend class ColumnMetaData;
 
         // This will be filled while writing chunks as well as we will get back while reading them
-        std::vector<int> startPositions;
+        std::vector<uint64_t> startPositions;
 
     public:
 
@@ -81,7 +81,7 @@ class Fragments {
         }
 
         // This will be used while writing of chunks to mark them
-        void MarkFragment (int curPosInColumn);
+        void MarkFragment (uint64_t curPosInColumn);
 
         // swap
         void swap (Fragments& withMe);
@@ -91,14 +91,14 @@ class Fragments {
         void Initialize(long int _startPos){    startPositions.push_back(_startPos); }
 
         // Get start position of column of the given fragment
-        int GetStartPosition (int fragmentIndex);
+        uint64_t GetStartPosition (uint64_t fragmentIndex);
 
         // Get end position of column of the given fragment
-        int GetEndPosition (int fragmentIndex);
+        uint64_t GetEndPosition (uint64_t fragmentIndex);
 
         bool IsValid() {return !startPositions.empty();}
 
-        int GetNumFragments() {return startPositions.size();}
+        uint64_t GetNumFragments() {return startPositions.size();}
 };
 
 class FragmentsTuples {
@@ -109,7 +109,7 @@ class FragmentsTuples {
         friend class ColumnMetaData;
 
         // tuples count
-        std::vector<int> tuplesCount;
+        std::vector<uint64_t> tuplesCount;
 
         // This contains object length for bitstring
         uint64_t header1;
@@ -147,7 +147,7 @@ class FragmentsTuples {
         void swap (FragmentsTuples& withMe);
 
         // This will be used while writing of chunks to mark them
-        void SetTuplesCount (int tuplesCount);
+        void SetTuplesCount (uint64_t tuplesCount);
 
         void SetHeader1 (uint64_t _header1);
         uint64_t GetHeader1 ();
@@ -155,11 +155,11 @@ class FragmentsTuples {
         void SetHeader2 (uint64_t _header2);
         uint64_t GetHeader2 ();
 
-        int GetTupleCount (int fragmentIndex);
+        uint64_t GetTupleCount (uint64_t fragmentIndex);
 
-        int GetTupleCount (int fragmentIndexStart, int fragmentIndexEnd);
+        uint64_t GetTupleCount (uint64_t fragmentIndexStart, uint64_t fragmentIndexEnd);
 
-        int GetOverallTupleCount();
+        uint64_t GetOverallTupleCount();
 
         void PrintTupleCount ();
 };
@@ -170,22 +170,22 @@ private:
     friend class FileMetadata;
     friend class ChunkMetaD;
 
-    int startPage;
-    int sizePages;
-    int startPageCompr;
-    int sizePagesCompr;
-    int sizeBytes;
-    int sizeBytesCompr;
+    uint64_t startPage;
+    uint64_t sizePages;
+    uint64_t startPageCompr;
+    uint64_t sizePagesCompr;
+    uint64_t sizeBytes;
+    uint64_t sizeBytesCompr;
     Fragments fragments;
 
 public:
 
-    ColumnMetaData (int _startPage = -1,
-            int _sizePages = -1,
-            int _startPageCompr = -1,
-            int _sizePagesCompr = -1,
-            int _sizeBytes = -1,
-            int _sizeBytesCompr = -1) :
+    ColumnMetaData (uint64_t _startPage = -1,
+            uint64_t _sizePages = -1,
+            uint64_t _startPageCompr = -1,
+            uint64_t _sizePagesCompr = -1,
+            uint64_t _sizeBytes = -1,
+            uint64_t _sizeBytesCompr = -1) :
         startPage(_startPage),
         sizePages(_sizePages),
         startPageCompr(_startPageCompr),
@@ -194,12 +194,12 @@ public:
         sizeBytesCompr(_sizeBytesCompr)
     {}
 
-        ColumnMetaData (Fragments& _fragments, int _startPage = -1,
-                                        int _sizePages = -1,
-                                        int _startPageCompr = -1,
-                                        int _sizePagesCompr = -1,
-                                        int _sizeBytes = -1,
-                                        int _sizeBytesCompr = -1) :
+        ColumnMetaData (Fragments& _fragments, uint64_t _startPage = -1,
+                                        uint64_t _sizePages = -1,
+                                        uint64_t _startPageCompr = -1,
+                                        uint64_t _sizePagesCompr = -1,
+                                        uint64_t _sizeBytes = -1,
+                                        uint64_t _sizeBytesCompr = -1) :
                                         startPage(_startPage),
                                          sizePages(_sizePages),
                                         startPageCompr(_startPageCompr),
@@ -236,7 +236,7 @@ public:
 private:
     friend class FileMetadata;
 
-    int numTuples;
+    uint64_t numTuples;
     std::vector<ColumnMetaData> colMetaData;
     FragmentsTuples fragTuple;
     ClusterRange clusterRange;
@@ -245,7 +245,7 @@ private:
 public:
 
         // For STL
-    ChunkMetaD (FragmentsTuples& f, int _numTuples = 0) :
+    ChunkMetaD (FragmentsTuples& f, uint64_t _numTuples = 0) :
         numTuples(_numTuples),
         colMetaData(),
         fragTuple(f),
@@ -253,7 +253,7 @@ public:
         dirty(false)
     {}
 
-    ChunkMetaD (int _numTuples = 0) :
+    ChunkMetaD (uint64_t _numTuples = 0) :
         numTuples(_numTuples),
         colMetaData(),
         fragTuple(),
@@ -262,7 +262,7 @@ public:
     {}; // For STL resize
 
         // Load from disk
-    void Initialize(int _numCols, long int _numTuples, int64_t _cMin, int64_t _cMax);
+    void Initialize(uint64_t _numCols, long int _numTuples, int64_t _cMin, int64_t _cMax);
 
         // Returns the starting page for a given chunk and column.
         off_t getStartPage(unsigned long numCol);
@@ -276,7 +276,7 @@ public:
         off_t getSizeBytes(unsigned long numCol);
         off_t getSizeBytesCompr(unsigned long numCol);
 
-        int getNumTuples ();
+        uint64_t getNumTuples ();
         Fragments& getFragments(unsigned long numCol);
         FragmentsTuples& getFragmentsTuples() {return fragTuple;}
 
@@ -306,7 +306,7 @@ class FileMetadata {
         char *relName;
 
         // the relation ID. This ID has to be unique in the system
-        int relID;
+        uint64_t relID;
 
         // is the relation new?
         bool newRelation;
@@ -330,7 +330,7 @@ class FileMetadata {
         // how many columns have been filled
         long colsFilled;
 
-        static void DeleteContentSQL(int relID, sqlite3* db);
+        static void DeleteContentSQL(uint64_t relID, sqlite3* db);
 
     public:
         // constructor
@@ -338,13 +338,13 @@ class FileMetadata {
         // if it exists, we check that it has numCols columns
         // whoever calls this should know how many columns we are supposed
         // to have
-        FileMetadata(const char* _relName, int _numCols);
+        FileMetadata(const char* _relName, uint64_t _numCols);
 
         // Destructor.
         virtual ~FileMetadata();
 
         // returns the relationID. Unique throught the system
-        int getRelID();
+        uint64_t getRelID();
 
         // Returns the number of columns on each chunk.
         unsigned long getNumCols();
@@ -422,9 +422,9 @@ class FileMetadata {
 
 // ===========================INLINE methods for Fragments =================
 inline
-void Fragments :: MarkFragment (int curPosInColumn) {
+void Fragments :: MarkFragment (uint64_t curPosInColumn) {
 
-    for (int i = 0; i < startPositions.size(); i++) {
+    for (uint64_t i = 0; i < startPositions.size(); i++) {
         //printf("\n curPosInColumn = %d, startPositions[%d] = %d", curPosInColumn, i, startPositions[i]); fflush(stdout);
         assert(curPosInColumn >= startPositions[i]);
     }
@@ -438,15 +438,15 @@ void Fragments :: swap (Fragments& withMe) {
 }
 
 inline
-int Fragments :: GetStartPosition (int fragmentIndex) {
+uint64_t Fragments :: GetStartPosition (uint64_t fragmentIndex) {
 
-  FATALIF(!(fragmentIndex >= 0 && fragmentIndex < startPositions.size()), "FragmentIndex=%d out of range", fragmentIndex);
+  FATALIF(!(fragmentIndex >= 0 && fragmentIndex < startPositions.size()), "FragmentIndex=%lu out of range", fragmentIndex);
 
     return startPositions[fragmentIndex];
 }
 
 inline
-int Fragments :: GetEndPosition (int fragmentIndex) {
+uint64_t Fragments :: GetEndPosition (uint64_t fragmentIndex) {
 
     assert(0); // function not needed for now
     assert(fragmentIndex >= 0);
@@ -455,7 +455,7 @@ int Fragments :: GetEndPosition (int fragmentIndex) {
 
 // ===========================INLINE methods for FragmentsTuples =================
 inline
-void FragmentsTuples :: SetTuplesCount (int _tuplesCount) {
+void FragmentsTuples :: SetTuplesCount (uint64_t _tuplesCount) {
 
     tuplesCount.push_back(_tuplesCount);
 }
@@ -488,7 +488,7 @@ void FragmentsTuples :: SetHeader2 (uint64_t _header2) {
 }
 
 inline
-int FragmentsTuples :: GetTupleCount (int fragmentIndex) {
+uint64_t FragmentsTuples :: GetTupleCount (uint64_t fragmentIndex) {
     assert(fragmentIndex >= 0);
     assert(fragmentIndex < tuplesCount.size());
 
@@ -499,25 +499,25 @@ int FragmentsTuples :: GetTupleCount (int fragmentIndex) {
 }
 
 inline
-int FragmentsTuples :: GetTupleCount (int fragmentIndexStart, int fragmentIndexEnd) {
+uint64_t FragmentsTuples :: GetTupleCount (uint64_t fragmentIndexStart, uint64_t fragmentIndexEnd) {
     assert(fragmentIndexStart >= 0);
     assert(fragmentIndexEnd >= 0);
     assert(fragmentIndexEnd >= fragmentIndexStart);
     if (fragmentIndexEnd > tuplesCount.size()-1)
         fragmentIndexEnd = tuplesCount.size()-1;
 
-    int cnt = 0;
-    for (int i = fragmentIndexStart; i <= fragmentIndexEnd; i++) {
+    uint64_t cnt = 0;
+    for (uint64_t i = fragmentIndexStart; i <= fragmentIndexEnd; i++) {
         cnt += tuplesCount[i];
     }
     return cnt;
 }
 
 inline
-int FragmentsTuples :: GetOverallTupleCount () {
-    int total = 0;
-    for (int i = 0; i < tuplesCount.size(); i++) {
-        //printf("\n %d",tuplesCount[i]);
+uint64_t FragmentsTuples :: GetOverallTupleCount () {
+    uint64_t total = 0;
+    for (uint64_t i = 0; i < tuplesCount.size(); i++) {
+        //printf("\n %lu",tuplesCount[i]);
         total += tuplesCount[i];
     }
     return total;
@@ -526,8 +526,8 @@ int FragmentsTuples :: GetOverallTupleCount () {
 inline
 void FragmentsTuples :: PrintTupleCount() {
     printf("(((");
-    for (int i = 0; i < tuplesCount.size(); i++) {
-        printf("%d, ",tuplesCount[i]);
+    for (uint64_t i = 0; i < tuplesCount.size(); i++) {
+        printf("%lu, ",tuplesCount[i]);
     }
     printf(")))");
 }
@@ -583,7 +583,7 @@ Fragments& ColumnMetaData::getFragments(){
 }
 // ===========================INLINE methods for ChunkMetaData =================
 inline
-void ChunkMetaD :: Initialize (int _numCols, long int _numTuples,
+void ChunkMetaD :: Initialize (uint64_t _numCols, long int _numTuples,
     int64_t _cMin, int64_t _cMax)
 {
     clusterRange = ClusterRange(_cMin, _cMax);
@@ -641,7 +641,7 @@ inline Fragments& ChunkMetaD::getFragments(unsigned long numCol) {
     return colMetaData[numCol].getFragments();
 }
 
-inline int ChunkMetaD::getNumTuples () {
+inline uint64_t ChunkMetaD::getNumTuples () {
     return numTuples;
 }
 
@@ -675,7 +675,7 @@ ChunkMetaD::ClusterRange ChunkMetaD::getClusterRange() const {
 }
 
 // ===========================INLINE methods for FileMetaData =================
-inline int FileMetadata::getRelID(void){ return relID; }
+inline uint64_t FileMetadata::getRelID(void){ return relID; }
 
 inline unsigned long FileMetadata::getNumCols() {
     return(numCols);

@@ -267,6 +267,10 @@ void WayPointImp :: SetTokensRequested( off_t requestType, int numTokens, int pr
     tokensToRequest[requestType] = pair<int,int>( numTokens, priority );
 }
 
+int WayPointImp :: GetTokensRequested( off_t requestType ) const {
+    return tokensToRequest.at(requestType).first;
+}
+
 void WayPointImp :: TokenRequestCompleted( off_t requestType ) {
     tokenRequestsOut[requestType] -= 1;
 }

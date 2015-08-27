@@ -23,7 +23,7 @@ function FixedArray(array $t_args) {
         // Perform type lookup
         $type = call_user_func_array('lookupType', $type);
     } else {
-        $type = $type->lookup();        
+        $type = $type->lookup();
     }
 
     grokit_assert(is_datatype($type), 'FixedArray: [type] argument must be a valid datatype');
@@ -311,7 +311,7 @@ void FromString( @type & x, const char * buffer ) {
     char * copy = strdup(buffer);
 
     current = strtok_r(copy, delim, &saveptr);
-    
+
     for( auto & val : x ) {
         FATALIF(current == NULL, "Not enough elements in string representation of array");
         ToString(val, current);

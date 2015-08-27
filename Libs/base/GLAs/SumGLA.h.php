@@ -6,9 +6,11 @@ function Sum( array $t_args, array $inputs, array $outputs ) {
     $className = generate_name("Sum");
 
     $storage = [];
+    $inits = [];
     if( \count($inputs) == 0 ) {
         $inputs = [ "x" => lookupType("base::DOUBLE") ];
         $storage = [ "x" => 'long double' ];
+        $inits = [ "x" => '' ];
         $outputs = $inputs;
     }
     else {
@@ -34,6 +36,8 @@ function Sum( array $t_args, array $inputs, array $outputs ) {
                 }
             }
 
+            $inits[$name] = $value->has('init') ? $value->get('init') : '';
+
             next($outputs);
         }
     }
@@ -42,7 +46,7 @@ class <?=$className?> {
     <?=array_template('{val} {key};' . PHP_EOL, '    ', $storage)?>
 
 public:
-    <?=$className?>() : <?=array_template('{key}(0)', ', ', $storage) ?>
+    <?=$className?>() : <?=array_template('{key}({val})', ', ', $inits) ?>
     { }
 
     void AddItem(<?=array_template('const {val}& _{key}', ', ', $inputs)?>) {

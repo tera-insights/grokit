@@ -187,6 +187,9 @@ public:
 <?  $methods[] = [ 'IsNull', [], 'BASE::BOOL', true ]; ?>
     bool IsNull(void) const;
 
+<?  $methods[] = ['IsLeapYear', [], 'BASE::BOOL', true ]; ?>
+    bool IsLeapYear() const;
+
     // Description: Returns the year represented by this date (1500-2500)
 <?  $methods[] = [ 'GetYear', [], 'base::INT', true ];    ?>
     Int32 GetYear() const;
@@ -220,6 +223,9 @@ public:
     // Description: Return Julian day number
 <?  $methods[] = [ 'GetJulianDay', [], 'base::INT', true ];    ?>
     Int32 GetJulianDay() const;
+
+<?  $methods[] = [ 'IsDST', [], 'BASE::BOOL', true]; ?>
+    bool IsDST() const;
 
     // Description:
     //stl::string DATE::ToString() const;
@@ -438,6 +444,12 @@ DATE& DATE::operator-=( Int32 dateOffset)
   return *this;
 }
 
+inline
+bool DATE::IsLeapYear() const {
+  REPASDATE(*this);
+  return GETCOMPONENT(m_Date, BITOFFSETISLEAPYEAR, BITSIZEISLEAPYEAR) ? true : false;
+}
+
 // Description: Returns the year represented by this date (1500-2500)
 
 inline
@@ -445,7 +457,7 @@ Int32 DATE::GetYear() const
 {
   REPASDATE(*this);
   Int32 Year = GETCOMPONENT(m_Date, BITOFFSETYEAR, BITSIZEYEAR) + MINIMUMYEAR;
-  assert(Year >= MINIMUMYEAR && Year <= MINIMUMYEAR + 1000);
+  assert(Year >= MINIMUMYEAR && Year <= MINIMUMYEAR + 1000); //>
   return Year;
 }
 
@@ -456,7 +468,7 @@ Int32 DATE::GetQuarter() const
 {
   REPASDATE(*this);
   Int32 Quarter = GETCOMPONENT(m_Date, BITOFFSETMONTH, BITSIZEMONTH) / 3;
-  assert(Quarter >= 1 && Quarter <= 4);
+  assert(Quarter >= 1 && Quarter <= 4); //>
   return Quarter;
 }
 
@@ -467,7 +479,7 @@ Int32 DATE::GetMonth() const
 {
   REPASDATE(*this);
   Int32 Month = GETCOMPONENT(m_Date, BITOFFSETMONTH, BITSIZEMONTH);
-  assert(Month >= 1 && Month <= 12);
+  assert(Month >= 1 && Month <= 12); //>
   return Month;
 }
 
@@ -527,7 +539,7 @@ Int32 DATE::GetDayOfWeek() const
 {
   REPASDATE(*this);
   Int32 DayOfWeek = GETCOMPONENT(m_Date, BITOFFSETDAYOFWEEK, BITSIZEDAYOFWEEK);
-  assert(DayOfWeek >= 1 && DayOfWeek <= 7);
+  assert(DayOfWeek >= 1 && DayOfWeek <= 7); // >
   return DayOfWeek;
 }
 
@@ -563,6 +575,76 @@ Int32 DATE::GetJulianDay() const
 {
   REPASJD(*this);
   return m_Date;
+}
+
+inline
+bool DATE::IsDST() const
+{
+    auto year = GetYear();
+    auto month = GetMonth();
+    auto day = GetDay();
+
+    if (year >= 2007) {
+        // 2007+ rules
+        // Begins at 2:00 AM on the second Sunday of March
+        // Ends at 2:00 AM on the first Sunday of November
+        if (month >= 4 || month <= 10) // > April through October are DST
+            return true;
+        else if (month <= 2 || month == 12) // > January, February and December are not DST
+            return false;
+        else if (month == 3) { // March DST starts
+            // Find second sunday of march
+            DATE firstDay(year, month, 1);
+            Int32 daysTillSunday = 7 - firstDay.GetDayOfWeek();
+
+            // Add 7 days to first sunday to get second sunday
+            Int32 secondSunday = 1 + daysTillSunday + 7;
+
+            return day >= secondSunday;
+        } else if (month == 11) { // November DST ends
+            // Find first sunday of november
+            DATE firstDay(year, month, 1);
+            Int32 daysTillSunday = 7 - firstDay.GetDayOfWeek();
+
+            Int32 firstSunday = 1 + daysTillSunday;
+
+            return day < firstSunday; // >
+        } else {
+            return false;
+        }
+    } else if (year >= 1987) {
+        // Old DST rules
+        // Begins at 2:00 AM on the first Sunday of April
+        // Ends at 2:00 AM on the last Sunday of October
+        if (month >= 5 || month <= 9) // > May through September are DST
+            return true;
+        else if (month <= 3 || month >= 11) // > January, February, March, November, and December are not DST
+            return false;
+        else if (month == 4) { // April DST starts
+            // Find first sunday of april
+            DATE firstDay(year, month, 1);
+            Int32 daysTillSunday = 7 - firstDay.GetDayOfWeek();
+
+            // Add 7 days to first sunday to get second sunday
+            Int32 firstSunday = 1 + daysTillSunday;
+
+            return day >= firstSunday;
+        } else if (month == 10) { // October DST ends
+            // Find last sunday of October
+            Int32 lastDayNumber = DATECalc::DaysInMonth(month, IsLeapYear());
+            DATE lastDay(year, month, lastDayNumber);
+            Int32 daysPastSunday = lastDay.GetDayOfWeek() % 7;
+
+            Int32 lastSunday = lastDayNumber - daysPastSunday;
+
+            return day < lastSunday; // >
+        } else {
+            return false;
+        }
+    } else {
+        // Assume DST not implemented
+        return false;
+    }
 }
 
 // Description: Convert internal representation to Julian day number
@@ -618,7 +700,7 @@ int ToString(const @type& x, char* text){
   return x.ToString(text);
 }
 
-inline 
+inline
 int64_t ClusterValue(const @type& x){
   // correct it to Unix day
   return x.GetJulianDay();
@@ -676,7 +758,7 @@ public:
 
     return array(
         'kind'              => 'TYPE',
-        "system_headers"    => array ("assert.h"),
+        "system_headers"    => array ("assert.h",),
         "user_headers"      => array ( "datetimedefs.h", "datecalc.h", "Constants.h", "Config.h" ),
         "complex"           => false,
         // The + and - operators for DATE do not follow the normal rule for those operators, so

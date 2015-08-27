@@ -1,0 +1,8 @@
+This directory is for pkg-config meta-data files for libraries that are
+missing them.
+
+I can't guarantee that these files will work on all systems, so you should
+install them somewhere and modify them if they contain incorrect information.
+Generally, you should only have to modify the four variables at the beginning
+of the file to point to the correct install location of the library on your
+system.

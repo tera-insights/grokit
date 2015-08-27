@@ -164,6 +164,26 @@ function args( $args ) {
     return implode(CSL_SEP, array_keys($args));
 }
 
+function typed( $args ) {
+    $vals = [];
+
+    foreach( $args as $n => $t ) {
+        array_push($vals, "$t");
+    }
+
+    return implode(CSL_SEP, $vals);
+}
+
+function typed_ref( $args ) {
+    $vals = [];
+
+    foreach( $args as $n => $t ) {
+        array_push($vals, "$t &");
+    }
+
+    return implode(CSL_SEP, $vals);
+}
+
 function typed_args( $args ) {
     $vals = [];
 
@@ -516,7 +536,89 @@ function grokit_warning_assert( $bool, $msg ) {
     }
 }
 
+function add_default_values(array &$input, array $defaults) {
+    foreach ($defaults as $key => $value)
+        if (!array_key_exists($key, $input))
+            $input[$key] = $value;
+}
 
+// Checks if every member of $args is a key in $input.
+// If $error is true, throws an error if $input also has extra keys.
+// If not, only a warning is thrown.
+function check_has_args(array $input, array $args, $error = false) {
+    $missing = array_diff($args, array_keys($input));
+    $extra = array_diff(array_keys($input), $arg);
+    grokit_assert(count($missing) == 0,
+                  'Missing args: ' . implode(', ', $missing));
+    if ($error)
+        grokit_error_if(count($extra) != 0,
+                        'Extra args: ' . implode(', ', $extra));
+    else
+        grokit_warning_if(count($extra) != 0,
+                          'Extra args: ' . implode(', ', $extra));
+}
+
+// Checks arguments for validity
+// $input should be a name to value mapping.
+// $checks should be a name to checks mapping.
+// each check should be an array, whose values are string denoting the name
+// of a function or arguments to a function. Each function is checked on the
+// corresponding argument. If the value after a string is not itself a string in
+// the array, then it is taken to be argument(s) to function named by the
+// previous string. If it is a value, then it is passed as the second arg to the
+// function. Otherwise, if it is an array then its elements are passed. In order,
+// to pass an array as an argument, the array must itself be enclosed. For each
+// check, all sub-checks must be passed or an error is thrown.
+function check_args(array $input, array $checks) {
+    foreach ($checks as $name => $check) {
+        $arg = $input[$name];
+        grokit_assert(check_arg($arg, $check), "$name is invalid");
+    }
+}
+
+function check_arg($arg, array $check) {
+    for ($i = 0; $i < count($check); $i++) {
+        $call = $check[$i];
+        if ($i == count($check) - 1 || is_string($check[$i + 1])) {
+            $result = call_user_func($check[$i], $arg);
+        } else if (is_array($check[$i + 1])) {
+            $result = call_user_func_array($check[$i], array_merge([$arg], $check[$i + 1]));
+            $i++;
+        } else {
+            $result = call_user_func($check[$i], $arg, $check[$i + 1]);
+            $i++;
+        }
+        if (!$result)
+            return false;
+    }
+    return true;
+}
+
+function is_positive($arg) {
+    return $arg > 0;
+}
+
+function greater_than($left, $right) {
+    return $left > $right;
+}
+
+
+function or_func($arg, $checks) {
+    foreach ($checks as $check)
+        if (check_arg($arg, $check))
+            return true;
+    return false;
+}
+
+function not_funct($arg, $check) {
+    return !check_arg($arg, $check);
+}
+
+function process_args(array &$input, array $defaults, array $checks) {
+    add_default_values($input);
+    check_has_args($input, array_keys($checks));
+    check_args($input, $checks);
+}
 } // end of global namespace
 
 ?>

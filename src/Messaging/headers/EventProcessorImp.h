@@ -144,7 +144,7 @@ class EventProcessorImp {
         // WARNING: this method only starts one thread, not all the allowed threads
         // it has to be executed repeteadly to start multiple threads
         // the default is defined
-        bool ForkAndSpin(int node=NUMA_ALL_NODES);
+        bool ForkAndSpin(int node = NUMA_ALL_NODES, size_t stack_size = EventProcessor::DEFAULT_STACK_SIZE);
 
         // When this functin is called, the thread calling it blocks until the event
         // processor gets the Die message. This is useful to write main programs that

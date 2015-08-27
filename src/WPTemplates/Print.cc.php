@@ -87,10 +87,11 @@ int PrintWorkFunc_<?=$wpName?> (WorkDescription &workDescription, ExecEngineData
             jsonRow = Json::Value(Json::arrayValue);
 
 <?          foreach( $val["expressions"] as $exp) { ?>
+            json = Json::Value(Json::nullValue);
             ToJson(<?=$exp->value()?>, json);
             jsonRow.append(json);
 <?          } // for each expression ?>
-            
+
             jsonString = jsonWriter.write(jsonRow);
             fprintf(file_<?=queryName($query)?>, "%s,", jsonString.c_str());
 <?      } // if output file is json

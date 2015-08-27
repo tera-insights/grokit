@@ -141,6 +141,8 @@ function parseDataType( $ast ) {
     $alias = ast_get($data, NodeKey::ALIAS);
     $alias = $alias === null ? null : parseIdentifier($alias);
 
+    //fwrite( STDERR, "parseDT: name($name) t_args(" . squashToString($t_args) . ")\n");
+
     return lookupType($name, $t_args, $alias);
 }
 

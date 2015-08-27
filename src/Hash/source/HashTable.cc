@@ -17,7 +17,6 @@
 #include "HashTable.h"
 #include "Errors.h"
 
-using namespace std;
 #include <iostream>
 
 void HashTable :: EnterReader (HashTableView &myView) {

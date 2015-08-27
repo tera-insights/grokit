@@ -33,15 +33,15 @@ private:
 protected:
 
     // get the number of bytes stored in the column
-    int GetColLength ();
+    uint64_t GetColLength ();
 
     // tell the column we are done iterating, and that it should be truncated at numBytes
-    void Done (int numBytes);
+    void Done (uint64_t numBytes);
 
     // tell the column that we want to detach from any shallow copies (if they exist) by
     // making a deep copy
     //void Detach ();
 
     // ask the column for more data; this call goes straight through to the storage
-    char *GetNewData (int posToStartFrom, int &numBytesRequested);
+    char *GetNewData (uint64_t posToStartFrom, uint64_t &numBytesRequested);
 

@@ -49,10 +49,10 @@ private:
     Iterator it;
 
     // pattern start count
-    unsigned int startCount;
+    uint64_t startCount;
 
     // pattern end count
-    unsigned int endCount;
+    uint64_t endCount;
 
     // while Insert() if pattern received is same as the last one, just increment the count
     // so keep track of last seen bitstring pattern
@@ -65,22 +65,22 @@ private:
 
     // num tuples in local buffer;
     // This is not total count when you have fragments
-    int numTuples;
+    uint64_t numTuples;
 
     // tuple start count, this is local to every BStringIterator, not to be copied or swapped
     // this will essetially be helping to remove usage of AtUnwrittenByte
-    int tupleCount;
+    uint64_t tupleCount;
 
     // This keep information about num tuples for all fragments and objlen
     FragmentsTuples fragTuples;
 
     // Below variables are for checkpointing only
-    unsigned int c_startCount;
-    unsigned int c_endCount;
+    uint64_t c_startCount;
+    uint64_t c_endCount;
     Bitstring c_mLastSeenPattern;
     bool c_onceWritten;
-    int c_numTuples;
-    int c_tupleCount;
+    uint64_t c_numTuples;
+    uint64_t c_tupleCount;
 
 public:
 
@@ -98,16 +98,16 @@ public:
 
     3) DO NOT use it for reading purpose
   */
-    BStringIterator (Column &iterateMe, Bitstring& pattern, uint64_t sizeofPattern = 0, int stepSize = COLUMN_ITERATOR_STEP);
+    BStringIterator (Column &iterateMe, Bitstring& pattern, uint64_t sizeofPattern = 0, uint64_t stepSize = COLUMN_ITERATOR_STEP);
 
   /**
     This is read only constructor, size of object is read from the header of column
     Don't use it if you plan to Insert(), because it has no idea of object length to write
   */
-    BStringIterator (Column &iterateMe, int _numTuples, int _objLen = 8 /*Sarvesh remove default, temp*/, int stepSize = COLUMN_ITERATOR_STEP);
+    BStringIterator (Column &iterateMe, uint64_t _numTuples, uint64_t _objLen = 8 /*Sarvesh remove default, temp*/, uint64_t stepSize = COLUMN_ITERATOR_STEP);
 
     // This iterates from [fragmentStart, fragmentEnd]
-    // BStringIterator (Column &iterateMe, int fragmentStart, int fragmentEnd, int _numTuples, int _objLen, int stepSize = COLUMN_ITERATOR_STEP);
+    // BStringIterator (Column &iterateMe, uint64_t fragmentStart, uint64_t fragmentEnd, uint64_t _numTuples, uint64_t _objLen, uint64_t stepSize = COLUMN_ITERATOR_STEP);
 
     // To support user to create black object and CreateDeepCopy
     BStringIterator ():
@@ -150,8 +150,8 @@ public:
 
     // returns true if the object under the cursor has never been written to and so
     // it should not be read (it is undefined what happens if you read it)
-    int AtUnwrittenByte ();
-    int AtEndOfColumn();
+    uint64_t AtUnwrittenByte ();
+    uint64_t AtEndOfColumn();
 
     // returns the data object at the current position in the column...
     const Bitstring& GetCurrent ();
@@ -171,7 +171,7 @@ public:
 
     // Get number of tuples
     // This is not total count when you have fragments
-    int GetNumTuples ();
+    uint64_t GetNumTuples ();
 
 /**
   create deep copy from 'fromMe'. Everything is created new down the hierarchy,
@@ -205,7 +205,7 @@ public:
     void MarkFragment (bool firstTime);
     void MarkFragmentTuples ();
 
-    void SetFragmentRange(int start, int end);
+    void SetFragmentRange(uint64_t start, uint64_t end);
 
     void SetFragmentsTuples (FragmentsTuples& _tuples);
 
@@ -227,17 +227,17 @@ void swap( BStringIterator & a, BStringIterator & b ) {
     a.swap(b);
 }
 
-inline int BStringIterator :: AtUnwrittenByte () {
+inline uint64_t BStringIterator :: AtUnwrittenByte () {
     return it.AtUnwrittenByte ();
 }
 
-inline int BStringIterator :: AtEndOfColumn () {
+inline uint64_t BStringIterator :: AtEndOfColumn () {
     return (numTuples <= tupleCount);
 }
 
 
 inline
-int BStringIterator::GetNumTuples () {
+uint64_t BStringIterator::GetNumTuples () {
     return numTuples;
 }
 
@@ -261,7 +261,7 @@ void BStringIterator :: Insert (Bitstring &addMe) {
 
     assert (it.IsWriteOnly() == true);
 
-    int objLen = it.GetObjLen();
+    uint64_t objLen = it.GetObjLen();
 
     // If pattern is same, update the count and return
     if (onceWritten && mLastSeenPattern == addMe) {
@@ -276,16 +276,16 @@ void BStringIterator :: Insert (Bitstring &addMe) {
                 break;
 
             case 8:
-                if (startCount < (unsigned int)-1) {
+                if (startCount < (uint64_t)-1) {
                     startCount++;
-                    BString32_32 b32((unsigned int)(addMe.GetInt64()), (unsigned int)startCount);
+                    BString32_32 b32((uint64_t)(addMe.GetInt64()), (uint64_t)startCount);
                     *((BString32_32 *) it.GetData()) = b32;
                     return;
                 }
                 break;
 
             case 12:
-                if (startCount < (unsigned int)-1) {
+                if (startCount < (uint64_t)-1) {
                     startCount++;
                     BString32_64 b64(addMe.GetInt64(), startCount);
                     *((BString32_64 *) it.GetData()) = b64;
@@ -320,7 +320,7 @@ void BStringIterator :: Insert (Bitstring &addMe) {
 
         case 8:
             {
-                BString32_32 b32((unsigned int)(addMe.GetInt64()), 0);
+                BString32_32 b32((uint64_t)(addMe.GetInt64()), 0);
                 *((BString32_32 *) it.GetData()) = b32;
                 break;
             }
@@ -369,7 +369,7 @@ inline
 void BStringIterator :: SetCount () {
 
     char* myData = it.GetData();
-    int objLen = it.GetObjLen();
+    uint64_t objLen = it.GetObjLen();
 
     startCount = 0;
     if (objLen == 4) {

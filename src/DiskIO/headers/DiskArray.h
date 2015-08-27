@@ -70,10 +70,10 @@ class DiskArray : public EventProcessor {
 
         // method to allocate pages. Behaves atomically. Should be called to
         // determine where to write info.
-        off_t AllocatePages(off_t _noPages, int relID);
+        off_t AllocatePages(off_t _noPages, uint64_t relID);
 
         // method to delete all content of a relation
-        void DeleteRelationSpace(int relID);
+        void DeleteRelationSpace(uint64_t relID);
 
         // function to force the array to writte metadata on disk
         // should be done at the end of each bulk load (pointless before sice we want the whole bulkload to succeed)
@@ -83,7 +83,7 @@ class DiskArray : public EventProcessor {
         void Flush(sqlite3* db){ array->Flush(db); }
 
         // arrayID access
-        int getArrayID(void){ return array->getArrayID(); }
+        uint64_t getArrayID(void){ return array->getArrayID(); }
 
         // ask about the amount of IO
         off_t NumPagesProcessed(void);
@@ -99,11 +99,11 @@ inline off_t DiskArray::NumPagesDelta(void){
     return array->NumPagesDelta();
 }
 
-inline void DiskArray::DeleteRelationSpace(int relID){
+inline void DiskArray::DeleteRelationSpace(uint64_t relID){
     array->DeleteRelationSpace(relID);
 }
 
-inline off_t DiskArray::AllocatePages(off_t _noPages, int relID){
+inline off_t DiskArray::AllocatePages(off_t _noPages, uint64_t relID){
     return array->AllocatePages(_noPages,relID);
 }
 

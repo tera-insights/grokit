@@ -33,15 +33,15 @@ class RawStorageUnit {
 public:
     void* data;
     // This is size in pages. For last page, there may be some unused space
-    int sizeInPages;
+    uint64_t sizeInPages;
 
     // Size in bytes is added for testing purpose only, and can be remove later
-    int sizeInBytes;
+    uint64_t sizeInBytes;
 
     // For compatibility for TwoWayList
     RawStorageUnit() {}
 
-    RawStorageUnit(void* _data, int _pages, int _bytes):
+    RawStorageUnit(void* _data, uint64_t _pages, uint64_t _bytes):
         data(_data), sizeInPages(_pages), sizeInBytes(_bytes) {}
 
     void swap(RawStorageUnit& o){

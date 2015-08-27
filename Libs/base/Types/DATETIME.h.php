@@ -13,6 +13,7 @@ function DATETIME() {
 
     $system_headers[] = 'boost/date_time/posix_time/posix_time.hpp';
     $system_headers[] = 'boost/date_time/gregorian/gregorian.hpp';
+    $system_headers[] = 'boost/date_time/dst_rules.hpp';
     $libraries[] = 'boost_date_time';
 
     $globalContent = "";
@@ -110,6 +111,19 @@ public:
 
 <?  $methods[] = ['IsDST', [], 'BASE::BOOL', true]; ?>
     bool IsDST(void) const;
+<?  $methods[] = ['IsDSTBoundary', [], 'BASE::BOOL', true]; ?>
+    bool IsDSTBoundary(void) const;
+
+<?  $methods[] = ['GetDSTBoundary', [], 'BASE::BYTE', true]; ?>
+    // Returns -1 if starting DST this day,
+    // 1 if ending DST this day,
+    // and 0 otherwise
+    int8_t GetDSTBoundary(void) const;
+
+    // Returns a new DATETIME with the time component set to 00:00:00
+    // and the day set to 1
+<?  $methods[] = ['ByMonth', [], 'BASE::DATETIME', true]; ?>
+    DATETIME ByMonth(void) const;
 
     // Comparisons
 <?  $bin_operators[] = '==';  ?>
@@ -156,15 +170,17 @@ private:
 
 inline
 constexpr int8_t DATETIME::DaysInMonth(int16_t year, int8_t month) {
-    return ((month != 1) || (year % 4 != 0) || (year % 100 == 0 && year % 400 != 0)) ?
-        GetDPM(month) : GetDPM(month) + 1;
+    return (((month - 1) != 1) || (year % 4 != 0) || (year % 100 == 0 && year % 400 != 0)) ?
+        GetDPM(month - 1) : GetDPM(month - 1) + 1;
 }
 
 inline
 void DATETIME :: Set( int16_t year, int8_t month, int8_t day, int8_t hour, int8_t minute, int8_t second ) {
+
+
     tm dtime;
     dtime.tm_year = year - TM_YEAR_OFFSET;
-    dtime.tm_mon = month;
+    dtime.tm_mon = month - 1;  // tm struct month is in range [0, 11]
     dtime.tm_mday = day;
     dtime.tm_hour = hour;
     dtime.tm_min = minute;
@@ -250,17 +266,35 @@ inline
 int8_t DATETIME :: DaysInMonth(void) const {
     auto temp = boost::posix_time::from_time_t(static_cast<time_t>(ctime));
     auto ymd = temp.date().year_month_day();
-    return DATETIME::DaysInMonth(ymd.year, ymd.month - 1);
+    return DATETIME::DaysInMonth(ymd.year, ymd.month);
 }
 
 inline
 bool DATETIME :: IsDST(void) const {
-    tm dtime;
-    time_t tmp = static_cast<time_t>(ctime);
-    gmtime_r(&tmp, &dtime);
-    mktime(&dtime);
+    auto temp = boost::posix_time::from_time_t(static_cast<time_t>(ctime));
+    return boost::posix_time::us_dst::local_is_dst(temp.date(), temp.time_of_day()) ==
+        boost::date_time::is_in_dst;
+}
 
-    return dtime.tm_isdst;
+inline
+bool DATETIME :: IsDSTBoundary(void) const {
+    auto dtime = boost::posix_time::from_time_t(static_cast<time_t>(ctime));
+    return boost::posix_time::us_dst::is_dst_boundary_day(dtime.date());
+}
+
+inline
+int8_t DATETIME :: GetDSTBoundary(void) const {
+    using boost::posix_time::us_dst;
+
+    auto dtime = boost::posix_time::from_time_t(static_cast<time_t>(ctime));
+    auto date = dtime.date();
+
+    if (date == us_dst::local_dst_start_day(date.year()))
+        return -1;
+    else if (date == us_dst::local_dst_end_day(date.year()))
+        return 1;
+    else
+        return 0;
 }
 
 inline constexpr
@@ -291,6 +325,13 @@ bool DATETIME :: IsValid(void) const {
 inline constexpr
 bool DATETIME :: IsNull(void) const {
     return ctime < 0; //>
+}
+
+inline
+DATETIME DATETIME :: ByMonth(void) const {
+    auto temp = boost::posix_time::from_time_t(static_cast<time_t>(ctime));
+    auto date = temp.date();
+    return DATETIME(date.year(), date.month(), 1, 0, 0, 0);
 }
 
 inline constexpr

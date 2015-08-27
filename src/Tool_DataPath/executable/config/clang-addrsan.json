@@ -1,0 +1,24 @@
+{
+  "general" : {
+    "debug" : false
+  },
+  "c++": {
+    "compiler" : "clang++",
+    "standard" : "c++11",
+    "stdlib" : "libstdc++",
+    "flags" : [
+      "-fPIC",
+      "-g",
+      "-D_FILE_OFFSET_BITS=64",
+      "-DDEBUG",
+      "-fsanitize=address"
+    ],
+    "optimizations" : [
+      "-O3",
+      "-march=native"
+    ],
+    "linkflags": [
+      "-fsanitize=address"
+    ]
+  }
+}

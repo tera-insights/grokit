@@ -150,7 +150,7 @@ EOT
 , [ 'int', 'int', 'text', ], [ ]);
 ?>
 ;
-        for (int i=0; i<meta.HDNo; i++){
+        for (uint64_t i=0; i<meta.HDNo; i++){
             char fileName[1000];
             sprintf(fileName, pattern.c_str(), i+1);
 	    HDThread::CreateStripe(fileName, meta.arrayHash, i, MMAP_PAGE_SIZE << meta.pageMultExp);
@@ -200,7 +200,7 @@ EOT
 ?>
 {
         HDThread hd(fileName, meta.arrayHash, myInterface, DISK_OPERATION_STATISTICS_INTERVAL, isReadOnly);
-	int diskID = hd.DiskNo();
+	uint64_t diskID = hd.DiskNo();
         hd.ForkAndSpin();
 	FATALIF( hds[diskID].IsValid(), "Stripe %d already initized", diskID);
         hds[diskID].swap(hd); // put the hd in the vector
@@ -211,7 +211,7 @@ grokit\sql_end_statement_table();
 ;
 
     // check that all the stripes are correctly initialized
-    for (int i=0; i<meta.HDNo; i++){
+    for (uint64_t i=0; i<meta.HDNo; i++){
     	FATALIF( !hds[i].IsValid(), "Stripe %d is not initized", i);
     }
 

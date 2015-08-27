@@ -54,6 +54,9 @@ class Chunk {
 
         void CreateBitstringFromCol (Column& col);
 
+        // make the chunk readonly
+        void MakeReadonly();
+
         // This copies the chunk.  The copy is generally a fast, shallow
         // one (Column.copy is called for each of the columns in the chunk,
         // and since columns are read-only, Column.copy is shallow and fast).

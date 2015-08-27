@@ -208,6 +208,15 @@ namespace grokit {
             }
         }
 
+        public function getDefinedType($hash) {
+            if( array_key_exists($hash, $this->typeCache) ) {
+                return $this->typeCache[$hash];
+            }
+            else {
+                throw new Exception("No type with hash {$hash} defined");
+            }
+        }
+
         public function lookupType( $name, array &$args = [], $ohash = null) {
             $oName = $name;
             $name = $this->normalizeName($name);
@@ -249,6 +258,11 @@ namespace grokit {
 
             $buffer = "";
             $res = self::CallGeneratorType( $name, $args, $buffer );
+
+            if (is_typeinfo($res)) {
+                return $res;
+            }
+
             grokit_logic_assert(count($this->buffer) > 0,
                 "Called generator for a type but the buffer is empty!");
 
@@ -763,6 +777,12 @@ namespace grokit {
 
             $res = call_user_func_array( $func, $args );
 
+            $cont = ob_get_clean();
+
+            if (is_typeinfo($res)) {
+                return $res;
+            }
+
             // Ensure the return value was correct and create the info object
             grokit_assert( is_array($res), 'Malformed return value from generator for ' .
                 $name . ', got ' . gettype($res) . ' instead of an array' );
@@ -776,8 +796,6 @@ namespace grokit {
                 $tName = self::JoinNamespace($ns, $res['name']);
             }
             $res['name'] = $tName;
-
-            $cont = ob_get_clean();
 
             if( array_key_exists( 'system_headers', $res ) ) {
                 $sysHeaders = $res['system_headers'];
@@ -914,6 +932,8 @@ namespace grokit {
                 $extras = [
                     'binary_operators' => [ '||', '&&' ],
                     'unary_operators' => [ '!' ],
+                    'properties' => ['_primative_'],
+                    'describe_json' => DescribeJson('bool'),
                     ];
                 $boolDT = new DataType( $boolHash, 'BASE::BOOL', 'bool', $extras, [[]] );
 
@@ -1009,7 +1029,34 @@ namespace {
         return $info;
     }
 
+    /**
+     * Determines if a type has been defined depending on a set of
+     * characteristics that determine uniqueness.
+     *
+     * @param $characteristics an array containing uniqueness characteristics
+     * for the type.
+     * @param $hash output parameter for the unique hash for the type
+     * @param $type output parameter for the type information object for the
+     * type, if it is defined.
+     *
+     * @returns true if the type was defined, false otherwise
+     */
+    function typeDefined( $characteristics, &$hash, &$type ) {
+        $libman = & \grokit\LibraryManager::GetLibraryManager();
+        $hash = \grokit\hashComplex($characteristics);
+
+        if($libman->typeDefined($hash)) {
+            $type = $libman->getDefinedType($hash);
+            return true;
+        }
+
+        return false;
+    }
+
     function lookupType( $name, array $t_args = null, $alias = null ) {
+        if (is_datatype($name))
+            return $name->lookup();
+
         $t_args = is_null($t_args) ? [] : $t_args;
         $args = [ $t_args ];
         return _lookupType( $name, $args, $alias );
@@ -1154,8 +1201,13 @@ namespace {
         return $info;
     }
 
-    function lookupGIST( $name, $t_args, $output, $sargs, $alias = null ) {
-        grokit_logic_error( __FUNCTION__ . ' not yet implemented' );
+    function lookupGIST( $name, $t_args, $output, $sargs, $alias = null, $hash = null ) {
+        $args = [ $t_args, $output, $sargs ];
+        $info = _lookupType( $name, $args, $alias, $hash );
+        grokit_assert( $info->isGIST(),
+            'Tried looking up ' . $name . ' as a GIST, got a ' . $info->kind() . ' instead');
+
+        return $info;
     }
 
     function lookupGSE( $name, $t_args, $alias = null ) {
@@ -1174,6 +1226,13 @@ namespace {
             'Tried looking up ' . $name . ' as a GI, got a ' . $info->kind() . ' instead');
 
         return $info;
+    }
+
+    // Returns the correct type definition for hashed types.
+    function hashName( $name ) {
+        $hasher = hash_init( 'sha256' );
+        hash_update( $hasher, $name );
+        return '0x' . substr(hash_final($hasher), 0, 16) . 'ULL';
     }
 }
 

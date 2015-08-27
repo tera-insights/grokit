@@ -30,7 +30,6 @@
 */
 
 class CPUWorker : public EventProcessor {
-
 public:
 
 	// constructor (creates the implementation object)

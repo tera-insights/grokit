@@ -168,7 +168,7 @@ Json::Value LT_GIST::GetJson(){
   out[J_NAME] = info.getName();
   out[J_TYPE] = JN_GIST_WP;
 
-  out[J_ARGS] = MapToJson(infoMap);
+  out[J_PAYLOAD] = MapToJson(infoMap);
 
   SlotToQuerySet reverse;
   AttributesToQuerySet(used, reverse);

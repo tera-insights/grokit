@@ -20,14 +20,14 @@
     included by all programs that depend on specifics of a machine */
 
 // the size of a word in bytes. Used to ensure alignment
-#define WORDSIZE sizeof(int)
+//#define WORDSIZE sizeof(int)
 
 // macro to convert number of bytes to words
-#define BYTES_TO_WORDS(x)			\
+//  #define BYTES_TO_WORDS(x)			\
 	( (x) % WORDSIZE == 0? (x)/WORDSIZE : (x)/WORDSIZE+1 )
 
 // macro to transform number of bytes to number of bytes that are a multiple of
-#define BYTES_TO_WORD_ALIGNED(x)		\
+//#define BYTES_TO_WORD_ALIGNED(x)		\
 	(BYTES_TO_WORDS(x)*WORDSIZE)
 
 #endif //_MACHINE_H_

@@ -2,12 +2,12 @@
 #include "Errors.h"
 #include "MmapAllocator.h"
 
-MMappedCompressibleStorage::MMappedCompressibleStorage(void* _data, int _dataSize, bool isCompressed){
+MMappedCompressibleStorage::MMappedCompressibleStorage(void* _data, uint64_t _dataSize, bool isCompressed){
 	storage = new CompressibleStorageUnit(_data, _dataSize, isCompressed);
 }
 
 char* MMappedCompressibleStorage::
-GetData (int posToStartFrom, int &numBytesRequested, int haveWritten){
+GetData (uint64_t posToStartFrom, uint64_t &numBytesRequested, uint64_t haveWritten){
 
 	FATALIF( haveWritten, "You are not supposed to write in this kind of storage");
 
@@ -49,7 +49,7 @@ void MMappedCompressibleStorage :: Finalize () {
 	delete storage;
 }
 
-ColumnStorage *MMappedCompressibleStorage :: Done (int num, int haveWritten) {
+ColumnStorage *MMappedCompressibleStorage :: Done (uint64_t num, uint64_t haveWritten) {
 
 	// What this is supposed to do for our case?
 	return 0;
@@ -61,11 +61,11 @@ void MMappedCompressibleStorage :: Detach () {
 
 }
 
-int MMappedCompressibleStorage :: GetNumBytes () {
+uint64_t MMappedCompressibleStorage :: GetNumBytes () {
   return storage->num_bytes;
 }
 
-int MMappedCompressibleStorage :: GetNumCompressedBytes () {
+uint64_t MMappedCompressibleStorage :: GetNumCompressedBytes () {
   return storage->num_compressed_bytes;
 }
 

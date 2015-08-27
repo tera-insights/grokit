@@ -52,27 +52,119 @@ MMappedStorage *MMappedStorage :: CreateShallowCopy () {
 	return returnVal;
 };
 
-MMappedStorage :: MMappedStorage (int numaNode) {
-
+MMappedStorage :: MMappedStorage (uint64_t numaNode) :
+    ColumnStorage(),
+    storage(),
+    numBytes(0),
+    numCompressedBytes(0),
+    bridge(),
 	// remember that we are empty
-	numBytes = 0;
-	numCompressedBytes = 0;
-	decompress = false;
-	numa = numaNode;
-	bridgeEmpty = true;
-
+    bridgeEmpty(true),
+    bridgeSize(0),
+    cstorage(),
+    decompress(false),
 	// this can be treated as write only storage, because we dont have anything to read
-	isWriteMode = true;
+    isWriteMode(true),
+    numa(numaNode)
+{
 }
 
 
-char *MMappedStorage :: GetData (int posToStartFrom, int &numBytesRequested) {
+	/******** THIS IS AN EXPERIMENTAL VERSION THAT HAS A PROBLEM 
+char *MMappedStorage :: GetData (uint64_t posToStartFrom, uint64_t &numBytesRequested) {
+	// super fast path: the request is within the current storage element and it fits
+	// completely in
+	// 
+	if (storage.Current ().start <= posToStartFrom && storage.Current ().end > posToStartFrom+numBytesRequested)
+		return storage.Current ().bytes + (posToStartFrom - storage.Current ().start);
 
-	/*-------------------- Below new added code for compression ---------------*/	
+	// This is special case handled for 80 % of cases where we are reading from disk and size of storage unit is
+	// one. It is fast path. It helps to store pointer while doing CheckpointStore in JoinMerge
+
+	if (storage.Length () == 1 && !isWriteMode && storage.Current ().start <= posToStartFrom && storage.Current ().end > posToStartFrom) {
+		if (posToStartFrom + numBytesRequested - 1 <= storage.Current ().end) {
+			numBytesRequested = storage.Current ().end - posToStartFrom;
+		}
+		return storage.Current ().bytes + (posToStartFrom - storage.Current ().start);
+	}
+
+	// first, if we have a "bridge" and we have written to it, then copy the written bytes
+	// the bridge can be written at any time so we can delay this
+	if (!bridgeEmpty && isWriteMode) {
+		storage.MoveToStart ();
+		while (storage.RightLength ()) {
+			storage.Current ().CopyOverlappingContent (bridge);
+			storage.Advance ();
+		}
+	}
+	bridgeEmpty = true;
+
+	// now, go through the list again and see if any memory block covers the request
+	storage.MoveToStart ();
+	while (storage.RightLength ()) {
+		// see if the current entry covers the requet
+		if (storage.Current ().start <= posToStartFrom &&
+		    storage.Current ().end >= posToStartFrom) {
+			// it does, so see if it totally covers it
+			if (posToStartFrom + numBytesRequested - 1 <= storage.Current ().end) {
+				// tell the caller the actual number of bytes he can use
+				numBytesRequested = storage.Current ().end - posToStartFrom + 1;
+				return storage.Current ().bytes + (posToStartFrom - storage.Current ().start);
+			// the page does not totally cover the request, so create a bridge
+			// that is a contiguous block of storage covering the entire request
+			} else {
+			  FATALIF(numBytesRequested>MMAP_PAGE_SIZE, "The request is too large");
+			  if (bridge.bytes == NULL) // need a bridge so make sure we have one
+			    bridge.bytes = (char *) mmap_alloc (MMAP_PAGE_SIZE, numa); // larage bridge.
+
+			  bridge.start = posToStartFrom;
+			  bridge.end = posToStartFrom + numBytesRequested - 1;
+			  bridgeEmpty = false;
+
+			  if (isWriteMode){
+			  	StorageUnit temp;
+			  	temp.start = storage.Current().end+1; // start just after end of the previous one
+			  	temp.end = temp.start + MMAP_PAGE_SIZE - 1; // end one page latter (inclusive)
+
+				// alloc the new chunk and then insert it!
+			  	temp.bytes = (char *)mmap_alloc(MMAP_PAGE_SIZE, numa);
+			  	storage.Append(temp);
+			  } else { // reading mode
+				while (storage.RightLength ()) {
+					bridge.CopyOverlappingContent (storage.Current ());
+					storage.Advance ();
+				}
+			  }
+			  // and return the bridge!
+			  return bridge.bytes;
+			}
+		}
+		storage.Advance ();
+	}
+
+	// if we got here, then no existing chunk of memory covers the request; so, create it
+	// This can happen if the r'equests are alligned and we never need a bridge
+	StorageUnit temp;
+	temp.start = posToStartFrom;
+  	temp.end = temp.start + MMAP_PAGE_SIZE - 1; // end one page latter (inclusive)
+	temp.bytes = (char *) mmap_alloc (MMAP_PAGE_SIZE, numa);
+
+	// insert the new chunk of memory
+	char *returnVal = temp.bytes;
+	storage.Insert (temp);
+
+	// and get outta here!
+	return returnVal;
+}
+******************/
+
+char *MMappedStorage :: GetData (uint64_t posToStartFrom, uint64_t &numBytesRequested) {
+
+	/*-------------------- Below new added code for compression ---------------*/
 
 	// below code decompresses data and assign a one big chunk of
 	// storage unit to the decompressed data.
-	int decompressedbytes = 0;
+	uint64_t decompressedbytes = 0;
 	if (decompress) {
 		// We can not decompress in place for writing case, since we need whole data for writing on disk
 		// so just decompress in place for read only case
@@ -84,10 +176,10 @@ char *MMappedStorage :: GetData (int posToStartFrom, int &numBytesRequested) {
 			decompressedbytes = cstorage.DecompressUpTo(posToStartFrom+numBytesRequested);
 //#endif
 	}
-	/*-------------------- Above new added code for compression ---------------*/	
-		
+	/*-------------------- Above new added code for compression ---------------*/
+
 	// This is special case handled for 80 % of cases where we are reading from disk and size of storage unit is
-	// one. It is fast path. It helps to store pointer while doing CheckpointStore in JoinMerge	
+	// one. It is fast path. It helps to store pointer while doing CheckpointStore in JoinMerge
 
 	if (storage.Length () == 1 && !isWriteMode && storage.Current ().start <= posToStartFrom && storage.Current ().end > posToStartFrom) {
 		if (posToStartFrom + numBytesRequested - 1 > storage.Current ().end) {
@@ -112,7 +204,7 @@ char *MMappedStorage :: GetData (int posToStartFrom, int &numBytesRequested) {
 	while (storage.RightLength ()) {
 
 		// see if the current entry covers the requet
-		if (storage.Current ().start <= posToStartFrom && 
+		if (storage.Current ().start <= posToStartFrom &&
 		    storage.Current ().end >= posToStartFrom) {
 
 			// it does, so see if it totally covers it
@@ -140,18 +232,24 @@ char *MMappedStorage :: GetData (int posToStartFrom, int &numBytesRequested) {
 			}
 //#endif
 
+
 			// the page does not totally cover the request, so create a bridge
 			// that is a contiguous block of storage covering the entire request
 			} else {
-			  //FATALIF(numBytesRequested>MMAP_PAGE_SIZE, "The request is too large");
-			  if (bridge.bytes == NULL)
-			    bridge.bytes = (char *) mmap_alloc (MMAP_PAGE_SIZE, numa); // larage bridge.
-			
+        if (numBytesRequested > bridgeSize) {
+          // Deallocate previous bridge.
+          if (bridge.bytes != nullptr)
+            mmap_free(bridge.bytes);
+          // Allocate a bigger bridge to accomodate large request.
+          bridgeSize = PAGE_ALIGN(numBytesRequested);
+          bridge.bytes = (char *) mmap_alloc (bridgeSize, numa); // larage bridge.
+        }
+        FATALIF(numBytesRequested > bridgeSize, "bridge is too small");
 			  bridge.start = posToStartFrom;
 			  bridge.end = posToStartFrom + numBytesRequested - 1;
 			  bridgeEmpty = false;
-				
-				int upperEnd;
+
+				uint64_t upperEnd;
 				while (storage.RightLength ()) {
 					bridge.CopyOverlappingContent (storage.Current ());
 					upperEnd = storage.Current ().end;
@@ -170,7 +268,7 @@ char *MMappedStorage :: GetData (int posToStartFrom, int &numBytesRequested) {
 						temp.end = bridge.end;
 
 					// alloc the new chunk and then insert it!
-					temp.bytes = (char *)mmap_alloc 
+					temp.bytes = (char *)mmap_alloc
 						(temp.end - temp.start + 1, numa);
 					storage.Insert (temp);
 
@@ -180,12 +278,12 @@ char *MMappedStorage :: GetData (int posToStartFrom, int &numBytesRequested) {
 				return bridge.bytes;
 			}
 
-		} 
+		}
 
 		storage.Advance ();
-	
+
 	}
-	
+
 	// if we got here, then no existing chunk of memory covers the request; so, create it
 	StorageUnit temp;
 	temp.start = posToStartFrom;
@@ -194,7 +292,7 @@ char *MMappedStorage :: GetData (int posToStartFrom, int &numBytesRequested) {
 	  numBytesRequested = MMAP_PAGE_SIZE;
 	temp.end = posToStartFrom + numBytesRequested - 1;
 	temp.bytes = (char *) mmap_alloc (numBytesRequested, numa);
-	
+
 	// insert the new chunk of memory
 	char *returnVal = temp.bytes;
 	storage.Insert (temp);
@@ -203,7 +301,17 @@ char *MMappedStorage :: GetData (int posToStartFrom, int &numBytesRequested) {
 	return returnVal;
 }
 
-MMappedStorage *MMappedStorage :: Done (int num) {
+
+
+void MMappedStorage :: MakeReadonly(){
+	storage.MoveToStart ();
+	while (storage.RightLength ()) {
+		storage.Current ().MakeReadonly();
+		storage.Advance ();
+	}
+}
+
+MMappedStorage *MMappedStorage :: Done (uint64_t num) {
 
 	// first, if we have a "bridge" and we have written to it, then copy the written bytes
 	if (!bridgeEmpty && isWriteMode) {
@@ -215,8 +323,12 @@ MMappedStorage *MMappedStorage :: Done (int num) {
 	}
 	bridgeEmpty = true;
 
+	// make all the storage units Readonly since we do not allow the chunk to be changed 
+	// beyound this point
+	MakeReadonly();
+
 	// truncate the column
-	numBytes = num;	
+	numBytes = num;
 
 	// change the mode to read only
 	isWriteMode = false;
@@ -252,7 +364,7 @@ void MMappedStorage :: Detach () {
 }
 #endif
 
-MMappedStorage *MMappedStorage :: CreatePartialDeepCopy (int position) {
+MMappedStorage *MMappedStorage :: CreatePartialDeepCopy (uint64_t position) {
 
 	// create the guy we are gonna return
 	// create new guy into same numa node until we enhance it not to
@@ -285,7 +397,7 @@ MMappedStorage *MMappedStorage :: CreatePartialDeepCopy (int position) {
 	return returnVal;
 }
 
-int MMappedStorage :: GetNumBytes () {
+uint64_t MMappedStorage :: GetNumBytes () {
 	return numBytes;
 }
 
@@ -362,7 +474,7 @@ void MMappedStorage :: GetUncompressed(RawStorageList& rawUncompressedList) {
 		StorageUnit& temp = storage.Current();
 		// It may be possible that allocated chunk is bigger than actual data in it, possible
 		// for last chunk in the list. In that case, correct the length
-		int len = 0;
+		uint64_t len = 0;
 		if (temp.end > numBytes)
 			len = numBytes - temp.start;
 		else
@@ -373,16 +485,24 @@ void MMappedStorage :: GetUncompressed(RawStorageList& rawUncompressedList) {
 	}
 }
 
-MMappedStorage :: MMappedStorage (void *myData, int sizeDecompressed, int sizeCompressed, int numaNode) {
+MMappedStorage :: MMappedStorage (void *myData, uint64_t sizeDecompressed, uint64_t sizeCompressed, uint64_t numaNode) :
+    ColumnStorage(),
+    storage(),
+    numBytes(sizeDecompressed),
+    numCompressedBytes(0),
+    bridge(),
+    bridgeEmpty(true),
+    bridgeSize(0),
+    cstorage(),
+    decompress(false),
+    isWriteMode(false),
+    numa(numaNode)
+{
 
 	// It's always read mode, even if you pass the blank allocated storage
 	// It is enforced to create empty MMapped storage constructor and it ensures
 	// creation of storage with appropriate page sizes
-	isWriteMode = false;
-	numa = numaNode;
-	bridgeEmpty = true;
-	numBytes = sizeDecompressed;
-	
+
 	if (sizeCompressed == 0) { /* not compressed */
 		// create a storage unit to store the data we have been passed
 		StorageUnit temp(((char *) myData), 0, (sizeDecompressed - 1)); // compressed or not we get a single storage unit
@@ -404,14 +524,19 @@ MMappedStorage :: ~MMappedStorage () {
   // everything is destroied automagically
 }
 
-MMappedStorage :: MMappedStorage (void *myData, int preEmptyPages, int numPages, int postEmptyPages, int numaNode) {
-
-	isWriteMode = false;
-	numa = numaNode;
-	decompress = false; // not compressed
-	bridgeEmpty = true;
-	numBytes = (preEmptyPages + postEmptyPages + numPages) * MMAP_PAGE_SIZE;
-
+MMappedStorage :: MMappedStorage (void *myData, uint64_t preEmptyPages, uint64_t numPages, uint64_t postEmptyPages, uint64_t numaNode) :
+    ColumnStorage(),
+    storage(),
+    numBytes((preEmptyPages + postEmptyPages + numPages) * MMAP_PAGE_SIZE),
+    numCompressedBytes(0),
+    bridge(),
+    bridgeEmpty(true),
+    bridgeSize(0),
+    cstorage(),
+    decompress(false),
+    isWriteMode(false),
+    numa(numaNode)
+{
 	// Pre empty pages in storage
 	StorageUnit temp1(NULL, 0, preEmptyPages * MMAP_PAGE_SIZE);
 	storage.Insert (temp1);

@@ -29,12 +29,15 @@ class CPUWorkerPool {
 
 private:
 
+	static const constexpr size_t DEFAULT_STACK_SIZE = 64L * 1024L * 1024L; // 64 MiB
+
+
 	CPUWorkerList myWorkers;
 
 public:
 
 	// set up all of the worker threads and puts them into the list myWorkers
-	CPUWorkerPool (int numWorkers);
+	CPUWorkerPool (int numWorkers, size_t stack_size = DEFAULT_STACK_SIZE);
 
 	// die
 	virtual ~CPUWorkerPool ();

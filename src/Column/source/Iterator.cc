@@ -22,8 +22,8 @@ using namespace std;
 #include "Swap.h"
 
 Iterator :: Iterator (Column &iterateMe,
-        int minByteToGetLength,
-        int stepSize) :
+        uint64_t minByteToGetLength,
+        uint64_t stepSize) :
     myData (NULL),
     bytesToRequest (stepSize),
     curPosInColumn (0),
@@ -60,10 +60,10 @@ Iterator :: Iterator (Column &iterateMe,
 }
 
 Iterator :: Iterator (Column &iterateMe,
-        int fragmentStart,
-        int fragmentEnd,
-        int minByteToGetLength,
-        int stepSize) :
+        uint64_t fragmentStart,
+        uint64_t fragmentEnd,
+        uint64_t minByteToGetLength,
+        uint64_t stepSize) :
     myData (NULL),
     bytesToRequest (stepSize),
     curPosInColumn (0),
@@ -96,7 +96,7 @@ Iterator :: Iterator (Column &iterateMe,
         return;
 
     // get enough storage to get the object length
-    int requestLen = stepSize;
+    uint64_t requestLen = stepSize;
     myData = myColumn.GetNewData (curPosInColumn, requestLen);
     firstInvalidByte = curPosInColumn + requestLen;
 }
@@ -108,13 +108,13 @@ void Iterator::Restart(void){
     myData = myColumn.GetNewData (curPosInColumn, firstInvalidByte);
 }
 
-void Iterator :: SetFragmentRange (int start, int end) {
+void Iterator :: SetFragmentRange (uint64_t start, uint64_t end) {
 
     assert(myColumn.GetFragments().IsValid());
     curPosInColumn = myColumn.GetFragments().GetStartPosition(start);
 
     // get enough storage to get the object length
-    int requestLen = bytesToRequest;
+    uint64_t requestLen = bytesToRequest;
     myData = myColumn.GetNewData (curPosInColumn, requestLen);
     firstInvalidByte = curPosInColumn + requestLen;
 }
@@ -132,9 +132,9 @@ Iterator :: Iterator () :
 {
 }
 
-void Iterator :: EnsureFirstObjectSpace (int len) {
+void Iterator :: EnsureFirstObjectSpace (uint64_t len) {
 
-    int neededSpace = objLen;
+    uint64_t neededSpace = objLen;
     // For some cases we need to make sure space exists for asked number of bytes
     if (len != -1)
         neededSpace = len;
@@ -229,7 +229,7 @@ void Iterator :: CreateDeepCopy (Iterator& fromMe) {
     myColumn.swap(newCol);
 
     // update myData pointer
-    int requestLen = firstInvalidByte - curPosInColumn;
+    uint64_t requestLen = firstInvalidByte - curPosInColumn;
     myData = myColumn.GetNewData (curPosInColumn, requestLen);
     //firstInvalidByte += requestLen;
     firstInvalidByte = curPosInColumn + requestLen;
@@ -293,7 +293,7 @@ void Iterator :: ConvertFromCol(Column& realColumn) {
     if (colLength < myMinByteToGetLength)
         return;
 
-    int requestLen = firstInvalidByte;
+    uint64_t requestLen = firstInvalidByte;
     if (colLength < requestLen)
         requestLen = colLength;
     // get enough storage to get the object length

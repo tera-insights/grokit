@@ -46,8 +46,24 @@
 #define SYS_PAGE_SIZE (1ULL<<12) // 4K PAGES
 #endif
 
+/* When memory is allocated, it is set to unusable to ensure
+   there is no way to use unallocated memory */
+#ifdef USE_MEMORY_PROTECTION
+#define SYS_MMAP_ALLOC(size)			\
+  mmap(NULL, size, PROT_NONE, MAP_FLAGS, 0, 0)
+#else
 #define SYS_MMAP_ALLOC(size)			\
   mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_FLAGS, 0, 0)
+#endif
+// change the protection of a memory region to prot
+// prot bust be PROT_NONE or a combination of PROT_READ and PROT_WRITE
+#ifdef USE_MEMORY_PROTECTION
+#define SYS_MMAP_PROT(pointer, size, prot)      \
+  mprotect( pointer, size, prot)
+#else
+#define SYS_MMAP_PROT(pointer, size, prot)  0 // so that the error does not get triggered
+#endif
+
 #define SYS_MMAP_CHECK(pointer)			\
   (pointer != MAP_FAILED)
 #define SYS_MMAP_FREE(pointer, size)			\
@@ -79,6 +95,7 @@
 #define MMAP_PAGE_SIZE (1<<ALLOC_PAGE_SIZE_EXPONENT)
 #define PAGES_TO_BYTES(x) (((size_t)x) << ALLOC_PAGE_SIZE_EXPONENT)
 #define BYTES_TO_PAGES(x)  ( (PAGES_TO_BYTES((x)>>ALLOC_PAGE_SIZE_EXPONENT) == (x)) ? ((x)>>ALLOC_PAGE_SIZE_EXPONENT) : (((x)>>ALLOC_PAGE_SIZE_EXPONENT)+1))
+#define PAGE_ALIGN(x) PAGES_TO_BYTES(BYTES_TO_PAGES(x))
 
 // macros to provide the low level memory allocation from teh system
 
@@ -97,9 +114,21 @@
 // the argument is the amount to allocate
 // If node is specified, the system tries to allocate memory from a specific numa node
 // To avoid unnecessary complications, this is just a preference
+// 
+// This function will make the memory writable (but not readable)
+// a separate call to mmap_prot_read is needed to make is readable
 extern void* mmap_alloc_imp(size_t noBytes, int node = NUMA_ALL_NODES, const char* file=NULL, int line = -1);
 
 #define mmap_alloc(numBytes,node) mmap_alloc_imp(numBytes,node,__FILE__,__LINE__)
+
+
+// change protection for a memory region to read. This has to be alligned
+extern void mmap_prot_read_imp(void* ptr, const char* file=NULL, int line = -1);
+#define mmap_prot_read(ptr) mmap_prot_read_imp(ptr,__FILE__,__LINE__ )
+
+// change protection for a memory region to read-write. This has to be alligned
+extern void mmap_prot_readwrite_imp(void* ptr, const char* file=NULL, int line = -1);
+#define mmap_prot_readwrite(ptr) mmap_prot_readwrite_imp(ptr,__FILE__,__LINE__ )
 
 // deallocation function
 // the argument is the pointer to the region that was previously allocated

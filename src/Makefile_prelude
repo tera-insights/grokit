@@ -123,6 +123,10 @@ CCFLAGS += -DPER_CPU_PROFILE
 CCFLAGS += -O3 -march=native
 #CCFLAGS += -O0
 
+# Clang address sanitizer
+#CCFLAGS += -fsanitize=address
+#LINKFLAGS += -fsanitize=address
+
 # antlr3 executable
 ANTLR = java -jar /usr/local/lib/antlr-3.3-complete.jar
 
@@ -144,10 +148,13 @@ install: ../tools/grokit ../tools/grokit-cli ../tools/compile-library.php
 	install -d $(ROOT)$(PREFIX)/lib/grokit/scripts
 	install ../tools/grokit $(ROOT)$(PREFIX)/bin/grokit
 	install ../tools/grokit-cli $(ROOT)$(PREFIX)/bin/grokit-cli
+	install -d $(ROOT)$(PREFIX)/lib/grokit/scripts
 	install ../tools/compile-library.php $(ROOT)$(PREFIX)/lib/grokit/scripts/
-	./installDefsScript.sh
+	env ROOT=$(ROOT) PREFIX=$(PREFIX) ./installDefsScript.sh
 	touch ../lock
 
 uninstall:
 	rm $(PREFIX)/bin/grokit
 	rm $(PREFIX)/bin/grokit-cli
+
+

@@ -440,6 +440,7 @@ int GLAFinalizeWorkFunc_<?=$wpName?>
                 cgInsertAttributesList($output, '_Column_Out', 3);
 ?>
         }
+        delete iterator;
 <?
             } elseif( $resType == 'state' ) {
                 reset($output);
@@ -531,13 +532,13 @@ int GLAFinalizeStateWorkFunc_<?=$wpName?>
         if( $retState ) {
             if( $gla->finalize_as_state() ) {
 ?>
-        GLAPtr state;
-        state.swap(glaState);
-        FATALIF( state.get_glaType() != <?=$gla->cHash()?>,
+        GLAPtr statePtr;
+        statePtr.swap(glaState);
+        FATALIF( statePtr.get_glaType() != <?=$gla->cHash()?>,
             "Got GLA of unexpected type");
-        <?=$gla?> * state = (<?=$gla?> *) state.get_glaPtr();
+        <?=$gla?> * state = (<?=$gla?> *) statePtr.get_glaPtr();
         state->FinalizeState();
-        state.swap(glaState);
+        statePtr.swap(glaState);
 <?
             } // if gla finalized as state
         } // if return as state

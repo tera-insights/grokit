@@ -27,7 +27,7 @@ DOUBLE DOUBLE_Null( const GrokitNull & n ) {
 
 <? ob_start(); ?>
 inline void FromString(@type & x, const char* text){
-    x=atof(text);
+    x = std::strtod(text, nullptr);
 }
 
 inline int ToString(const @type & x, char* text){

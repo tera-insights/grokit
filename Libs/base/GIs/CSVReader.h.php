@@ -55,7 +55,7 @@ function CSVReader( array $t_args, array $output ) {
             'CSV column delimiter cannot be new line');
 
         // Scream if separator is longer than one character
-        grokit_assert( \count($sep) == 1 || $sep == '\t',
+        grokit_assert( \strlen($sep) == 1 || $sep == '\t',
             'Expected string of length 1 for separator, got string <' . $sep . '> instead');
 
         $separator = $sep;
@@ -63,7 +63,7 @@ function CSVReader( array $t_args, array $output ) {
 
     // Handle quote character
     $quotechar = '"';
-    if( array_key_exists( 'quote', $t_args) ) {
+    if( array_key_exists( 'quote', $t_args) && !is_null($t_args['quote']) ) {
         grokit_assert(!$simple, 'Quote option not available for simple CSVReader');
         $quote = $t_args['quote'];
 
@@ -71,7 +71,7 @@ function CSVReader( array $t_args, array $output ) {
             "Got " . gettype($quote) . " instead of string for quote.");
 
         // Scream if separator is longer than one character
-        grokit_assert( \count($quote) == 1,
+        grokit_assert( \strlen($quote) == 1,
             'Expected string of length 1 for quote character, got string <' . $quote . '> instead');
 
         $quotechar = $quote;
@@ -80,14 +80,14 @@ function CSVReader( array $t_args, array $output ) {
 
     // Handle escape character
     $escapeChar = '\\';
-    if( array_key_exists( 'escape', $t_args ) ) {
+    if( array_key_exists( 'escape', $t_args ) && !is_null($t_args['escape']) ) {
         grokit_assert(!$simple, 'Escape option not available for simple CSVReader');
         $escape = $t_args['escape'];
 
         grokit_assert( is_string($escape),
             'Got ' . gettype($escape) . ' instead of string for escape character.');
 
-        grokit_assert( \count($escape) == 1,
+        grokit_assert( \strlen($escape) == 1,
             'Expected string of length 1 for escape character, got string <' . $escape . '> instead');
 
         $escapeChar = $escape;
@@ -105,6 +105,10 @@ function CSVReader( array $t_args, array $output ) {
         grokit_assert( $headerLines >= 0,
             'Cannot skip a negative number of lines.');
     }
+
+    // Maximum number of lines to read
+    $maxLines = get_default($t_args, 'n', -1);
+    grokit_assert( is_int($maxLines), 'Got ' . gettype($maxLines) . ' instead of int for template argument "n"');
 
     $nullArg = get_first_key_default($t_args, ['nullable'], false);
 
@@ -126,7 +130,7 @@ function CSVReader( array $t_args, array $output ) {
             if( is_string($n) ) {
                 grokit_assert(is_string($v) || is_bool($v),
                     'CSVReader: nullable associative mapping must have string or boolean values');
-                grokit_assert(array_key_exists($n, $nullable), 'CSVReader: cannot make unknown attribute ' . $v . ' nullable');
+                grokit_assert(array_key_exists($n, $nullable), 'CSVReader: cannot make unknown attribute ' . $n . ' nullable');
 
                 if( is_bool($v) ) {
                     $nullable[$n] = $v;
@@ -147,7 +151,7 @@ function CSVReader( array $t_args, array $output ) {
                     $attrName = $v->name();
                     grokit_assert(array_key_exists($attrName, $nullable), 'CSVReader: cannot make unknown attribute ' . $v . ' nullable');
                     $nullable[$attrName] = true;
-                    $nullStr[$attrName] = 'NULL';                    
+                    $nullStr[$attrName] = 'NULL';
                 }
             }
         }
@@ -177,6 +181,7 @@ class <?=$className?> {
     std::string fileName;
 
     // Template parameters
+    static constexpr size_t MAX_LINES = <?=$maxLines?>;
     static constexpr size_t HEADER_LINES = <?=$headerLines?>;
     static constexpr char DELIMITER = '<?=$separator?>';
 <?  if( !$simple ) { ?>
@@ -193,6 +198,8 @@ class <?=$className?> {
     std::string line;
     std::vector<std::string> tokens;
 
+    size_t count;
+
 <?  \grokit\declareDictionaries($my_output); ?>
 
 public:
@@ -204,6 +211,7 @@ public:
         , my_separator(ESCAPE_CHAR, DELIMITER, QUOTE_CHAR)
         , my_tokenizer(std::string(""))
 <?  } ?>
+        , count(0)
     {
 <?  if( $headerLines > 0 ) { ?>
         for( size_t i = 0; i < HEADER_LINES; ++i ) {
@@ -215,6 +223,12 @@ public:
 // >
 
     bool ProduceTuple( <?=typed_ref_args($my_output)?> ) {
+        if (count < MAX_LINES) { //>
+            count++;
+        } else {
+            return false;
+        }
+
         if( getline( my_stream, line ) ) {
 <?  if( $trimCR ) { ?>
             if( line.back() == '\r' ) {
@@ -287,7 +301,7 @@ public:
 };
 
 <?
-    $sys_headers = [ 'vector', 'string', 'iostream' ];
+    $sys_headers = [ 'vector', 'string', 'iostream', 'cstdint' ];
     if( !$simple )
         $sys_headers[] = 'boost/tokenizer.hpp';
 

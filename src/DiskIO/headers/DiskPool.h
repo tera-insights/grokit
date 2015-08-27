@@ -114,7 +114,7 @@ class DiskPool {
 
            numCols indicates how many columns we have (or should have)
            */
-        TableScanID AddFile(std::string name, int numCols);
+        TableScanID AddFile(std::string name, uint64_t numCols);
         // function to stop the file. After this the scanner is not available and
         // future attempts to talk to it will result in errors
         // this does not block

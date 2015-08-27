@@ -35,22 +35,22 @@ class LT_GIST : public LT_Waypoint {
   LT_GIST(WayPointID id) : LT_Waypoint(id)
     {}
 
-  virtual WaypointType GetType() {return GISTWayPoint;}
-  virtual void DeleteQuery(QueryID query);
-  virtual void ClearAllDataStructure();
+  virtual WaypointType GetType() override {return GISTWayPoint;}
+  virtual void DeleteQuery(QueryID query) override;
+  virtual void ClearAllDataStructure() override;
 
   // GIST, one per query basis
   virtual bool AddGIST(QueryID query,
           SlotContainer& resultAtts,
           StateSourceVec& sVec,
-          Json::Value& info);
+          Json::Value& info) override;
 
-  virtual bool PropagateDown(QueryID query, const SlotSet& atts, SlotSet& result, QueryExit qe);
+  virtual bool PropagateDown(QueryID query, const SlotSet& atts, SlotSet& result, QueryExit qe) override;
   virtual bool PropagateDownTerminating(QueryID query, const SlotSet& atts /*blank*/, SlotSet& result,
-          QueryExit qe);
-  virtual bool PropagateUp(QueryToSlotSet& result);
-  virtual Json::Value GetJson();
-  virtual bool GetConfig(WayPointConfigureData& where);
+          QueryExit qe) override;
+  virtual bool PropagateUp(QueryToSlotSet& result) override;
+  virtual Json::Value GetJson() override;
+  virtual bool GetConfig(WayPointConfigureData& where) override;
 };
 
 #endif // _LT_GIST_H_

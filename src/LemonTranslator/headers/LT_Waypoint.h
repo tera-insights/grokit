@@ -195,7 +195,7 @@ public:
     // GIST, one per query basis
     virtual bool AddGIST( QueryID query,
             SlotContainer& resultAtts,
-            std::vector<WayPointID> reqStates,
+            std::vector<WayPointID>& reqStates,
             Json::Value& info) {
         return false;
     }

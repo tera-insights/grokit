@@ -39,7 +39,7 @@ public:
 
 	
   // constructor (creates the implementation object)
-  FileWriter(const char * _metadataFile, long unsigned int _noCols){
+  FileWriter(const char * _metadataFile, long unsigned uint64_t _noCols){
     evProc = new FileWriterImp(_metadataFile, _noCols);
   }
 

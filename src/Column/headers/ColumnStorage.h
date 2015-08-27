@@ -20,6 +20,8 @@
 #include "RawStorageDesc.h"
 #include "DistributedCounter.h"
 
+#include <utility>
+
 // This class encapsultes storage management for a column... it is a pure abstract class
 // It is designed so that it you can have compressed storage, uncompressed storage, different
 // kinds of compressed storage, etc., and move easily (and automatically) between the types
@@ -30,17 +32,17 @@ class ColumnStorage {
 
 public:
 
-	// tells us if this is the lone copy.  This function is important because it 
-	// assures the object that there are not any other shallow copies floating around 
+	// tells us if this is the lone copy.  This function is important because it
+	// assures the object that there are not any other shallow copies floating around
 	// out there.  The destructor of any class derived from the ColumnStorage class
 	// should have the following code:
 	//
 	// if (IsLoneCopy ())
 	// 	Finalize ();
-	int IsLoneCopy ();
+	uint64_t IsLoneCopy ();
 
 	// these functions must be provided by any actual ColumnStorage implementation
-	
+
 	// creates and returns a "shallow" copy of this object to the caller.  The "shallow"
 	// part means that the actual data is simply aliased, but any state that might be
 	// associated with the storage is unique to the copy
@@ -53,14 +55,14 @@ public:
 
 	// returns a pointer to at least numBytesRequested bytes of data in the column.
 	// The actual number of bytes returned is put into numBytesRequested.
-	virtual char *GetData (int posToStartFrom, int &numBytesRequested) = 0;
+	virtual char *GetData (uint64_t posToStartFrom, uint64_t &numBytesRequested) = 0;
 
 	// tells the storage that we are done with this round of iteration, and that we
 	// want the column to be truncated at numBytes in length.  Optionally, the storage
 	// can return a pointer to a new storage object that should be used to replace itself.
 	// This is useful, for example, so that the storage can decompress itself as it is
 	// processed, and then return a decompressed version of itself for future use.
-	virtual ColumnStorage *Done (int numBytes) = 0;
+	virtual ColumnStorage *Done (uint64_t numBytes) = 0;
 
 	// this tells the storage that we want it to make a deep copy of all of the data
 	// structures that were simply aliased during a shallow copy.  The existing verions
@@ -70,10 +72,10 @@ public:
 
 	// this tells the storage that we want it to make a deep copy of all of the data
 	// and return the new storage
-	virtual ColumnStorage *CreatePartialDeepCopy (int position) = 0;
+	virtual ColumnStorage *CreatePartialDeepCopy (uint64_t position) = 0;
 
 	// returns the number of valid bytes in the column
-	virtual int GetNumBytes () = 0;
+	virtual uint64_t GetNumBytes () = 0;
 
 public:
 
@@ -83,10 +85,17 @@ public:
 
 	// There is no swap operator, since a ColumnStorage object should be created and
 	// then immediately loaded up into a Column object!
-	
-	// Any class that actually implements the ColumnStorage will add routines that 
+
+    void swap(ColumnStorage& withMe) {
+        using std::swap;
+
+        swap(refCount, withMe.refCount);
+        swap(myID, withMe.myID);
+    }
+
+	// Any class that actually implements the ColumnStorage will add routines that
 	// put data into the storage, and perhaps routines that read/write the storage to disk
-	
+
 	// Note that the destrcutor of any class that actually implements the ColumnStorage
 	// should always free memory asociated with components that are NOT shared among shallow
 	// copies of the storage
@@ -120,5 +129,10 @@ public:
 	virtual bool IsWriteMode () = 0;
 
 };
+
+inline
+void swap(ColumnStorage& a, ColumnStorage& b) {
+    a.swap(b);
+}
 
 #endif

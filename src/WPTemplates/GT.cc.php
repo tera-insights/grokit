@@ -252,7 +252,15 @@ int GTProcessChunkWorkFunc_<?=$wpName?>
 <?  cgConstructColumns($allSynth, '_out'); ?>
 
     // Queries Covered by each passthrough attribute
-<?  foreach( $allPassthrough as $attr ) { ?>
+<?  foreach( $allPassthrough as $attr ) {
+		$type = $attr->type();
+		$nullable = $type->is('nullable');
+
+		$cstr = "";
+		if ($nullable)
+			$cstr = "(GrokitNull::Value)";
+?>
+	<?=$type?> <?=$attr->name()?>_out_default<?=$cstr?>;
     QueryIDSet <?=$attr->name()?>_out_queries;
 <?      foreach( $queries as $query => $info ) {
             if( in_array($attr, $info['pass']) ) {
@@ -264,7 +272,15 @@ int GTProcessChunkWorkFunc_<?=$wpName?>
 <?  } // foreach passthrough attribute ?>
 
     // Queries covered by each synthesized attribute
-<?  foreach( $allSynth as $attr ) { ?>
+<?  foreach( $allSynth as $attr ) {
+		$type = $attr->type();
+		$nullable = $type->is('nullable');
+
+		$cstr = "";
+		if ($nullable)
+			$cstr = "(GrokitNull::Value)";
+?>
+	<?=$type?> <?=$attr->name()?>_out_default<?=$cstr?>;
     QueryIDSet <?=$attr->name()?>_out_queries;
 <?      foreach( $queries as $query => $info ) {
             if( in_array($attr, $info['output']) ) {
@@ -323,17 +339,23 @@ int GTProcessChunkWorkFunc_<?=$wpName?>
             // Insert synthesized attributes
 <?      foreach( $allSynth as $attr ) { ?>
             if( queriesToRun.Overlaps(<?=$attr->name()?>_out_queries) ) {
-                <?=$attr->name()?>_out_Column_Out.Insert(<?=$attr->name()?>_out);
-                <?=$attr->name()?>_out_Column_Out.Advance();
+				<?=$attr->name()?>_out_Column_Out.Insert(<?=$attr->name()?>_out);
             }
+			else {
+				<?=$attr->name()?>_out_Column_Out.Insert(<?=$attr->name()?>_out_default);
+			}
+			<?=$attr->name()?>_out_Column_Out.Advance();
 <?      } // foreach synthesized attribute ?>
 
             // Insert passthrough attributes
 <?      foreach( $allPassthrough as $attr ) { ?>
             if( queriesToRun.Overlaps(<?=$attr->name()?>_out_queries) ) {
                 <?=$attr->name()?>_out_Column_Out.Insert(<?=$attr->name()?>);
-                <?=$attr->name()?>_out_Column_Out.Advance();
             }
+			else {
+				<?=$attr->name()?>_out_Column_Out.Insert(<?=$attr->name()?>_out_default);
+			}
+			<?=$attr->name()?>_out_Column_Out.Advance();
 <?      } // foreach synthesized attribute ?>
 
                 queries_out.Insert(<?=queryName($query)?>);

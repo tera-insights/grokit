@@ -17,6 +17,8 @@
 #define _DP_RANDOM_H_
 
 #include "Config.h"
+#include <cinttypes>
+#include <limits>
 
 /*
  *  This header defines functions used for thread-safe random number generation
@@ -24,26 +26,14 @@
  *  numbers.
  */
 
-#ifdef _HAS_STD_RANDOM
-
-// Use STL pseudo-random number generators with thread-local storage.
-
-#include <random>
-
-unsigned long RandInt(void);
+/**
+ * Generates a random integer on the closed interval [start, end]
+ * @param  start The lower bound on numbers to be generated
+ * @param  end   The upper bound on numbers to be generated
+ * @return       A random integer in the range [start, end]
+ */
+int64_t RandInt(int64_t start = 0, int64_t end = std::numeric_limits<uint64_t>::max());
 
 double RandDouble(void);
-
-#else // _HAS_STD_RANDOM
-
-// Use rand48 class of functions with thread-local storage for the state.
-#include <cstdlib>
-#include <cstdio>
-
-unsigned long int RandInt(void); 
-
-double RandDouble(void); 
-
-#endif // _HAS_STD_RANDOM
 
 #endif // _DP_RANDOM_H_

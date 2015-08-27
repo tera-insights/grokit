@@ -25,7 +25,7 @@
 #define _dp_max(x,y) ((x) > (y)? (x) : (y))
 #endif
 
-template <class DataType, int headerSize = DataType::HeaderLength, int dtSize = DataType::MaxObjectLength>
+template <class DataType, uint64_t headerSize = DataType::HeaderLength, uint64_t dtSize = DataType::MaxObjectLength>
 class ColumnVarIterator {
 
     DataType myValue;
@@ -36,9 +36,9 @@ public:
     
     // Creates a column iterator for the given column. The requests for data
     // that are sent to the column are of stepSize. iterateMe is consumed.
-    ColumnVarIterator (Column &iterateMe, int stepSize = COLUMN_ITERATOR_STEP);
+    ColumnVarIterator (Column &iterateMe, uint64_t stepSize = COLUMN_ITERATOR_STEP);
 
-    ColumnVarIterator (Column &iterateMe, int fragmentStart, int fragmentEnd, int stepSize = COLUMN_ITERATOR_STEP);
+    ColumnVarIterator (Column &iterateMe, uint64_t fragmentStart, uint64_t fragmentEnd, uint64_t stepSize = COLUMN_ITERATOR_STEP);
 
     ColumnVarIterator();
 
@@ -54,7 +54,7 @@ public:
 
     void Restart(void);
 
-	int AtUnwrittenByte ();
+	uint64_t AtUnwrittenByte ();
 
 	void CreateDeepCopy (ColumnVarIterator& fromMe);
 
@@ -70,9 +70,9 @@ public:
 	void MarkFragment ();
 };
 
-template <class DataType, int headerSize, int dtSize>
+template <class DataType, uint64_t headerSize, uint64_t dtSize>
 inline
-ColumnVarIterator<DataType, headerSize, dtSize> :: ColumnVarIterator( Column &iterateMe, int stepSize )
+ColumnVarIterator<DataType, headerSize, dtSize> :: ColumnVarIterator( Column &iterateMe, uint64_t stepSize )
     : it( iterateMe, headerSize, _dp_max(stepSize, dtSize) )
 {
     if( it.IsInvalid() )
@@ -80,13 +80,15 @@ ColumnVarIterator<DataType, headerSize, dtSize> :: ColumnVarIterator( Column &it
 
     if( !it.IsWriteOnly() ) {
         it.EnsureHeaderSpace();
-        myValue.Deserialize( it.GetData() ); 
+        size_t serializedSize = SizeFromBuffer<DataType>(it.GetData());
+        it.EnsureSpace(serializedSize, serializedSize);
+        Deserialize(it.GetData(), myValue);
     } 
 }
 
-template <class DataType, int headerSize, int dtSize>
+template <class DataType, uint64_t headerSize, uint64_t dtSize>
 inline
-ColumnVarIterator<DataType, headerSize, dtSize> :: ColumnVarIterator( Column &iterateMe, int fragmentStart, int fragmentEnd, int stepSize )
+ColumnVarIterator<DataType, headerSize, dtSize> :: ColumnVarIterator( Column &iterateMe, uint64_t fragmentStart, uint64_t fragmentEnd, uint64_t stepSize )
     : it( iterateMe, fragmentStart, fragmentEnd, headerSize, _dp_max(stepSize, dtSize) )
 {
     if( it.IsInvalid() )
@@ -94,23 +96,25 @@ ColumnVarIterator<DataType, headerSize, dtSize> :: ColumnVarIterator( Column &it
 
     if( !it.IsWriteOnly() ) {
         it.EnsureHeaderSpace();
-        myValue.Deserialize( it.GetData() ); 
+        size_t serializedSize = SizeFromBuffer<DataType>(it.GetData());
+        it.EnsureSpace(serializedSize, serializedSize);
+        Deserialize(it.GetData(), myValue);
     } 
 }
 
-template <class DataType, int headerSize, int dtSize>
+template <class DataType, uint64_t headerSize, uint64_t dtSize>
 inline
 ColumnVarIterator<DataType, headerSize, dtSize> :: ColumnVarIterator()
     : it()
 {
 }
 
-template <class DataType, int headerSize, int dtSize>
+template <class DataType, uint64_t headerSize, uint64_t dtSize>
 inline
 ColumnVarIterator<DataType, headerSize, dtSize> :: ~ColumnVarIterator() {
 }
 
-template <class DataType, int headerSize, int dtSize>
+template <class DataType, uint64_t headerSize, uint64_t dtSize>
 inline
 void ColumnVarIterator<DataType, headerSize, dtSize> :: Insert( const DataType& addMe ) {
     if( it.IsInvalid() )
@@ -118,79 +122,81 @@ void ColumnVarIterator<DataType, headerSize, dtSize> :: Insert( const DataType& 
 
     assert( it.IsWriteOnly() == true );
 
-    it.SetObjLen( addMe.GetObjLength() );
+    it.SetObjLen( SerializedSize(addMe) );
     it.EnsureWriteSpace();
     
     char* myData = it.GetData(); 
 
     myValue = addMe;
-    myValue.Serialize( myData );
+    Serialize(myData, myValue);
 }
 
-template <class DataType, int headerSize, int dtSize>
+template <class DataType, uint64_t headerSize, uint64_t dtSize>
 inline
 void ColumnVarIterator<DataType, headerSize, dtSize> :: Advance() {
     if( it.IsInvalid() )
         return;
 
-    int oLen = myValue.GetObjLength();
+    uint64_t oLen = SerializedSize(myValue);
     it.SetObjLen( oLen );
     it.AdvanceBy( oLen );
 
     if( !it.IsWriteOnly() ) {
         it.EnsureHeaderSpace();
-        myValue.Deserialize( it.GetData() );
+        size_t serializedSize = SizeFromBuffer<DataType>(it.GetData());
+        it.EnsureSpace(serializedSize, serializedSize);
+        Deserialize(it.GetData(), myValue);
     }
 }
 
-template <class DataType, int headerSize, int dtSize>
+template <class DataType, uint64_t headerSize, uint64_t dtSize>
 inline
 const DataType& ColumnVarIterator<DataType, headerSize, dtSize> :: GetCurrent() {
     return myValue;
 }
 
-template <class DataType, int headerSize, int dtSize>
+template <class DataType, uint64_t headerSize, uint64_t dtSize>
 void ColumnVarIterator <DataType, headerSize, dtSize> :: Done (Column &iterateMe) {
 	it.Done(iterateMe);
 }
 
-template <class DataType, int headerSize, int dtSize>
+template <class DataType, uint64_t headerSize, uint64_t dtSize>
 void ColumnVarIterator <DataType, headerSize, dtSize> :: CreateDeepCopy (ColumnVarIterator<DataType, headerSize, dtSize>& fromMe) {
 	it.CreateDeepCopy(fromMe.it);
 }
 
-template <class DataType, int headerSize, int dtSize>
+template <class DataType, uint64_t headerSize, uint64_t dtSize>
 void ColumnVarIterator <DataType, headerSize, dtSize> :: swap (ColumnVarIterator& swapMe) {
 	it.swap (swapMe.it);
 }
 
-template <class DataType, int headerSize, int dtSize>
+template <class DataType, uint64_t headerSize, uint64_t dtSize>
 void ColumnVarIterator <DataType, headerSize, dtSize> :: CreateShallowCopy (ColumnVarIterator& copyMe) {
 	it.CreateShallowCopy (copyMe.it);
 }
 
-template <class DataType, int headerSize, int dtSize>
+template <class DataType, uint64_t headerSize, uint64_t dtSize>
 void ColumnVarIterator <DataType, headerSize, dtSize> :: CheckpointSave () {
 	it.CheckpointSave ();
 }
 
-template <class DataType, int headerSize, int dtSize>
+template <class DataType, uint64_t headerSize, uint64_t dtSize>
 void ColumnVarIterator <DataType, headerSize, dtSize> :: CheckpointRestore () {
 	it.CheckpointRestore ();
 }
 
-template <class DataType, int headerSize, int dtSize >
-inline int ColumnVarIterator <DataType, headerSize, dtSize > :: AtUnwrittenByte () {
+template <class DataType, uint64_t headerSize, uint64_t dtSize >
+inline uint64_t ColumnVarIterator <DataType, headerSize, dtSize > :: AtUnwrittenByte () {
   return it.AtUnwrittenByte ();
 }
 
-template <class DataType, int headerSize, int dtSize >
+template <class DataType, uint64_t headerSize, uint64_t dtSize >
 inline void ColumnVarIterator <DataType, headerSize, dtSize > :: Restart () {
   it.Restart();
 }
 
 
-template <class DataType, int headerSize, int dtSize >
+template <class DataType, uint64_t headerSize, uint64_t dtSize >
 inline void ColumnVarIterator <DataType, headerSize, dtSize > :: MarkFragment () {
   if (it.IsInvalid())
 	return;

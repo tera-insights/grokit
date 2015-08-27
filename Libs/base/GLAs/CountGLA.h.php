@@ -15,12 +15,6 @@ function Count( array $t_args, array $input, array $output ) {
     array_set_index( $output, 0, $oType );
 
     // Don't care what inputs are
-    $postfix = 0;
-    $inputs = [];
-    foreach( $input as $i ) {
-        $n = 'input' . $postfix;
-        $inputs[$n] = $i;
-    }
 
     $name = generate_name('Count_');
 ?>
@@ -29,7 +23,7 @@ class <?=$name?> {
 
 public:
     <?=$name?>() : count(0) {}
-    void AddItem( <?=const_typed_ref_args($inputs)?> ) { count++; }
+    void AddItem( <?=const_typed_ref_args($input)?> ) { count++; }
     void AddState( <?=$name?> & o ) { count += o.count; }
     void GetResult(<?=$oType?> & _count ) {
 <?  if( $asJson) { ?>
@@ -45,7 +39,7 @@ public:
     return [
         'kind'        => 'GLA',
         'name'        => $name,
-        'input'       => $inputs,
+        'input'       => $input,
         'output'      => $output,
         'result_type' => 'single',
         ];

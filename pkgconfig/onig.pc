@@ -1,0 +1,10 @@
+prefix=/usr
+exec_prefix=${prefix}
+libdir=/usr/lib64
+includedir=${prefix}/include
+
+Name: Oniguruma
+Description: A C regular expression library
+Version: 5.9.2
+Cflags: -I${includedir}
+Libs: -L${libdir} -lonig

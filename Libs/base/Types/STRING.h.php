@@ -24,10 +24,11 @@ function STRING( array $t_args ){
 ?>
 
 class <?=$className?> {
-
+public:
     // the type used for the size
     typedef size_t SizeType;
 
+private:
     // The length of the string
     SizeType length;
 
@@ -91,11 +92,11 @@ public:
     void * Serialize( void * buffer ) const;
 
     // Deserialize myself from the buffer
-    void Deserialize( char * buffer );
+    void Deserialize( const char * buffer );
 
     // Return the size (in bytes) this object writes in Serialize and reads in Deserialize.
     int GetObjLength() const;
-    int GetSize() const;
+    SizeType GetSize() const;
 
     ///// Utilities /////
 
@@ -241,7 +242,7 @@ void * <?=$className?> :: Serialize( void * buffer ) const {
 }
 
 inline
-void <?=$className?> :: Deserialize( char * buffer ) {
+void <?=$className?> :: Deserialize( const char * buffer ) {
     Clear();
 
     str = buffer;
@@ -261,7 +262,7 @@ int <?=$className?> :: GetObjLength() const {
 
 // Used for serialization
 inline
-int <?=$className?> :: GetSize() const {
+<?=$className?>::SizeType <?=$className?> :: GetSize() const {
     return length + 1;
 }
 
@@ -318,6 +319,34 @@ void <?=$className?> :: fromJson( const Json::Value & src ) {
 }
 
 <? ob_start(); ?>
+
+// Binary serialization
+
+template<>
+inline
+size_t SizeFromBuffer<@type>(const char * buffer) {
+    return @type::MaxObjectLength;
+}
+
+template<>
+inline
+size_t SerializedSize(const @type& from) {
+    return from.GetSize();
+}
+
+template<>
+inline
+size_t Serialize(char * buffer, const @type& from) {
+    from.Serialize(buffer);
+    return SerializedSize(from);
+}
+
+template<>
+inline
+size_t Deserialize(const char * buffer, @type& dest) {
+    dest.Deserialize(buffer);
+    return SerializedSize(dest);
+}
 
 // Copy function
 inline

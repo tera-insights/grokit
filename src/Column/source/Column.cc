@@ -19,7 +19,7 @@
 #include <string.h>
 #include "MMappedStorage.h"
 
-int Column :: GetColLength () {
+uint64_t Column :: GetColLength () {
     return myData->GetNumBytes ();
 }
 
@@ -42,11 +42,13 @@ Column :: ~Column () {
 
 }
 
+void Column :: MakeReadonly(){ if (myData != NULL) { myData->MakeReadonly();} }
+
 bool Column :: IsWriteMode () {
     return myData->IsWriteMode ();
 }
 
-char *Column :: GetNewData (int posToStartFrom, int &numBytesRequested) {
+char *Column :: GetNewData (uint64_t posToStartFrom, uint64_t &numBytesRequested) {
     FATALIF( myData == NULL, "Why is this NULL?");
 
     // this just goes right through to the storage
@@ -110,7 +112,7 @@ dataWeShouldBeUsing = new (MMappedStorage *);
  pthread_mutex_unlock (myMutex);
  myMutex = new pthread_mutex_t;
  pthread_mutex_init (myMutex, NULL);
- numCopies = new int;
+ numCopies = new uint64_t;
  *numCopies = 1;
 
 // otherwise, we are the only copy of the column storage
@@ -163,7 +165,7 @@ void Column :: copy (Column &copyMe) {
     myData->SetCopyOf (*(copyMe.myData));
 }
 
-void Column :: Done (int numBytes) {
+void Column :: Done (uint64_t numBytes) {
 
     if (refCount == 0)
         return;
@@ -174,7 +176,7 @@ void Column :: Done (int numBytes) {
     FATALIF(newStorage != 0, "ColumnStorage that morphs into different storage not supported");
 }
 
-void Column :: CreatePartialDeepCopy (Column& fromMe, int curPosInColumn) {
+void Column :: CreatePartialDeepCopy (Column& fromMe, uint64_t curPosInColumn) {
 
     // If this call is coming from some valid column, dont do anything
     if (IsValid ())

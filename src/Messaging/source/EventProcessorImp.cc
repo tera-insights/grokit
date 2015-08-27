@@ -178,7 +178,7 @@ void* EventProcessorImp::ForkAndSpinThread(void* aux) {
     return NULL;
 }
 
-bool EventProcessorImp::ForkAndSpin(int node) {
+bool EventProcessorImp::ForkAndSpin(int node, size_t stack_size) {
     //are we dead? can we even start a thread?
     pthread_mutex_lock(&mutex);
     if ((dead == true) || (forksRemaining == 0)) {
@@ -201,6 +201,7 @@ bool EventProcessorImp::ForkAndSpin(int node) {
     int ret;
 
     ret = pthread_attr_init(&t_attr);
+    ret = pthread_attr_setstacksize(&t_attr, stack_size);
     ret = pthread_attr_setdetachstate(&t_attr, PTHREAD_CREATE_DETACHED);
     ret = pthread_create(threadPtr, &t_attr, EventProcessorImp::ForkAndSpinThread, (void *)this);
     FATALIF(ret, "ERROR: return code from pthread_create() is %d.\n", ret);

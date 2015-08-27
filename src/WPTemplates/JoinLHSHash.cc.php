@@ -150,7 +150,7 @@ int JoinLHSHashWorkFunc_<?=$wpName?> (WorkDescription &workDescription, ExecEngi
 <?  cgPutbackColumns($jDesc->attribute_queries_LHS, 'input', $wpName); ?>
 
     PROFILING(start_time, "<?=$wpName?>", "LHS_hash", "%d", totalNum);
-    PROFILING(0.0, "HashTable", "fillrate", "%2.4f", HashTableSegment::globalFillRate);
+    PROFILING(0.0, "HashTable", "fillrate", "%2.4f", HashTableSegment::globalFillRate.load());
 
     // now we are finally done!
     JoinHashResult myResult (mySamples);

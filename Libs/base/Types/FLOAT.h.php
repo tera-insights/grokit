@@ -72,7 +72,7 @@ return array(
 } // end of function
 
 // Define the constructors from the various other types.
-foreach( [ 'BYTE', 'SMALLINT', 'BIGINT', 'INT', 'DOUBLE' ] as $type ) {
+foreach( [ 'BYTE', 'SMALLINT', 'BIGINT', 'INT', 'FLOAT', 'DOUBLE' ] as $type ) {
     $fullType = 'base::' . $type;
     $call = function($args, $targs = []) use ($fullType) {
         $arg = lookupType($fullType);

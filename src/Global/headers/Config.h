@@ -151,7 +151,7 @@
 #ifdef _HAS_CONSTEXPR
     #define CONSTEXPR constexpr
 #else
-    #define CONSTEXPR const
+    #define CONSTEXPR
 #endif // _HAS_CONSTEXPR
 
 #endif//_CONFIG_H_

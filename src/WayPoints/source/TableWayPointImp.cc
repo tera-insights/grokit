@@ -589,6 +589,11 @@ void TableWayPointImp::DoneProducing (QueryExitContainer &whichOnes, HistoryList
     if (history.Current().Type() == TableReadHistory::type){
         FATALIF(history.RightLength () != 1, "Why do we have more than the table lineage?");
 
+        ChunkContainer cCont;
+        cCont.swap(data);
+        cCont.get_myChunk().MakeReadonly();
+        cCont.swap(data);
+
         LOG_ENTRY_P(2, "CHUNK of %s READ", myName.c_str()) ;
         // ignore the message
     } else {

@@ -42,19 +42,19 @@ struct CompressedStorageUnit {
     private:
         // start location of decompressed data
         char* decompressedBytes;
-        int nextDecompress; // last byte decompressed in decompressedBytes buffer
+        uint64_t nextDecompress; // last byte decompressed in decompressedBytes buffer
 
         // start location of compressed data
         char *compressedBytes;
-        int nextCompress; // last byte compressed in compressedBytes buffer up to which we are done with decompression
+        uint64_t nextCompress; // last byte compressed in compressedBytes buffer up to which we are done with decompression
 
         // total decompressed size
-        int decompressedSize;
+        uint64_t decompressedSize;
         // total compressed size
-        int compressedSize;
+        uint64_t compressedSize;
 
         // how much we decompressed in last call
-        int lastDecompressedLength;
+        uint64_t lastDecompressedLength;
 
         // state needs to be passed to compress and decompress quicklz functions
         qlz_state_compress *state_compress;
@@ -63,7 +63,7 @@ struct CompressedStorageUnit {
         qlz_state_decompress *state_decompress;
 
         // numa node
-        int numa;
+        uint64_t numa;
 
     public:
 
@@ -73,10 +73,10 @@ struct CompressedStorageUnit {
         CompressedStorageUnit ();
 
         // decompressed data constructor
-        CompressedStorageUnit(int _dataSize, int _numa = 0);
+        CompressedStorageUnit(uint64_t _dataSize, uint64_t _numa = 0);
         // compressed data constructor, where is the sister storage unit
         // that accesses teh decompressed data
-        CompressedStorageUnit(char* _data, int _dataSize, int _compressedSize, StorageUnit& where, int _numa = 0);
+        CompressedStorageUnit(char* _data, uint64_t _dataSize, uint64_t _compressedSize, StorageUnit& where, uint64_t _numa = 0);
 
         // states are local to object and are created and destroyed with object.
         // in case of deep and shallow copies, they are created new and not copied
@@ -95,14 +95,14 @@ struct CompressedStorageUnit {
 
         // decompress at least up to given position, but actual decompression could be much
         // more depending on decompression algorithm used by quicklz stream decompression
-        int DecompressUpTo(int decompress_position);
+        uint64_t DecompressUpTo(uint64_t decompress_position);
 
         // same function as above but the decompression is always at the
         // beggining of the buffer. The new decompressed data overrides the
         // old one
         // Note: the caller has to know that we always write from the
         // beggining of the buffer, not continuously
-        int DecompressInPlace(int posToStartFrom, int decompress_position);
+        uint64_t DecompressInPlace(uint64_t posToStartFrom, uint64_t decompress_position);
 
         // does a simple copy
         void copy (CompressedStorageUnit &fromMe);
@@ -116,10 +116,10 @@ struct CompressedStorageUnit {
 
 
         // Get the size of original decompressed data reading the header info in the compressed data
-        int GetDecompressedSize();
+        uint64_t GetDecompressedSize();
 
         // Get the current compressed size reading the header of compressed data
-        int GetCompressedSize();
+        uint64_t GetCompressedSize();
 
         bool GetIsCompressed(){ return compressedSize>0; }
 };
@@ -144,7 +144,7 @@ CompressedStorageUnit::CompressedStorageUnit() : decompressedBytes(NULL), nextDe
     state_compress(NULL), state_decompress(NULL){}
 
     inline /* data is decompressed, we'll compress */
-    CompressedStorageUnit::CompressedStorageUnit(int _decompressedSize, int _numa):
+    CompressedStorageUnit::CompressedStorageUnit(uint64_t _decompressedSize, uint64_t _numa):
         decompressedBytes(NULL),
         nextDecompress(0),
         compressedBytes((char*) mmap_alloc(_decompressedSize + QLZ_EXTRA_SPACE, _numa)),
@@ -160,8 +160,8 @@ CompressedStorageUnit::CompressedStorageUnit() : decompressedBytes(NULL), nextDe
 }
 
 inline /** data is compressed */
-CompressedStorageUnit::CompressedStorageUnit(char* _data, int _decompressedSize,
-        int _compressedSize, StorageUnit& where, int _numa):
+CompressedStorageUnit::CompressedStorageUnit(char* _data, uint64_t _decompressedSize,
+        uint64_t _compressedSize, StorageUnit& where, uint64_t _numa):
     decompressedBytes((char*) mmap_alloc(_decompressedSize, _numa)),
     nextDecompress(0),
     compressedBytes(_data),
@@ -184,12 +184,12 @@ CompressedStorageUnit::CompressedStorageUnit(char* _data, int _decompressedSize,
 }
 
 inline
-int CompressedStorageUnit::GetDecompressedSize() {
+uint64_t CompressedStorageUnit::GetDecompressedSize() {
     return decompressedSize;
 }
 
 inline
-int CompressedStorageUnit::GetCompressedSize () {
+uint64_t CompressedStorageUnit::GetCompressedSize () {
     return compressedSize;
 }
 
@@ -246,14 +246,14 @@ void CompressedStorageUnit::CreateDeepCopy(CompressedStorageUnit &withMe) {
 
 // This works in streaming mode internally, see quicklz.h flags
 inline
-int CompressedStorageUnit::DecompressUpTo(int decompress_position) {
+uint64_t CompressedStorageUnit::DecompressUpTo(uint64_t decompress_position) {
     // we assume that the decompression process proceeds linearly and
     // does not get restarted
     FATALIF( nextCompress==0 && nextDecompress!=0, "The decompression process is not linear");
 
     // we go in a loop until we stream-decompressed enough
     while (decompress_position > nextDecompress){
-        int csize = qlz_size_compressed(compressedBytes+nextCompress);
+        uint64_t csize = qlz_size_compressed(compressedBytes+nextCompress);
 
         nextDecompress += qlz_decompress(compressedBytes+nextCompress,
                 decompressedBytes+nextDecompress,
@@ -266,7 +266,7 @@ int CompressedStorageUnit::DecompressUpTo(int decompress_position) {
 
 // This works in streaming mode internally, see quicklz.h flags
 inline
-int CompressedStorageUnit::DecompressInPlace(int posToStartFrom, int decompress_position) {
+uint64_t CompressedStorageUnit::DecompressInPlace(uint64_t posToStartFrom, uint64_t decompress_position) {
 
     // In case we restart the iteration from start, we need to reset all variables.
     if (posToStartFrom == 0) {
@@ -280,7 +280,7 @@ int CompressedStorageUnit::DecompressInPlace(int posToStartFrom, int decompress_
     // We will start decompressing from startbuffer + dNext, since we already copied up to dNext
     // in the start decompressed buffer. SO overall, just copy last unused portion to the start
     // and start decompressing after that.
-    int dNext = nextDecompress - posToStartFrom;
+    uint64_t dNext = nextDecompress - posToStartFrom;
 
 
     // If it is positive amount, do the copy. It should not be negative until posToStart takes
@@ -320,10 +320,10 @@ int CompressedStorageUnit::DecompressInPlace(int posToStartFrom, int decompress_
 while (decompress_position > nextDecompress){
     // printf("\ndnexxxxxxxxxxxxxttttttttttttttttttttttttttttttttttt of decompressed buffer = %d %lx\n", dNext, decompressedBytes);
 
-    int csize = qlz_size_compressed(compressedBytes+nextCompress);
+    uint64_t csize = qlz_size_compressed(compressedBytes+nextCompress);
 
 
-    int dsize = qlz_decompress(compressedBytes+nextCompress,
+    uint64_t dsize = qlz_decompress(compressedBytes+nextCompress,
             decompressedBytes+dNext,
             state_decompress);
     nextCompress+=csize;
@@ -372,23 +372,28 @@ void CompressedStorageUnit::CompressThisStorageUnit(StorageUnit& unit){
     //
     // Note: we assume that the ritht amount of space was allocated
     // already in constructor
-    int num = 0; // how much we compressed from this unit
+    uint64_t num = 0; // how much we compressed from this unit
 #ifndef COMPRESS_ALL_AT_ONCE
-    int sizeToCompress = COMPRESSION_UNIT;
+    uint64_t sizeToCompress = COMPRESSION_UNIT;
 #else
-    int sizeToCompress = unit.Size();
+    uint64_t sizeToCompress = unit.Size();
 #endif
-    int size = unit.Size();
+    uint64_t size = unit.Size();
     while (num < size) {
         if (num + sizeToCompress > size)
             sizeToCompress = size - num;
-        int cSize = qlz_compress((const char*)unit.bytes + num, compressedBytes+nextCompress,
+        uint64_t cSize = qlz_compress((const char*)unit.bytes + num, compressedBytes+nextCompress,
                 sizeToCompress, state_compress);
         nextCompress += cSize;
         num += sizeToCompress;
     }
     // set the compressedSize to what we compressed so far
     compressedSize = nextCompress;
+}
+
+inline
+void swap(CompressedStorageUnit& a, CompressedStorageUnit& b) {
+    a.swap(b);
 }
 
 #endif // COMPRESS_STOR_UNIT_H

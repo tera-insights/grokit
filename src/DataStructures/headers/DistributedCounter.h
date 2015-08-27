@@ -67,16 +67,16 @@ inline DistributedCounter::~DistributedCounter(void){
 }
 
 inline int64_t DistributedCounter::Increment(int64_t _increment){
-    return counter.fetch_add(_increment, std::memory_order_relaxed) + _increment;
+    return counter.fetch_add(_increment, std::memory_order_seq_cst) + _increment;
 }
 
 inline int64_t DistributedCounter::GetCounter(void){
-    return counter.load(std::memory_order_relaxed);
+    return counter.load(std::memory_order_seq_cst);
 }
 
 
 inline int64_t DistributedCounter::Decrement(int64_t _decrement){
-    int64_t ret = counter.fetch_sub(_decrement, std::memory_order_relaxed) - _decrement;
+    int64_t ret = counter.fetch_sub(_decrement, std::memory_order_seq_cst) - _decrement;
 
     return ret;
 }

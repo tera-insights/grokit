@@ -41,7 +41,6 @@ function Multiplexer( array $t_args, array $inputs, array $outputs ) {
 
     $glaGenStates = [];
     $glaReqStates = [];
-    $glaAllStates = [];
 
     $configurable = false;
     $constArgs = [];
@@ -111,8 +110,14 @@ function Multiplexer( array $t_args, array $inputs, array $outputs ) {
         else
             grokit_assert($iterable == $gla->iterable(), 'Multiplexer does not support mixing iterable and non-iterable GLAs');
 
+        $glaReqStates[$glaName] = $gla->req_states();
+        foreach($gla->req_states() as $rstate) {
+            $reqStates[] = $rstate;
+        }
+
+        $glaGenStates[$glaName] = $gla->state();
         // TODO: Support constant states
-        grokit_assert(\count($gla->states()) == 0, 'Multiplexer currently does not support constant states.');
+        grokit_assert(!$gla->has_state(), 'Multiplexer currently does not support constant states.');
     }
 
     $libraries = array_unique($libraries);

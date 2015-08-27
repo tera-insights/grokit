@@ -28,14 +28,14 @@
 
 class MultiLock {
 private:
-	int isLocked; // how may times the lock is acquired
+	uint64_t isLocked; // how may times the lock is acquired
 								// if 0, the lock is up for grabs
 
-	int counter;// the current value of the counter for the current
+	uint64_t counter;// the current value of the counter for the current
 							// owner. When it reaches cntMax, it will not be
 							// allowed to increase numLocks
 
-	int cntMax; // the reset value of the counter
+	uint64_t cntMax; // the reset value of the counter
 
 	pthread_mutex_t mutex;
 	pthread_cond_t cond;// conditional variable to wait for the lock to
@@ -46,7 +46,7 @@ private:
 
 public:
 	/** Constructor with parameter the number of successes */
-	MultiLock(int _numSuccesses);
+	MultiLock(uint64_t _numSuccesses);
 	virtual ~MultiLock();
 
 	// locking function
@@ -58,7 +58,7 @@ public:
 	void Unlock();
 };
 
-inline MultiLock::MultiLock(int _numSuccesses):
+inline MultiLock::MultiLock(uint64_t _numSuccesses):
 	cntMax(_numSuccesses){
 	counter=0;
 	isLocked = 0;

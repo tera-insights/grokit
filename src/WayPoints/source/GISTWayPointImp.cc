@@ -217,6 +217,15 @@ bool GISTWayPointImp :: PreProcessingComplete( QueryExitContainer& whichOnes,
     QueryToGLAStateMap& generatedStates = result.get_genStates();
     QueryToGLAStateMap& gists = result.get_gists();
 
+    // Sanity Checking
+    FOREACH_TWL( iter, whichOnes ) {
+        QueryID query = iter.query;
+
+        FATALIF( !gists.IsThere(query),
+            "GIST PreProcessing returned no GIST state for query %s",
+            query.GetStr().c_str());
+    } END_FOREACH;
+
     gistStates.SuckUp(gists);
     AddConstStates(generatedStates);
 
@@ -725,8 +734,8 @@ void GISTWayPointImp :: ProcessAckMsg( QueryExitContainer& whichOnes, HistoryLis
         }
     } END_FOREACH;
 
-    LOG_ENTRY_P(2, "Fragment %s of %s query %s PROCESSED",
-            fragNo, GetID().getName().c_str(), queries.GetStr().c_str());
+    // LOG_ENTRY_P(2, "Fragment %s of %s query %s PROCESSED",
+    //         fragNo, GetID().getName().c_str(), queries.GetStr().c_str());
 }
 
 void GISTWayPointImp :: ProcessDropMsg( QueryExitContainer& whichOnes, HistoryList& lineage ) {

@@ -48,6 +48,8 @@ struct <?=$className?> {
     struct Key {
         <?=array_template("{val} {key};", PHP_EOL , $gbyAtts)?>
 
+        Key () : <?=array_template('{key}()', ', ', $gbyAtts)?> {}
+
         Key (<?=array_template('const {val} & _{key}', ', ', $gbyAtts)?>) :
             <?=array_template('{key}(_{key})', ',' . PHP_EOL, $gbyAtts)?>
         { }
@@ -156,7 +158,7 @@ struct <?=$className?> {
  *
  *  Any expressions used as grouping attributes must be named.
  */
-function GroupBy( array $t_args, array $inputs, array $outputs ) {
+function GroupBy( array $t_args, array $inputs, array $outputs, array $states ) {
 
     // Ensure we have valid inputs.
     if( \count($inputs) == 0 ) {
@@ -193,7 +195,7 @@ function GroupBy( array $t_args, array $inputs, array $outputs ) {
 
     $debug = get_default( $t_args, 'debug', 0);
 
-    $init_size = get_default( $t_args, 'init.size', 65536);
+    $init_size = get_default( $t_args, 'init.size', 1024);
     $use_mct = get_default( $t_args, 'use.mct', true);
     $keepHashes = get_default($t_args, 'mct.keep.hashes', false);
     grokit_assert(is_bool($keepHashes), 'GroupBy mct.keep.hashes argument must be boolean');
@@ -230,7 +232,7 @@ function GroupBy( array $t_args, array $inputs, array $outputs ) {
         }
     }
 
-    $innerGLA = $innerGLA->apply($glaInputAtts, $glaOutputAtts);
+    $innerGLA = $innerGLA->apply($glaInputAtts, $glaOutputAtts, $states);
     $libraries = $innerGLA->libraries();
 
     $innerRes = get_first_value( $innerGLA->result_type(), [ 'multi', 'single', 'state' ] );
@@ -243,9 +245,14 @@ function GroupBy( array $t_args, array $inputs, array $outputs ) {
     }
     else {
         $innerOutputs = $innerGLA->output();
+
+        grokit_assert(\count($innerOutputs) == \count($glaOutputAtts),
+            'Expected ' . \count($glaOutputAtts) . ' outputs fromm Inner GLA, got ' .
+            \count($innerOutputs));
     }
 
-    $constState = lookupResource('GroupByState', [ 'gla' => $innerGLA, 'groups' => $gbyAtts, 'debug' => $debug ]);
+    $constState = lookupResource('GroupByState',
+        [ 'gla' => $innerGLA, 'groups' => $gbyAtts, 'debug' => $debug ]);
 
     // constructor argumetns are inherited from inner GLA
     $configurable = $innerGLA->configurable();
@@ -267,6 +274,7 @@ function GroupBy( array $t_args, array $inputs, array $outputs ) {
     // add the outputs we got from the gla
     foreach( $innerOutputs as $name => $type ) {
         grokit_assert( array_key_exists($name, $outputs), 'Inner GLA\'s outputs refer to unknown attribute ' . $name );
+        grokit_assert($type !== null, 'GroupBy Inner GLA left output ' . $name . ' with no type');
         $outputs[$name] = $type;
     }
 
@@ -294,7 +302,7 @@ function GroupBy( array $t_args, array $inputs, array $outputs ) {
 
 
 class <?=$className?>{
-private:
+public:
     using ConstantState = <?=$constState?>;
 <?  if( $innerGLA->has_state() ) { ?>
     using InnerState = ConstantState::InnerState;
@@ -352,7 +360,7 @@ public:
                 if( !gotResult ) {
                     ++it;
                     if( it != end ) {
-                        it->second.Finalize();                    
+                        it->second.Finalize();
                     }
                 }
 <?              break;
@@ -368,9 +376,6 @@ public:
                 $oName = key($innerOutputs);
                 $oType = current($innerOutputs);
 ?>
-<?              if( $innerGLA->finalize_as_state() ) { ?>
-                gla.FinalizeState();
-<?              } // if we need to finalize as a state ?>
                 gotResult = true;
                 <?=$oName?> = <?=$oType?>( &gla );
                 ++it;
@@ -514,6 +519,10 @@ public:
             frag++;
         }
 
+<?php if($debug > 0) { ?>
+        fprintf(stderr, "<?=$className?>: fragments(%d)\n", frag);
+<?php } ?>
+
         return frag;
 
     }
@@ -550,6 +559,28 @@ public:
     std::size_t size() const {
         return groupByMap.size();
     }
+
+    const MapType& GetMap() const {
+      return groupByMap;
+    }
+
+    bool Contains(<?=const_typed_ref_args($gbyAtts)?>) const {
+      Key key(<?=args($gbyAtts)?>);
+      return groupByMap.count(key) > 0;
+    }
+
+    const InnerGLA& Get(<?=const_typed_ref_args($gbyAtts)?>) const {
+      Key key(<?=args($gbyAtts)?>);
+      return groupByMap.at(key);
+    }
+
+    bool Contains(Key key) const {
+      return groupByMap.count(key) > 0;
+    }
+
+    const InnerGLA& Get(Key key) const {
+      return groupByMap.at(key);
+    }
 };
 
 <?  if( in_array( 'fragment', $resType ) ) { ?>
@@ -573,6 +604,7 @@ typedef <?=$className?>::Iterator <?=$className?>_Iterator;
         'iterable'         => $iterable,
         'properties'       => [ 'resettable', 'finite container' ],
         'libraries'        => $libraries,
+        'extra'            => [ 'inner_gla' => $innerGLA],
     );
 }
 ?>

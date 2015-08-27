@@ -1,4 +1,4 @@
-//
+///
 //  Copyright 2012 Alin Dobra and Christopher Jermaine
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,21 +21,7 @@
 #include <cstddef>
 #include "Constants.h"
 #include "Iterator.h"
-
-// Default functions for Serialize/Deserialize
-template <class DataType>
-size_t Serialize(char * buffer, const DataType& src) {
-    DataType* asTypePtr = reinterpret_cast<DataType*>(buffer);
-    *asTypePtr = src;
-    return sizeof(DataType);
-}
-
-template <class DataType>
-size_t Deserialize(const char * buffer, DataType& dest) {
-    const DataType* asTypePtr = reinterpret_cast<const DataType*>(buffer);
-    dest = *asTypePtr;
-    return sizeof(DataType);
-}
+#include "SerializeBinary.h"
 
 /**
   This is iterator for flat datatypes (which do not have pointer inside as data members)
@@ -43,7 +29,7 @@ size_t Deserialize(const char * buffer, DataType& dest) {
   */
 class Column;
 
-template <class DataType, int headerSize = 0, int dtSize = sizeof(DataType) >
+template <class DataType, uint64_t headerSize = 0, uint64_t dtSize = sizeof(DataType) >
 class ColumnIterator {
 
     protected:
@@ -55,10 +41,10 @@ class ColumnIterator {
 
         // creates a column iterator for the given column... the requests for data that
         // are sent to the column are of size stepSize.  iterateMe is consumed.
-        ColumnIterator (Column &iterateMe, int stepSize = COLUMN_ITERATOR_STEP);
+        ColumnIterator (Column &iterateMe, uint64_t stepSize = COLUMN_ITERATOR_STEP);
 
         // This iterates from [fragmentStart, fragmentEnd]
-        ColumnIterator (Column &iterateMe, int fragmentStart, int fragmentEnd, int stepSize = COLUMN_ITERATOR_STEP);
+        ColumnIterator (Column &iterateMe, uint64_t fragmentStart, uint64_t fragmentEnd, uint64_t stepSize = COLUMN_ITERATOR_STEP);
 
         ColumnIterator ();
         // destructor... if there is a column left in the ColumnIterator, it will be
@@ -84,7 +70,7 @@ class ColumnIterator {
 
         // returns true if the object under the cursor has never been written to and so
         // it should not be read (it is undefined what happens if you read it)
-        int AtUnwrittenByte ();
+        uint64_t AtUnwrittenByte ();
 
         // returns the data object at the current position in the column...
         const DataType &GetCurrent ();
@@ -120,7 +106,7 @@ class ColumnIterator {
         void MarkFragment ();
 };
 
-template <class DataType, int headerSize, int dtSize >
+template <class DataType, uint64_t headerSize, uint64_t dtSize >
 inline const DataType &ColumnIterator <DataType, headerSize, dtSize > :: GetCurrent () {
 
     // For invalid columns this statement will turn out to be *((DataType*)NULL), this looks like
@@ -130,12 +116,12 @@ inline const DataType &ColumnIterator <DataType, headerSize, dtSize > :: GetCurr
     return curItem;
 }
 
-template <class DataType, int headerSize, int dtSize >
-inline int ColumnIterator <DataType, headerSize, dtSize > :: AtUnwrittenByte () {
+template <class DataType, uint64_t headerSize, uint64_t dtSize >
+inline uint64_t ColumnIterator <DataType, headerSize, dtSize > :: AtUnwrittenByte () {
     return it.AtUnwrittenByte ();
 }
 
-template <class DataType, int headerSize, int dtSize >
+template <class DataType, uint64_t headerSize, uint64_t dtSize >
 inline void ColumnIterator <DataType, headerSize, dtSize > :: Insert (const DataType &addMe) {
     if (it.IsInvalid ()) return;
     assert (it.IsWriteOnly() == true);
@@ -143,19 +129,19 @@ inline void ColumnIterator <DataType, headerSize, dtSize > :: Insert (const Data
     Serialize(it.GetData(), addMe);
 }
 
-template <class DataType, int headerSize, int dtSize >
+template <class DataType, uint64_t headerSize, uint64_t dtSize >
 inline void ColumnIterator <DataType, headerSize, dtSize > :: Advance () {
     it.Advance();
 }
 
 
-template <class DataType, int headerSize, int dtSize >
+template <class DataType, uint64_t headerSize, uint64_t dtSize >
 inline void ColumnIterator <DataType, headerSize, dtSize > :: Restart () {
     it.Restart();
 }
 
 
-template <class DataType, int headerSize, int dtSize >
+template <class DataType, uint64_t headerSize, uint64_t dtSize >
 inline void ColumnIterator <DataType, headerSize, dtSize > :: MarkFragment () {
     if (it.IsInvalid())
         return;
