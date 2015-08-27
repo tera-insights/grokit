@@ -1,5 +1,11 @@
 lexer grammar BaseLexer;
 
+@header {
+#ifndef _empty
+    #define _empty NULL
+#endif
+}
+
 QUOTED_ID : '`' ('a'..'z'|'A'..'Z'|'_') ('a'..'z'|'A'..'Z'|'0'..'9'|'_')* '`'
     ;
 

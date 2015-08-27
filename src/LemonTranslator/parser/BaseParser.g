@@ -186,6 +186,10 @@ tokens {
 
 @header {
 
+#ifndef _empty
+    #define _empty NULL
+#endif
+
 #ifndef BASE_GRAMMAR_INCLUDE
 #define BASE_GRAMMAR_INCLUDE
 

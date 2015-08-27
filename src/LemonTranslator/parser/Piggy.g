@@ -4,13 +4,6 @@ options {
     output = AST;
 }
 
-@header
-{
-    #ifndef _empty
-        #define _empty NULL
-    #endif
-}
-
 import BaseLexer, BaseParser;
 
 /* Keywords */
