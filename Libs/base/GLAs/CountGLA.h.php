@@ -25,7 +25,7 @@ public:
     <?=$name?>() : count(0) {}
     void AddItem( <?=const_typed_ref_args($input)?> ) { count++; }
     void AddState( <?=$name?> & o ) { count += o.count; }
-    void GetResult(<?=$oType?> & _count ) {
+    void GetResult(<?=$oType?> & _count ) const {
 <?  if( $asJson) { ?>
         Json::Value jVal(Json::objectValue);
         jVal["count"] = (Json::Int64) count;
