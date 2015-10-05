@@ -230,7 +230,7 @@ public:
     }
 
 <?  foreach( array_keys($myGLAs) as $index => $name) { ?>
-    const <?=$myGLAs[$name]?>& GetGLA<?=$index?>() {
+    const <?=$myGLAs[$name]?>& GetGLA<?=$index?>() const {
       return <?=$name?>;
     }
 <?  } ?>
