@@ -234,12 +234,6 @@ int GTProcessChunkWorkFunc_<?=$wpName?>
 
 <?  } // foreach query ?>
 
-<?  cgAccessColumns($attMap, 'input', $wpName); ?>
-
-    // Prepare input bitstring iterator
-    BStringIterator queries_in;
-    input.SwapBitmap(queries_in);
-
     // Prepare output bitstring iterator
     MMappedStorage queries_out_store;
     Column queries_out_col( queries_out_store );
@@ -253,14 +247,14 @@ int GTProcessChunkWorkFunc_<?=$wpName?>
 
     // Queries Covered by each passthrough attribute
 <?  foreach( $allPassthrough as $attr ) {
-		$type = $attr->type();
-		$nullable = $type->is('nullable');
+        $type = $attr->type();
+        $nullable = $type->is('nullable');
 
-		$cstr = "";
-		if ($nullable)
-			$cstr = "(GrokitNull::Value)";
+        $cstr = "";
+        if ($nullable)
+            $cstr = "(GrokitNull::Value)";
 ?>
-	<?=$type?> <?=$attr->name()?>_out_default<?=$cstr?>;
+    <?=$type?> <?=$attr->name()?>_out_default<?=$cstr?>;
     QueryIDSet <?=$attr->name()?>_out_queries;
 <?      foreach( $queries as $query => $info ) {
             if( in_array($attr, $info['pass']) ) {
@@ -273,14 +267,14 @@ int GTProcessChunkWorkFunc_<?=$wpName?>
 
     // Queries covered by each synthesized attribute
 <?  foreach( $allSynth as $attr ) {
-		$type = $attr->type();
-		$nullable = $type->is('nullable');
+        $type = $attr->type();
+        $nullable = $type->is('nullable');
 
-		$cstr = "";
-		if ($nullable)
-			$cstr = "(GrokitNull::Value)";
+        $cstr = "";
+        if ($nullable)
+            $cstr = "(GrokitNull::Value)";
 ?>
-	<?=$type?> <?=$attr->name()?>_out_default<?=$cstr?>;
+    <?=$type?> <?=$attr->name()?>_out_default<?=$cstr?>;
     QueryIDSet <?=$attr->name()?>_out_queries;
 <?      foreach( $queries as $query => $info ) {
             if( in_array($attr, $info['output']) ) {
@@ -301,10 +295,48 @@ int GTProcessChunkWorkFunc_<?=$wpName?>
     // Profiling information
     int64_t numTuplesIn = 0;
     int64_t numTuplesOut = 0;
+
 #ifdef PER_QUERY_PROFILE
 <?  foreach( $queries as $query => $info ) { ?>
     int64_t numTuplesIn_<?=queryName($query)?> = 0;
     int64_t numTuplesOut_<?=queryName($query)?> = 0;
+<?  } // foreach query ?>
+#endif // PER_QUERY_PROFILE
+
+    // Define should_iterate and is_done for each query
+<?  $iterVars = [];
+    foreach( $queries as $query => $info ) {
+        $iterVar = 'should_process_' . queryName($query);
+        $iterVars[] = $iterVar;
+?>
+    bool <?=$iterVar?> = false;
+<?  }
+    $iterExpr = implode(' || ', $iterVars);
+?>
+
+<?  foreach( $queries as $query => $info ) {
+        // Call StartChunk() on iterable GTs
+        $gt = $info['gt'];
+        $gtVar = $gtVars[$query];
+        if ($gt->iterable()) {
+?>
+    if (queriesToRun.Overlaps(<?=queryName($query)?>)) {
+        <?=$gtVar?>->StartChunk();
+    }
+<?      } ?>
+<?  } ?>
+
+    do {
+<?  cgAccessColumns($attMap, 'input', $wpName); ?>
+
+    // Prepare input bitstring iterator
+    BStringIterator queries_in;
+    input.SwapBitmap(queries_in);
+    
+    numTuplesIn = 0;
+#ifdef PER_QUERY_PROFILE
+<?  foreach( $queries as $query => $info ) { ?>
+    numTuplesIn_<?=queryName($query)?> = 0;
 <?  } // foreach query ?>
 #endif // PER_QUERY_PROFILE
 
@@ -320,6 +352,7 @@ int GTProcessChunkWorkFunc_<?=$wpName?>
         $gt = $info['gt'];
         $input = $info['expressions'];
         $output = $info['output'];
+        $iterVar = 'should_process_' . queryName($query);
 
         $gtVar = $gtVars[$query];
 
@@ -369,7 +402,7 @@ int GTProcessChunkWorkFunc_<?=$wpName?>
         $outputText = ob_get_clean();
 ?>
         // Do Query [<?=queryName($query)?>]
-        if( qry.Overlaps(<?=queryName($query)?>) ) {
+        if( !<?=$doneVar?> && qry.Overlaps(<?=queryName($query)?>) ) {
 #ifdef PER_QUERY_PROFILE
             numTuplesIn_<?=queryName($query)?>++;
 #endif // PER_QUERY_PROFILE
@@ -394,6 +427,28 @@ int GTProcessChunkWorkFunc_<?=$wpName?>
 <?  cgAdvanceAttributes($attMap, 2); ?>
     } // while we have tuples to process
 
+<?  foreach( $queries as $query => $info ) {
+        $gt = $info['gt'];
+        $iterVar = 'should_process_' . queryName($query);
+
+        $gtVar = $gtVars[$query];
+
+        if ($gt->iterable()) { ?>
+    if (<?=$iterVar?>) {
+        <?=$iterVar?> = <?=$gtVar?>->ShouldIterate();
+    }
+
+<?      } else { ?>
+    if (<?=$iterVar?>)
+        <?=$iterVar?> = false;
+<?      } ?>
+<?  } //foreach query ?>
+
+    // Put columns back into chunk
+<?  cgPutbackColumns($attMap, 'input', $wpName); ?>
+
+    } while(<?=$iterExpr?>);
+
     // Tell GTs that need to know about the chunk boundary
 <?  foreach( $queries as $query => $info ) {
         $gt = $info['gt'];
@@ -404,8 +459,7 @@ int GTProcessChunkWorkFunc_<?=$wpName?>
 <?      } // if GT cares about chunk boundaries  ?>
 <?  } // foreach query ?>
 
-    // Put columns back into chunk
-<?  cgPutbackColumns($attMap, 'input', $wpName); ?>
+
 
     // Finalize the output iterators and put the columns into the output chunk
     queries_out.Done();

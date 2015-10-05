@@ -991,6 +991,8 @@ namespace grokit {
         private $input = [];
         private $result_type;
         private $chunk_boundary = false;
+        private $iterable = false;
+
 
         public function __construct( $hash, $name, $value, array $args, array $oArgs ) {
             parent::__construct(InfoKind::T_GT, $hash, $name, $value, $args, $oArgs[0]);
@@ -1013,6 +1015,10 @@ namespace grokit {
             if( array_key_exists( 'chunk_boundary', $args ) ) {
                 $this->chunk_boundary = $args['chunk_boundary'];
             }
+
+            if( array_key_exists( 'iterable', $args ) ) {
+                $this->iterable = $args['iterable'];
+            }
         }
 
         public function summary() {
@@ -1022,6 +1028,7 @@ namespace grokit {
             $ret['output'] = squash($this->output);
             $ret['result_type'] = $this->result_type;
             $ret['chunk_boundary'] = $this->chunk_boundary;
+            $ret['iterable'] = $this->iterable;
 
             return $ret;
         }
@@ -1031,6 +1038,7 @@ namespace grokit {
         public function input() { return $this->input; }
         public function result_type() { return $this->result_type; }
         public function chunk_boundary() { return $this->chunk_boundary; }
+        public function iterable() { return $this->iterable; }
 
         /*
          * $outputs should be an array of TypeInfo objects giving the types of
