@@ -57,7 +57,7 @@ public:
         <?=array_template('{key} += other.{key};' . PHP_EOL, '        ', $inputs)?>
     }
 
-    void GetResult( <?=array_template('{val}& _{key}', ', ', $outputs)?> ) {
+    void GetResult( <?=array_template('{val}& _{key}', ', ', $outputs)?> ) const {
 <?
     reset($outputs);
     reset($inputs);

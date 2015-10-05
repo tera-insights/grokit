@@ -545,7 +545,7 @@ int GISTProduceResultsWorkFunc_<?=$wpName?>
 <?              break; }
             case 'multi': ?>
         state_<?=queryName($query)?>->Finalize();
-        while (state_<?=queryName($query)?>->(<?=implode(', ', $output)?>)) {
+        while (state_<?=queryName($query)?>->GetNextResult(<?=implode(', ', $output)?>)) {
 <?              break;
             case 'fragment': ?>
         <?=$gist?>::Iterator* iterator

@@ -70,7 +70,7 @@ public:
     }
 
     // we only support one tuple as output
-    void GetResult(<?=typed_ref_args($output)?>){
+    void GetResult(<?=typed_ref_args($output)?>) const {
         if( count > 0 ) {
 <?  foreach($output as $name => $type) {
         $inName = $outToIn[$name];

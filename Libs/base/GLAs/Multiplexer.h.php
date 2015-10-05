@@ -121,7 +121,7 @@ function Multiplexer( array $t_args, array $inputs, array $outputs ) {
     }
 
     $libraries = array_unique($libraries);
-
+    $extra = ['glas' => $myGLAs];
 ?>
 
 class <?=$className?> {
@@ -228,17 +228,24 @@ public:
         Finalize();
         GetNextResult(<?=args($outputs)?>);
     }
+
+<?  foreach( array_keys($myGLAs) as $index => $name) { ?>
+    const <?=$myGLAs[$name]?>& GetGLA<?=$index?>() const {
+      return <?=$name?>;
+    }
+<?  } ?>
 };
 
 <?
     return array(
-        'kind'        => 'GLA',
-        'name'        => $className,
-        'input'       => $inputs,
-        'output'      => $outputs,
-        'result_type' => $resultType,
-        'libraries'   => $libraries,
+        'kind'         => 'GLA',
+        'name'         => $className,
+        'input'        => $inputs,
+        'output'       => $outputs,
+        'result_type'  => $resultType,
+        'libraries'    => $libraries,
         'configurable' => $configurable,
+        'extra'        => $extra,
     );
 } // end function Multiplexer
 ?>
