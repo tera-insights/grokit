@@ -21,7 +21,9 @@ function Sum( array $t_args, array $inputs, array $outputs ) {
                 $storage[$name] = 'long double';
             } else if( $value->is('integral') ) {
                 $storage[$name] = 'long long int';
-            } else {
+            } else if( $value == lookupType('base::BOOL') ) {
+                $storage[$name] = 'long int';
+            }else {
                 $storage[$name] = $value->value();
             }
             $oKey = key($outputs);
@@ -29,7 +31,8 @@ function Sum( array $t_args, array $inputs, array $outputs ) {
             if( $outputs[$oKey] === null ) {
                 if( $value->is('real') ) {
                     $outputs[$oKey] = lookupType('base::DOUBLE');
-                } else if ($value->is('integral')) {
+                } else if ( $value->is('integral') ||
+                            $value == lookupType('base::BOOL') ) {
                     $outputs[$oKey] = lookupType('base::BIGINT');
                 } else {
                     $outputs[$oKey] = $value;
