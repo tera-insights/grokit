@@ -54,7 +54,7 @@ public:
 function BernoulliSample($t_args, $inputs) {
 	$p = get_first_key_default($t_args, ['p', 0], 0.5);
 
-	grokit_assert(is_float($p),
+	grokit_assert(is_float($p) || is_integer($p),
 		"BernoulliSample: p must be a number in the range [0, 1]");
 	grokit_assert($p >= 0 && $p <= 1,
 		"BernoulliSample: p must be in the range [0, 1]");
