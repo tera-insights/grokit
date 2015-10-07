@@ -26,11 +26,12 @@ PatternMatcherOnig::PatternMatcherOnig( const char * regexp ) {
 bool PatternMatcherOnig :: Match( const char * target ) const {
     int size = strlen(target);
 
-    int r = onig_match(
+    int r = onig_search(
         reg,
         (UChar *) target,
         (UChar *) target + size,
         (UChar *) target,
+        (UChar *) target + size,
         NULL,
         ONIG_OPTION_NONE
     );
