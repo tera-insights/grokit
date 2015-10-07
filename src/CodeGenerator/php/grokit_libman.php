@@ -817,7 +817,7 @@ namespace grokit {
                 $libHdrs = $res['lib_headers'];
 
                 foreach($libHdrs as $h ) {
-                    if( \count(explode('\\', $h) == 1) ) {
+                    if( \count(explode('\\', $h)) == 1) {
                         // No library specified, assume current
                         $h = implode('\\', $ns_parts) . '\\' . $h;
                     }
