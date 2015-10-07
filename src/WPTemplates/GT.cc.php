@@ -402,7 +402,7 @@ int GTProcessChunkWorkFunc_<?=$wpName?>
         $outputText = ob_get_clean();
 ?>
         // Do Query [<?=queryName($query)?>]
-        if( !<?=$doneVar?> && qry.Overlaps(<?=queryName($query)?>) ) {
+        if( <?=$iterVar?> && qry.Overlaps(<?=queryName($query)?>) ) {
 #ifdef PER_QUERY_PROFILE
             numTuplesIn_<?=queryName($query)?>++;
 #endif // PER_QUERY_PROFILE
@@ -439,8 +439,7 @@ int GTProcessChunkWorkFunc_<?=$wpName?>
     }
 
 <?      } else { ?>
-    if (<?=$iterVar?>)
-        <?=$iterVar?> = false;
+    <?=$iterVar?> = false;
 <?      } ?>
 <?  } //foreach query ?>
 
