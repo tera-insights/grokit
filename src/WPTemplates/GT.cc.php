@@ -309,7 +309,7 @@ int GTProcessChunkWorkFunc_<?=$wpName?>
         $iterVar = 'should_process_' . queryName($query);
         $iterVars[] = $iterVar;
 ?>
-    bool <?=$iterVar?> = false;
+    bool <?=$iterVar?> = true;
 <?  }
     $iterExpr = implode(' || ', $iterVars);
 ?>
@@ -445,6 +445,10 @@ int GTProcessChunkWorkFunc_<?=$wpName?>
 
     // Put columns back into chunk
 <?  cgPutbackColumns($attMap, 'input', $wpName); ?>
+
+    // Put bitmap back into chunk
+    queries_in.Done();
+    input.SwapBitmap(queries_in);
 
     } while(<?=$iterExpr?>);
 
