@@ -61,6 +61,7 @@ MMappedStorage :: MMappedStorage (uint64_t numaNode) :
 	// remember that we are empty
     bridgeEmpty(true),
     bridgeSize(0),
+    allocMultiplier(1),
     cstorage(),
     decompress(false),
 	// this can be treated as write only storage, because we dont have anything to read
@@ -238,8 +239,12 @@ char *MMappedStorage :: GetData (uint64_t posToStartFrom, uint64_t &numBytesRequ
 			} else {
         if (numBytesRequested > bridgeSize) {
           // Deallocate previous bridge.
-          if (bridge.bytes != nullptr)
-            mmap_free(bridge.bytes);
+          if (bridge.bytes != nullptr){
+	    // free the old bridge
+	    mmap_free(bridge.bytes);
+	    // change the allocator size so that we can write MIN_DATA_IN_ALLOC_UNIT objects
+	    allocMultiplier = BYTES_TO_PAGES(numBytesRequested*MIN_DATA_IN_ALLOC_UNIT);
+	  }
           // Allocate a bigger bridge to accomodate large request.
           bridgeSize = PAGE_ALIGN(numBytesRequested);
           bridge.bytes = (char *) mmap_alloc (bridgeSize, numa); // larage bridge.
@@ -261,7 +266,7 @@ char *MMappedStorage :: GetData (uint64_t posToStartFrom, uint64_t &numBytesRequ
 				if (upperEnd < bridge.end) {
 					StorageUnit temp;
 					temp.start = upperEnd + 1;
-					temp.end = temp.start + MMAP_PAGE_SIZE - 1;
+					temp.end = temp.start + allocMultiplier* MMAP_PAGE_SIZE - 1;
 
 					// make sure we cover the request
 					if (temp.end < bridge.end)
@@ -493,6 +498,7 @@ MMappedStorage :: MMappedStorage (void *myData, uint64_t sizeDecompressed, uint6
     bridge(),
     bridgeEmpty(true),
     bridgeSize(0),
+    allocMultiplier(1),
     cstorage(),
     decompress(false),
     isWriteMode(false),
@@ -532,6 +538,7 @@ MMappedStorage :: MMappedStorage (void *myData, uint64_t preEmptyPages, uint64_t
     bridge(),
     bridgeEmpty(true),
     bridgeSize(0),
+    allocMultiplier(1),
     cstorage(),
     decompress(false),
     isWriteMode(false),

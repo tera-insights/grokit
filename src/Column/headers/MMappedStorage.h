@@ -31,6 +31,9 @@
 // this macro controls in-place decompression
 //#define DECOMPRESS_IN_PLACE 1
 
+// Number of objects that have to fit in an allocaion unit
+#define MIN_DATA_IN_ALLOC_UNIT 20
+
 class MMappedStorage : public ColumnStorage {
 
 private:
@@ -50,7 +53,14 @@ private:
 	// the bridge is used to allow a "flat view" outside but broken inside
 	StorageUnit bridge;
 	bool bridgeEmpty; // is the bridge empty? This is used to avoid killing bridge
-  uint64_t bridgeSize; // the amount of memory allocated for the bridge
+	uint64_t bridgeSize; // the amount of memory allocated for the bridge
+
+	/* Number of disk pages to allocate for each new storage unit added.
+	   Normally, if each data item is small, this should be 1, thus one 
+	   page at a time gets allocated. For very large data items, allocating
+	   one page at a time creates a performance problem since each datapoint
+	   will cover multiple pages thus it will result in a copy via the bridtge */
+	int allocMultiplier;
 
 	// compressed data from the disk
 	CompressedStorageUnit cstorage;
