@@ -394,7 +394,6 @@ struct tuple_element< I, @type > {
 
 }
 
-
 <?  $globalContent .= ob_get_clean(); ?>
 
 <?
