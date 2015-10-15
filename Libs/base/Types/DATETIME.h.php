@@ -480,7 +480,6 @@ int64_t ClusterValue(const @type& x){
     return tmp;
 }
 
-
 inline
 void FromJson( const Json::Value & src, @type & dest ) {
     dest.FromJson(src);
