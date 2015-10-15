@@ -100,6 +100,12 @@ public:
     constexpr TIME operator +( const TIME & o ) const;
 <?  $bin_operators[] = '-';  ?>
     constexpr TIME operator -( const TIME & o ) const;
+
+    void FromString( const char * str );
+    int ToString( char * buffer ) const;
+
+    void FromJson( const Json::Value & );
+    void ToJson( Json::Value & ) const;
 };
 
 inline
@@ -229,6 +235,86 @@ inline
 constexpr TIME TIME :: operator -( const TIME & o ) const {
     return TIME(nMillis - o.nMillis);
 }
+
+inline
+void TIME :: FromString( const char * str ) {
+    using namespace boost::time_duration;
+    time_duration time = duration_from_string(std::string(str));
+    nMillis = time.total_milliseconds();
+}
+
+inline
+int TIME :: ToString( char * buffer) const {
+    // Construcsts boost::time_duration around nMillis.
+    std::string output = to_simple_string(milliseconds(nMillis));
+    strcpy(buffer, output.c_str());
+    return 1 + output.length();
+}
+
+inline
+void TIME :: FromJson( const Json::Value & src ) {
+    this->FromString(src.asCString());
+}
+
+inline
+void TIME :: ToJson( Json::Value & dest ) const {
+    char buffer[9];
+    this->ToString(buffer);
+    dest = buffer;
+}
+
+<?  ob_start(); ?>
+
+inline
+void FromString( @type & date, const char * buffer ) {
+    date.FromString( buffer );
+}
+
+inline
+int ToString( const @type & date, char * buffer ) {
+    return date.ToString(buffer);
+}
+
+inline
+void FromJson( const Json::Value & src, @type & dest ) {
+    dest.FromJson(src);
+}
+
+inline
+void ToJson( const @type & src, Json::Value & dest ) {
+    src.ToJson(dest);
+}
+
+// Hash function
+<?  $functions[] = ['Hash', ['@type'], 'BASE::BIGINT', true, true ]; ?>
+inline uint64_t Hash( const @type val ) {
+    return val.as_millis();
+}
+
+<?  $functions[] = ['IsNull', ['@type'], 'BASE::BOOL', true, true ]; ?>
+inline
+bool IsNull( const @type & val ) {
+    return val.is_null();
+}
+
+#ifdef _HAS_STD_HASH
+<?  $system_headers[] = 'functional'; ?>
+// C++11 STL-compliant hash struct specialization
+
+namespace std {
+
+template <>
+class hash<@type> {
+public:
+    size_t operator () (const @type& key) const {
+        return Hash(key);
+    }
+};
+
+}
+#endif // _HAS_STD_HASH
+
+<?  $globalContent .= ob_get_clean(); ?>
 
 <?
     return [
