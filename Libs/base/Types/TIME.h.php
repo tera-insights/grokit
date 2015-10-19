@@ -6,6 +6,12 @@ function TIME() {
     $constructors = [];
     $functions = [];
     $bin_operators = [];
+    $libraries = [];
+
+    $system_headers = [ 'cinttypes', 'limits', 'string', 'stdio.h' ];
+
+    $system_headers[] = 'boost/date_time/posix_time/posix_time.hpp';
+    $libraries[] = 'boost_date_time';
 
     $globalContent = "";
 ?>
@@ -238,16 +244,19 @@ constexpr TIME TIME :: operator -( const TIME & o ) const {
 
 inline
 void TIME :: FromString( const char * str ) {
-    using namespace boost::time_duration;
+    using namespace boost::posix_time;
     time_duration time = duration_from_string(std::string(str));
     nMillis = time.total_milliseconds();
 }
 
 inline
 int TIME :: ToString( char * buffer) const {
-    // Construcsts boost::time_duration around nMillis.
-    std::string output = to_simple_string(milliseconds(nMillis));
-    strcpy(buffer, output.c_str());
+    using namespace boost::posix_time;
+    // Constructs boost::time_duration around nMillis. Boost automatically
+    // truncates the string if there are no fractional seconds.
+    std::string output = to_simple_string(milliseconds(nMillis)).substr(0, 12);
+    // Only the first 12 characters are kept, i.e. HH:MM:SS.mmm
+    strcpy(buffer, output.substr(0, 12).c_str());
     return 1 + output.length();
 }
 
@@ -319,7 +328,8 @@ public:
 <?
     return [
         'kind'              => 'TYPE',
-        'system_headers'    => [ 'cinttypes', 'limits' ],
+        'system_headers'    => $system_headers,
+        'libraries'         => $libraries,
         'user_headers'      => [ 'Config.h' ],
         'binary_operators'  => $bin_operators,
         'global_content'    => $globalContent,
