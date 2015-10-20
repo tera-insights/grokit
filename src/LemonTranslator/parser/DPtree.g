@@ -923,22 +923,20 @@ gistRule
             gistDef
         )
         {
-           if( $res.retState ) {
-                glaStateTypeJson[curQuery][wp] = $gistDef.json;
-           }
+            glaStateTypeJson[curQuery][wp] = $gistDef.json;
 
-           Json::Value jVal(Json::objectValue);
-           jVal[J_TYPE] = $gistDef.json;
-           jVal[J_VAL] = jRez;
-           jVal[J_CARGS] = jCtArgs;
-           jVal[J_STATE] = $res.retState;
-           jVal[J_SARGS] = jStates;
+            Json::Value jVal(Json::objectValue);
+            jVal[J_TYPE] = $gistDef.json;
+            jVal[J_VAL] = jRez;
+            jVal[J_CARGS] = jCtArgs;
+            jVal[J_STATE] = $res.retState;
+            jVal[J_SARGS] = jStates;
 
            // Old stuff
            jVal[J_C_DEFS] = defs;
 
            lT->AddGIST(wp,curQuery, outAtts, reqStateSources, jVal );
-    }
+       }
   ;
 
 attLWT [SlotContainer& outAtts, Json::Value& json]
