@@ -5,26 +5,28 @@ function Gather(array $t_args, array $inputs, array $outputs) {
 
     $outputs = array_combine(array_keys($outputs), $inputs);
 
-    $sys_headers = ['vector'];
+    $sys_headers  = ['vector'];
     $user_headers = [];
-    $lib_headers = [];
-    $libraries = ['armadillo'];
+    $lib_headers  = [];
+    $libraries    = [];
     $extra = [];
     $result_type = 'single'
 ?>
 
-using namespace std;
-using tuple = std::tuple<<?=typed($inputs)?>>;
-
 class <?=$className?>;
 
 class <?=$className?> {
+ public:
+  using Tuple = std::tuple<<?=typed($inputs)?>>;
+
+  using Vector = std::vector<Tuple>;
+
  private:
   // The container that gathers the input.
-  vector<tuple> items;
+  Vector items;
 
   // The tuple to be filled with the current item.
-  tuple item;
+  Tuple item;
 
   // Used for iterating over the container during GetNextResult.
   int return_counter;
@@ -34,7 +36,7 @@ class <?=$className?> {
 
   void AddItem(<?=const_typed_ref_args($inputs)?>) {
 <?  foreach (array_keys($inputs) as $index => $name) { ?>
-    get<<?=$index?>>(item) = <?=$name?>;
+    std::get<<?=$index?>>(item) = <?=$name?>;
 <?  } ?>
     items.push_back(item);
   }
@@ -50,12 +52,16 @@ class <?=$className?> {
 
   void GetResult(<?=typed_ref_args($outputs)?>, int index = 0) const {
 <?  foreach (array_keys($outputs) as $index => $name) { ?>
-    <?=$name?> = get<<?=$index?>>(items[index]);
+    <?=$name?> = std::get<<?=$index?>>(items[index]);
 <?  } ?>
   }
 
   int GetCount() const {
     return items.size();
+  }
+
+  const Vector& GetTuples() const {
+    return items;
   }
 };
 
