@@ -283,18 +283,38 @@ namespace grokit {
                 $tInfo = new DataType( $hash, $name, $tName, $res, $args );
                 break;
             case InfoKind::T_GI:
+                // args = [targs, outputs, states]
+                if (\count($args) > 3 && !array_key_exists('required_states', $res)) {
+                    $res['required_states'] = $args[2];
+                }
                 $tInfo = new GI_Info( $hash, $name, $tName, $res, $args );
                 break;
             case InfoKind::T_GLA:
+                // args = [targs, inputs, outputs, states]
+                if (\count($args) > 4 && !array_key_exists('required_states', $res)) {
+                    $res['required_states'] = $args[3];
+                }
                 $tInfo = new GLA_Info( $hash, $name, $tName, $res, $args );
                 break;
             case InfoKind::T_GF:
+                // args = [targs, inputs, states]
+                if (\count($args) > 3 && !array_key_exists('required_states', $res)) {
+                    $res['required_states'] = $args[2];
+                }
                 $tInfo = new GF_Info( $hash, $name, $tName, $res, $args );
                 break;
             case InfoKind::T_GIST:
+                // args = [targs, outputs, states]
+                if (\count($args) > 3 && !array_key_exists('required_states', $res)) {
+                    $res['required_states'] = $args[2];
+                }
                 $tInfo = new GIST_Info( $hash, $name, $tName, $res, $args );
                 break;
             case InfoKind::T_GT:
+                // args = [targs, inputs, otuputs, states]
+                if (\count($args) > 4 && !array_key_exists('required_states', $res)) {
+                    $res['required_states'] = $args[3];
+                }
                 $tInfo = new GT_Info( $hash, $name, $tName, $res, $args );
                 break;
             case InfoKind::T_GSE:
