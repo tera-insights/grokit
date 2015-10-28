@@ -9,8 +9,9 @@ function Gather(array $t_args, array $inputs, array $outputs) {
     $user_headers = [];
     $lib_headers  = [];
     $libraries    = [];
-    $extra = [];
-    $result_type = 'single'
+    $properties   = ['list'];
+    $extra        = [];
+    $result_type  = 'single'
 ?>
 
 class <?=$className?>;
@@ -60,7 +61,7 @@ class <?=$className?> {
     return items.size();
   }
 
-  const Vector& GetTuples() const {
+  const Vector& GetList() const {
     return items;
   }
 };
@@ -73,6 +74,7 @@ class <?=$className?> {
         'user_headers'   => $user_headers,
         'lib_headers'    => $lib_headers,
         'libraries'      => $libraries,
+        'properties'     => $properties,
         'extra'          => $extra,
         'iterable'       => false,
         'input'          => $inputs,
