@@ -28,10 +28,10 @@ class <?=$name?> {
 
 public:
     <?=$name?>() :
-        count(0),
 <?  foreach($output as $k => $v) { ?>
-        _<?=$k?>()
+        _<?=$k?>(),
 <?  } // foreach output ?>
+        count(0)
     { }
 
     void AddItem( <?=const_typed_ref_args($input)?> ) {
