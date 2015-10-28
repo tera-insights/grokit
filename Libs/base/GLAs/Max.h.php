@@ -2,7 +2,7 @@
 // Copyright 2014 Tera Insights, LLC. All Rights Reserved
 
 function Max( array $t_args, array $input, array $output ) {
-    grokit_assert( \count($output) <= 1,
+    grokit_assert( \count($output) >= 1,
         'Max GLA  produces at least one output!');
     grokit_assert( \count($output) == \count($input),
         'Max GLA should have the same number of inputs and outputs');
