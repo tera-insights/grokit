@@ -19,6 +19,24 @@
 
 using namespace std;
 
+// Function to display attributes for debugging
+  std::string GetAllAttrAsString(const std::set<SlotID>& atts) {
+    AttributeManager& am = AttributeManager::GetAttributeManager();
+    std::string rez;
+    bool first = true;
+    for (set<SlotID>::iterator it = atts.begin(); it != atts.end(); it++) {
+        if (first)
+            first = false;
+        else
+            rez += ", ";
+
+        SlotID slot = *it;
+        rez += am.GetAttributeName(slot);
+    }
+    return rez;
+}
+
+
 string LT_Waypoint::GetWPName(){
     IDInfo info;
     GetId().getInfo(info);

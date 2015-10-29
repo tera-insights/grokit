@@ -22,26 +22,6 @@
 
 using namespace std;
 
-namespace {
-
-string GetAllAttrAsString(const set<SlotID>& atts) {
-    AttributeManager& am = AttributeManager::GetAttributeManager();
-    string rez;
-    bool first = true;
-    for (set<SlotID>::iterator it = atts.begin(); it != atts.end(); it++) {
-        if (first)
-            first = false;
-        else
-            rez += ", ";
-
-        SlotID slot = *it;
-        rez += am.GetAttributeName(slot);
-    }
-    return rez;
-}
-
-} // anonymous namespace
-
 Json::Value LT_GT :: QueryToSlotSetJson( const QueryToSlotSet & val ) {
     AttributeManager& am = AttributeManager::GetAttributeManager();
 
@@ -200,6 +180,14 @@ bool LT_GT::PropagateDown(QueryID query, const SlotSet& atts, SlotSet& result, Q
     inputNeeded[query] = result;
 
     queryExit.Insert (qe);
+
+    std::cerr << "[GT] " << GetWPName() << " query " << GetQueryName(query) << ":\n"
+        << "\tNeeded By Next WP: " << GetAllAttrAsString(atts) << "\n"
+        << "\tNeeded By Self: " << GetAllAttrAsString(used[query]) << "\n"
+        << "\tPassthrough: " << GetAllAttrAsString(pass) << "\n"
+        << "\tSynthesized: " << GetAllAttrAsString(synthesized[query]) << "\n"
+        << "\tRequested From Below: " << GetAllAttrAsString(result) << "\n";
+
     return true;
 }
 

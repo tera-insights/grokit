@@ -147,6 +147,13 @@ bool LT_Selection::PropagateDown(QueryID query, const SlotSet& atts, SlotSet& re
   set_union(atts.begin(), atts.end(), used[query].begin(), used[query].end(), inserter(uni, uni.begin()));
   set_difference(uni.begin(), uni.end(), synthesized[query].begin(), synthesized[query].end(), inserter(result, result.begin()));
   queryExit.Insert (qe);
+
+    std::cerr << "[Selection] " << GetWPName() << " query " << GetQueryName(query) << ":\n"
+        << "\tNeeded By Next WP: " << GetAllAttrAsString(atts) << "\n"
+        << "\tNeeded By Self: " << GetAllAttrAsString(used[query]) << "\n"
+        << "\tSynthesized: " << GetAllAttrAsString(synthesized[query]) << "\n"
+        << "\tRequested From Below: " << GetAllAttrAsString(result) << "\n";
+
   return true;
 }
 
