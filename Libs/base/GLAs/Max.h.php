@@ -2,7 +2,7 @@
 // Copyright 2014 Tera Insights, LLC. All Rights Reserved
 
 function Max( array $t_args, array $input, array $output ) {
-    grokit_assert( \count($output) <= 1,
+    grokit_assert( \count($output) >= 1,
         'Max GLA  produces at least one output!');
     grokit_assert( \count($output) == \count($input),
         'Max GLA should have the same number of inputs and outputs');
@@ -28,10 +28,10 @@ class <?=$name?> {
 
 public:
     <?=$name?>() :
-        count(0),
 <?  foreach($output as $k => $v) { ?>
-        _<?=$k?>()
+        _<?=$k?>(),
 <?  } // foreach output ?>
+        count(0)
     { }
 
     void AddItem( <?=const_typed_ref_args($input)?> ) {
