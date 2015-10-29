@@ -45,6 +45,8 @@ class LT_GIST : public LT_Waypoint {
           StateSourceVec& sVec,
           Json::Value& info) override;
 
+  virtual bool ReturnAsState(QueryID query);
+
   virtual bool PropagateDown(QueryID query, const SlotSet& atts, SlotSet& result, QueryExit qe) override;
   virtual bool PropagateDownTerminating(QueryID query, const SlotSet& atts /*blank*/, SlotSet& result,
           QueryExit qe) override;

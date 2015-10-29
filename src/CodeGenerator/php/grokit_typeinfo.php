@@ -240,6 +240,9 @@ namespace grokit {
             return in_array($name, $this->properties) ? TRUE : FALSE;
         }
 
+        public function extras() { return $this->extras; }
+        public function properties() { return $this->properties; }
+
     }
 
     /*

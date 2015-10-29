@@ -482,6 +482,8 @@ scanner
 
             scanner = WayPointID(sName);
             lT->AddScannerWP(scanner, rName, attribs);
+            // Tell the scanner to report it can read all columns
+            lT->AddScanner(scanner, curQuery);
         }
             scannerFilters[scanner]
         )
@@ -1186,6 +1188,7 @@ textloaderWP
     jVal[J_C_DEFS] = defs;
 
     lT->AddTextLoaderWP(wp, attribs, jVal );
+    lT->AddScanner(wp, curQuery); // DO WE NEED THIS?
 }
   :
     ^(TEXTLOADER__
@@ -1219,6 +1222,7 @@ giWP
     jVal[J_OLD_TYPE] = giType;
 
     lT->AddGIWP(wp, attribs, jVal );
+    lT->AddScanner(wp, curQuery); // DO WE NEED THIS?
     lT->AddEdgeFromBottom(wp);
 }
     : ^(GI__
