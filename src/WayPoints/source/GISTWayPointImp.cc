@@ -216,6 +216,9 @@ bool GISTWayPointImp :: PreProcessingComplete( QueryExitContainer& whichOnes,
 
     QueryToGLAStateMap& generatedStates = result.get_genStates();
     QueryToGLAStateMap& gists = result.get_gists();
+    QueryIDSet& produceIntermediates = result.get_produceIntermediates();
+
+    queriesWithIntermediates.Union(produceIntermediates);
 
     // Sanity Checking
     FOREACH_TWL( iter, whichOnes ) {
@@ -608,12 +611,16 @@ bool GISTWayPointImp :: PreFinalizeComplete( QueryExitContainer& whichOnes,
         QueryID query = iter.query;
         queriesCounting.Difference(query);
 
+        bool lastIter = ! queriesToIterate.Overlaps(query);
+        bool producesIntermediates = queriesWithIntermediates.Overlaps(query);
+        bool produceTuples = producesIntermediates || lastIter;
+
         FATALIF(!fragInfo.IsThere(query),
                 "No information about the amount of output found for query %s",
                 query.GetStr().c_str());
         int numFrags = fragInfo.Find(query).GetData();
 
-        if( numFrags > 0 ) {
+        if( numFrags > 0  && produceTuples ) {
             queryFragmentMap.ORAll( query, numFrags );
             queriesFinalizing.Union(query);
 

@@ -562,7 +562,7 @@ namespace grokit {
             return $this->generateFunction( $oName, $args, $targs, $hash, $func );
         }
 
-        public function lookupFunction( $name, array $args, array $targs = [], $fuzzy = true ) {
+        public function lookupFunction( $name, array $args, array $targs = [], $fuzzy = true, $allowGenerate = true ) {
             // If the name of the function isn't namespaced, assume the base namespace
             // as long as we are doing fuzzy lookups with names.
             // If fuzzy is false, don't do this (mostly used for operators)
@@ -589,8 +589,11 @@ namespace grokit {
             if( ! $has_targs && $this->functionRegistered( $name, $args ) ) {
                 $info = $this->lookupConcreteFunction( $name, $args, $hash );
             }
-            else {
+            else if( $allowGenerate ) {
                 $info = $this->generateFunction( $name, $args, $targs, $hash );
+            } else {
+                $fArgs = implode(', ', $args);
+                grokit_error("Unable to lookup function {$name}({$fArgs})");
             }
 
             // Cache the function by both the original hash and the one provided

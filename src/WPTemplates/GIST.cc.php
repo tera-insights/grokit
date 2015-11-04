@@ -47,6 +47,7 @@ int GISTPreProcessWorkFunc_<?=$wpName?>
     QueryToGLASContMap & reqStates = myWork.get_receivedStates();
     QueryToGLAStateMap constStates;
     QueryToGLAStateMap gists;
+    QueryIDSet producingIntermediates;
 
 <?  cgDeclareQueryIDs($queries); ?>
 
@@ -108,12 +109,16 @@ int GISTPreProcessWorkFunc_<?=$wpName?>
             QueryID key = iter.query;
 
             gists.Insert(key, gistState);
+
+<?      if ($gist->intermediates()) { ?>
+            producingIntermediates.Union(iter.query);
+<?      } // gist produces intermediates ?>
         } // If this query is query <?=queryName($query)?>
 
 <?  } // foreach query ?>
     } END_FOREACH;
 
-    GISTPreProcessRez myRez( constStates, gists );
+    GISTPreProcessRez myRez( constStates, gists, producingIntermediates );
     myRez.swap(result);
 
     return WP_PREPROCESSING; // for PreProcess

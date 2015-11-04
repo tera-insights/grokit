@@ -104,6 +104,7 @@ function GTGenerate_ProcessChunk($wpName, $queries, $attMap) {
     $allSynth = [];
     foreach( $queries as $query => $info ) {
         $pass = $info['pass'];
+
         foreach( $pass as $attr ) {
             if( ! in_array($attr, $allPassthrough) )
                 $allPassthrough[] = $attr;
