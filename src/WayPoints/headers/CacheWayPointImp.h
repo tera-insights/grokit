@@ -18,6 +18,8 @@ class CacheWayPointImp : public WayPointImp {
 private:
     typedef EfficientMap<Keyify<uint64_t>, CachedChunk> ChunkMap;
 
+    bool allReceived;
+
     ChunkMap chunksAvailable;
     ChunkMap chunksOut;
     ChunkMap chunksDone;
