@@ -78,7 +78,7 @@ ColumnVarIterator<DataType, headerSize, dtSize> :: ColumnVarIterator( Column &it
     if( it.IsInvalid() )
         return;
 
-    if( !it.IsWriteOnly() ) {
+    if( !it.IsWriteOnly() && !it.AtUnwrittenByte() ) {
         it.EnsureHeaderSpace();
         size_t serializedSize = SizeFromBuffer<DataType>(it.GetData());
         it.EnsureSpace(serializedSize, serializedSize);
@@ -94,7 +94,7 @@ ColumnVarIterator<DataType, headerSize, dtSize> :: ColumnVarIterator( Column &it
     if( it.IsInvalid() )
         return;
 
-    if( !it.IsWriteOnly() ) {
+    if( !it.IsWriteOnly() && !it.AtUnwrittenByte() ) {
         it.EnsureHeaderSpace();
         size_t serializedSize = SizeFromBuffer<DataType>(it.GetData());
         it.EnsureSpace(serializedSize, serializedSize);
@@ -141,7 +141,7 @@ void ColumnVarIterator<DataType, headerSize, dtSize> :: Advance() {
     it.SetObjLen( oLen );
     it.AdvanceBy( oLen );
 
-    if( !it.IsWriteOnly() ) {
+    if( !it.IsWriteOnly() && !it.AtUnwrittenByte() ) {
         it.EnsureHeaderSpace();
         size_t serializedSize = SizeFromBuffer<DataType>(it.GetData());
         it.EnsureSpace(serializedSize, serializedSize);
