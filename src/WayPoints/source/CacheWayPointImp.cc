@@ -10,6 +10,7 @@ using namespace std;
 
 CacheWayPointImp :: CacheWayPointImp() :
     WayPointImp(),
+    allReceived(false),
     chunksAvailable(),
     chunksOut(),
     chunksDone(),
@@ -39,7 +40,10 @@ void CacheWayPointImp :: ProcessHoppingUpstreamMsg( HoppingUpstreamMsg & message
 
         // If we have cached chunks, generate token requests to start sending them
         chunksAvailable.MoveToStart();
-        if( ! chunksAvailable.AtEnd() )
+
+        // If we have previously received all chunks
+        // start producing immediately
+        if (allReceived)
             GenerateTokenRequests();
         else
             SendHoppingUpstreamMsg( message );
@@ -189,7 +193,7 @@ void CacheWayPointImp :: ProcessAckMsg( QueryExitContainer & whichOnes, HistoryL
 
     nAcked++;
 
-    if( nAcked == nChunks ) {
+    if( allReceived && (nAcked == nChunks) ) {
         SendQueryDoneMsg(whichOnesCopy);
     }
 }
@@ -198,6 +202,16 @@ void CacheWayPointImp :: ProcessHoppingDownstreamMsg( HoppingDownstreamMsg &mess
     PDEBUG("CacheWayPointImp :: ProcessHoppingDownstreamMsg()");
     // see if we have a query done message
     if (CHECK_DATA_TYPE (message.get_msg (), QueryDoneMsg)) {
+        QueryDoneMsg temp;
+        temp.swap(message.get_msg());
+        QueryExitContainer whichOnes;
+        whichOnes.copy(temp.get_whichOnes());
+        temp.swap(message.get_msg());
+
+        allReceived = true;
+        if (nAcked == nChunks) {
+            SendQueryDoneMsg(whichOnes);
+        }
     }
     else {
         SendHoppingDownstreamMsg (message);

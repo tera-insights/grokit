@@ -35,6 +35,8 @@ private:
     static constexpr const uint8_t DPM_MASK = 0x1F;
     static constexpr const uint8_t DPM_BITS = 5;
 
+    static const boost::posix_time::ptime UNIX_EPOCH __attribute__ ((weak));
+
     int32_t ctime;
 
     void Set(
@@ -167,6 +169,8 @@ private:
     }
 };
 
+const boost::posix_time::ptime DATETIME::UNIX_EPOCH(boost::gregorian::date(1970, 1, 1));
+
 
 inline
 constexpr int8_t DATETIME::DaysInMonth(int16_t year, int8_t month) {
@@ -177,18 +181,15 @@ constexpr int8_t DATETIME::DaysInMonth(int16_t year, int8_t month) {
 inline
 void DATETIME :: Set( int16_t year, int8_t month, int8_t day, int8_t hour, int8_t minute, int8_t second ) {
 
+    using boost::gregorian::date;
+    using boost::posix_time::time_duration;
+    using boost::posix_time::ptime;
 
-    tm dtime;
-    dtime.tm_year = year - TM_YEAR_OFFSET;
-    dtime.tm_mon = month - 1;  // tm struct month is in range [0, 11]
-    dtime.tm_mday = day;
-    dtime.tm_hour = hour;
-    dtime.tm_min = minute;
-    dtime.tm_sec = second;
-    dtime.tm_isdst = -1;
+    ptime time(date(year, month, day), time_duration(hour, minute, second));
 
-    time_t c_time = mktime( &dtime );
-    ctime = static_cast<int32_t>(c_time);
+    long seconds = (UNIX_EPOCH - time).total_seconds();
+
+    ctime = int32_t(seconds);
 }
 
 inline constexpr

@@ -44,6 +44,7 @@ class GISTWayPointImp : public GPWayPointImp {
     // Preprocessing stage
     QueryIDSet queriesToPreprocess;
     QueryIDSet queriesPreprocessing;
+    QueryIDSet queriesWithIntermediates;
     QueryToGLAStateMap gistStates;
 
     // Round preparation stage

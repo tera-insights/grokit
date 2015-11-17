@@ -27,6 +27,10 @@
 #include <map>
 #include <ostream>
 
+
+std::string GetAllAttrAsString(const std::set<SlotID>& atts);
+
+
 /** This is the base class for the hierarchy that keeps track of the
         information for the analysis in the Lemon Translator. */
 

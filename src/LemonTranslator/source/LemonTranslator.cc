@@ -666,13 +666,24 @@ bool LemonTranslator::AddPrint(WayPointID wpID, QueryID query,
 // query specifies which query the scanner acts as a writer
 bool LemonTranslator::AddWriter(WayPointID wpID, QueryID query, SlotToSlotMap& storeMap){
     PDEBUG("LemonTranslator::AddWriter(WayPointID wpID, QueryID query)");
-    FATALIF(!wpID.IsValid(), "Invalid WaypointID received in AddPrint");
+    FATALIF(!wpID.IsValid(), "Invalid WaypointID received in AddWriter");
     LT_Waypoint* WP = NULL;
     set<SlotID> attr;
     SlotContainer atts;
     if (GetWaypointAttr(wpID, atts, attr, WP) == false) return false;
     queryToRootMap[query] = IDToNode[wpID];
     return WP->AddWriter(query, storeMap);
+}
+
+bool LemonTranslator::AddScanner(WayPointID wpID, QueryID query){
+   PDEBUG("LemonTranslator::AddScanner(WayPointID wpID, QueryID query)");
+    FATALIF(!wpID.IsValid(), "Invalid WaypointID received in AddScanner");
+    LT_Waypoint* WP = NULL;
+    set<SlotID> attr;
+    SlotContainer atts;
+    if (GetWaypointAttr(wpID, atts, attr, WP) == false) return false;
+    queryToRootMap[query] = IDToNode[wpID];
+    return WP->AddScanner(query);
 }
 
 bool LemonTranslator::AddScannerRange(WayPointID wpID, QueryID query,
@@ -1056,12 +1067,6 @@ bool LemonTranslator::AnalyzeAttUsageBottomUp(QueryIDSet queries)
         LT_Waypoint* thisWP = nodeToWaypointData[node];
         // If we found some WP, start processing (will be null for virtual bottom node and virtual top node)
         if (thisWP) {
-            // if textLoader or scanner, just add all queries to them (they already have all
-            // attributes needed). All attributes will ge given to each query to start with
-            if (thisWP->GetType() == ScannerWaypoint || thisWP->GetType() == TextLoaderWaypoint
-                    || thisWP->GetType() == GIWayPoint )
-                thisWP->AddScanner(queries); // same function for both waypoints
-
             // get the attributes which we need to send up
             map<QueryID, set<SlotID> > attributes;
             if ( !thisWP->PropagateUp(attributes) ){

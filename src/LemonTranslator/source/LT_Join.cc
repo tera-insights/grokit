@@ -21,7 +21,7 @@
 #include <sstream>
 
 using namespace std;
-
+/* WE DO NOT NEED THIS
 static string GetAllAttrAsString(const set<SlotID>& atts) {
     string rez;
     for (set<SlotID>::iterator it = atts.begin(); it != atts.end(); it++) {
@@ -33,6 +33,7 @@ static string GetAllAttrAsString(const set<SlotID>& atts) {
     }
     return rez;
 }
+*/
 
 bool LT_Join::GetConfig(WayPointConfigureData& where){
 

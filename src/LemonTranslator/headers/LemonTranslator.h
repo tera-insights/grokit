@@ -170,6 +170,7 @@ class LemonTranslator {
         bool AddWriter(WayPointID wpID, QueryID query, SlotToSlotMap& storeMap);
 
         bool AddScannerRange(WayPointID wpID, QueryID query, int64_t min, int64_t max);
+	bool AddScanner(WayPointID wpID, QueryID query);
 
         /****Interface for the rest of the system***************/
 

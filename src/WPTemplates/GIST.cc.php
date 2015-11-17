@@ -47,6 +47,7 @@ int GISTPreProcessWorkFunc_<?=$wpName?>
     QueryToGLASContMap & reqStates = myWork.get_receivedStates();
     QueryToGLAStateMap constStates;
     QueryToGLAStateMap gists;
+    QueryIDSet producingIntermediates;
 
 <?  cgDeclareQueryIDs($queries); ?>
 
@@ -108,12 +109,16 @@ int GISTPreProcessWorkFunc_<?=$wpName?>
             QueryID key = iter.query;
 
             gists.Insert(key, gistState);
+
+<?      if ($gist->intermediates()) { ?>
+            producingIntermediates.Union(iter.query);
+<?      } // gist produces intermediates ?>
         } // If this query is query <?=queryName($query)?>
 
 <?  } // foreach query ?>
     } END_FOREACH;
 
-    GISTPreProcessRez myRez( constStates, gists );
+    GISTPreProcessRez myRez( constStates, gists, producingIntermediates );
     myRez.swap(result);
 
     return WP_PREPROCESSING; // for PreProcess
@@ -628,10 +633,10 @@ int GISTProduceStateWorkFunc_<?=$wpName?>
 
 <?  foreach ($queries as $query => $info) {
         $gist = $info['gist'];
-        if ($gist->finalize_as_state()) { ?>
-    // do <?=queryName($query)?>
+?>
+    // do <?=queryName($query)?> //
     if (whichOne.query == <?=queryName($query)?>){
-        // look for the state of <?=queryName($query)?>
+        // look for the state of <?=queryName($query)?> //
         GLAPtr state;
         state.swap(gist);
 
@@ -639,11 +644,12 @@ int GISTProduceStateWorkFunc_<?=$wpName?>
             "Got GIST of unexpected type when finalizing as state for query <?=queryName($query)?>");
 
         <?=$gist?>* state_<?=queryName($query)?> = (<?=$gist?>*) state.get_glaPtr();
+<?      if ($gist->finalize_as_state()) { ?>
         state_<?=queryName($query)?>->FinalizeState();
+<?      }  ?>
         state.swap(gist);
     }
-<?      }
-    } ?>
+<?  } ?>
 
     WayPointID myID = WayPointID::GetIdByName("<?=$wpName?>");
     StateContainer stateCont( myID, whichOne, gist );

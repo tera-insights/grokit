@@ -153,7 +153,12 @@ grokit\create_data_type( "GTProcessChunkRez", "ExecEngineData", [ ], [ 'filters'
 
 /***** Return types for Selection and Generalized Filters *****/
 <?php
-grokit\create_data_type( "SelectionPreProcessRez", "ExecEngineData", [ ], [ 'constStates' => 'QueryToGLAStateMap', ] );
+grokit\create_data_type(
+	"SelectionPreProcessRez"
+	, "ExecEngineData"
+	, [ ]
+	, [ 'constStates' => 'QueryToGLAStateMap' ]
+);
 ?>
 
 
@@ -162,7 +167,16 @@ grokit\create_data_type( "SelectionPreProcessRez", "ExecEngineData", [ ], [ 'con
 // Preprocessing will generate constant states not received from other
 // waypoints and initialize the GIST state, and return them.
 <?php
-grokit\create_data_type( "GISTPreProcessRez", "ExecEngineData", [ ], [ 'genStates' => 'QueryToGLAStateMap', 'gists' => 'QueryToGLAStateMap', ] );
+grokit\create_data_type(
+	"GISTPreProcessRez"
+	, "ExecEngineData"
+	, [ ]
+	, [
+		'genStates' => 'QueryToGLAStateMap',
+		'gists' => 'QueryToGLAStateMap',
+		'produceIntermediates' => 'QueryIDSet'
+	  ]
+);
 ?>
 
 

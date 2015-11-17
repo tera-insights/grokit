@@ -156,8 +156,8 @@ Iterator :: ~Iterator () {
     }
 
     // tell the column we are done
-    if (curPosInColumn + objLen > colLength) {
-        myColumn.Done (curPosInColumn + objLen);
+    if (curPosInColumn > colLength) {
+        myColumn.Done (curPosInColumn);
     } else {
         myColumn.Done (colLength);
     }
@@ -173,8 +173,8 @@ void Iterator :: Done (Column &iterateMe) {
     }
 
     // tell the column we are done
-    if (curPosInColumn + objLen > colLength) {
-        myColumn.Done (curPosInColumn + objLen);
+    if (curPosInColumn > colLength) {
+        myColumn.Done (curPosInColumn);
     } else {
         myColumn.Done (colLength);
     }
@@ -191,8 +191,8 @@ void Iterator :: Done () {
     }
 
     // tell the column we are done
-    if (curPosInColumn + objLen > colLength) {
-        myColumn.Done (curPosInColumn + objLen);
+    if (curPosInColumn > colLength) {
+        myColumn.Done (curPosInColumn);
     } else {
         myColumn.Done (colLength);
     }

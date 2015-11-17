@@ -113,6 +113,13 @@ bool LT_GIST :: AddGIST( QueryID query,
     return true;
 }
 
+bool LT_GIST::ReturnAsState( QueryID query ) {
+    Json::Value &info = infoMap[query];
+
+    info[J_STATE] = true;
+    return true;
+}
+
 // atts coming from top is dropped as it will not be propagated down
 // that also means, all attributes coming from top are synthesized ones
 // 1. result is blank, as this waypoint uses no attributes

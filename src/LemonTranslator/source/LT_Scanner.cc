@@ -187,7 +187,13 @@ bool LT_Scanner::AddWriter(QueryID query, SlotToSlotMap & qStoreMap){
     storeMap.copy(qStoreMap);
     //cout << "[" << GetId().getName() << "] AddWriter - storeMap: " << PrintSlotToSlotMap(storeMap) << endl;
 
-    CheckQueryAndUpdate(query, allAttr, newQueryToSlotSetMap);
+    SlotSet storeAtts;
+    FOREACH_EM(relSlot, sourceSlot, storeMap) {
+        SlotID sourceCopy = sourceSlot;
+        storeAtts.insert(sourceCopy);
+    } END_FOREACH;
+
+    CheckQueryAndUpdate(query, storeAtts, newQueryToSlotSetMap);
     queriesCovered.Union(query);
     return true;
 }
@@ -299,8 +305,13 @@ bool LT_Scanner::PropagateDownTerminating(QueryID query, const SlotSet& atts/*bl
     CheckQueryAndUpdate(newQueryToSlotSetMap, used);
     newQueryToSlotSetMap.clear();
     // populate everything we got from text loader to send them down
-    result = fromTextLoader[query];
+    result = used[query]; //fromTextLoader[query];
     queryExitTerminating.Insert(qe);
+
+    std::cerr << "[WRITER] " << GetWPName() << " query " << GetQueryName(query) << ":\n"
+        << "\tNeeded By Self: " << GetAllAttrAsString(used[query]) << "\n"
+        << "\tRequested From Below: " << GetAllAttrAsString(result) << "\n";
+
     return true;
 }
 

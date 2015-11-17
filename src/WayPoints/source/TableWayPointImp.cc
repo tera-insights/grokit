@@ -584,10 +584,25 @@ void TableWayPointImp::DoneProducing (QueryExitContainer &whichOnes, HistoryList
     // (system correctly pushes the chunk to the next guy)
     // To tell them apart we peak at the id in the history.
 
+    bool isOurChunk = false;
+
     // if this is a read ack than the first element should be a TableReadHistory
+    // created by us
     history.MoveToStart();
-    if (history.Current().Type() == TableReadHistory::type){
-        FATALIF(history.RightLength () != 1, "Why do we have more than the table lineage?");
+    if (CHECK_DATA_TYPE(history.Current(), TableReadHistory)) {
+        TableReadHistory readHist;
+        readHist.swap(history.Current());
+        WayPointID srcWP = readHist.get_whichWayPoint();
+        readHist.swap(history.Current());
+
+        isOurChunk = GetID() == srcWP;
+
+        if (isOurChunk) {
+            FATALIF(history.RightLength () != 1, "Why do we have more than the table lineage?");
+        }
+    }
+
+    if (isOurChunk){
 
         ChunkContainer cCont;
         cCont.swap(data);
