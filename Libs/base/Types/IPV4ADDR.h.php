@@ -140,6 +140,7 @@ public:
         return *this;
     }
 
+<?  $functions[] = ['Domain', ['@type'], '@type', true ]; ?>
     friend IPv4 Domain(IPv4 x){
         IPv4 rez=x;
         rez.addr.split.c4=0;
