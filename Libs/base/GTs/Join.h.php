@@ -5,29 +5,27 @@ function Join_Constant_State(array $t_args)
     $className = $t_args['className'];
     $states    = $t_args['states'];
 
-    // Values to be used in C++ code.
-    $state = array_keys($states)[0];
-    $class = $states[$state];
+    $states_ = array_combine(['mapping'], $states);
 
     // Return values.
-    $sys_headers = [];
+    $sys_headers  = [];
     $user_headers = [];
-    $lib_headers = [];
-    $libraries = [];
+    $lib_headers  = [];
+    $libraries    = [];
 ?>
 
 class <?=$className?>ConstantState {
  private:
-  using Map = <?=$class?>;
+  using Mapping = <?=$states_['mapping']?>;
 
   // The GroupBy state containing the hash map.
-  const Map& map;
+  const Mapping::Map& map;
 
  public:
   friend class <?=$className?>;
 
-  <?=$className?>ConstantState(<?=const_typed_ref_args($states)?>)
-      : map(<?=$state?>) {
+  <?=$className?>ConstantState(<?=const_typed_ref_args($states_)?>)
+      : map(mapping.GetMap()) {
   }
 };
 <?
@@ -42,19 +40,24 @@ class <?=$className?>ConstantState {
     ];
 }
 
-function Join(array $t_args, array $inputs, array $outputs, array $states) {
-    // Setting output type
-    $state = array_get_index($states, 0);
-    $outputs = array_combine(array_keys($outputs), $state->get('inner_gla')->output());
+function Join($t_args, $inputs, $outputs, $states) {
+    // Class name randomly generated
+    $className = generate_name('Join');
 
-    // Class name is randomly generated.
-    $className = generate_name("JoinGT");
+    // Processing of states;
+    $states_ = array_combine(['mapping'], $states);
 
-    // Return values.
-    $sys_headers = [];
+    // Processing of outputs.
+    $values = $states_['mapping']->get('vals');
+    $outputs = array_combine(array_keys($outputs), $values);
+
+    $sys_headers  = ['map', 'tuple'];
     $user_headers = [];
-    $lib_headers = [];
-    $libraries = [];
+    $lib_headers  = [];
+    $libraries    = [];
+    $properties   = ['list'];
+    $extra        = [];
+    $result_type  = ['multi'];
 ?>
 
 class <?=$className?>;
@@ -66,18 +69,14 @@ class <?=$className?>;
 class <?=$className?> {
  private:
   using ConstantState = <?=$constantState?>;
-  using Map = ConstantState::Map;
-  using Key = Map::Key;
+  using Mapping = ConstantState::Mapping;
+  using Iter = Mapping::Map::const_iterator;
 
   // The GroupBy containing the hash.
   const <?=$constantState?>& constant_state;
 
-  // The key for the current tuple being processed.
-  Key key;
-
-  // Whether this tuple has already been given output. Each tuple can only
-  // be given at most a single output.
-  int remaining;
+  // The iterator used for the multi return.
+  Iter it, end;
 
  public:
   <?=$className?>(const <?=$constantState?>& state)
@@ -85,18 +84,19 @@ class <?=$className?> {
   }
 
   void ProcessTuple(<?=const_typed_ref_args($inputs)?>) {
-    key = Key(<?=args($inputs)?>);
-    if (constant_state.map.Contains(key))
-      remaining = constant_state.map.Get(key).GetCount();
-    else
-      remaining = 0;
+    auto key = Mapping::ChainHash(<?=args($inputs)?>);
+    auto pair = constant_state.map.equal_range(key);
+    it = pair.first;
+    end = pair.second;
   }
 
   bool GetNextResult(<?=typed_ref_args($outputs)?>) {
-    if (remaining == 0)
+    if (it == end)
       return false;
-    remaining--;
-    constant_state.map.Get(key).GetResult(<?=args($outputs)?>, remaining);
+<?  foreach (array_keys($outputs) as $index => $name) { ?>
+    <?=$name?> = std::get<<?=$index?>>(it->second);
+<?  } ?>
+    ++it;
     return true;
   }
 };

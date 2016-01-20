@@ -83,3 +83,24 @@ inline TIME <?=$name?>(const DATETIME& date_time) {
 });
 
 ?>
+
+<?
+declareFunction('DATETIMEFROMINT', ['BASE::INT'], function($args) {
+    $result = lookupType('BASE::DATETIME');
+    $name = generate_name('DateTimeFromInt');
+?>
+
+inline DATETIME <?=$name?>(const INT& seconds) {
+  return DATETIME(seconds);
+}
+
+<?
+    return [
+        'kind'          => 'FUNCTION',
+        'name'          => $name,
+        'input'         => $args,
+        'result'        => $result,
+        'deterministic' => true,
+    ];
+});
+?>
