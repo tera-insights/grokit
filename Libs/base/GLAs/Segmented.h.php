@@ -76,6 +76,9 @@ function Segmenter( array $t_args, array $input, array $output, array $given_sta
     $user_headers = [ 'HashFunctions.h' ];
     $lib_headers = [];
 
+    $preferFragment = get_default($t_args, 'inner.prefer.fragment', false);
+    $wantedRes = $preferFragment ? ['fragment', 'multi'] : ['multi', 'fragment'];
+
     $nInputs = \count($input);
 
     grokit_assert($nInputs > 1, 'Segmenter: Not enough inputs specified!');
@@ -95,7 +98,7 @@ function Segmenter( array $t_args, array $input, array $output, array $given_sta
 
     $libraries = $gla->libraries();
 
-    $innerRes = get_first_value($gla->result_type(), ['fragment', 'multi']);
+    $innerRes = get_first_value($gla->result_type(), $wantedRes);
     $innerInputs = $gla->input();
     $innerOutput = $gla->output();
     $input = array_merge([ $keyName => $keyType ], $innerInputs);
