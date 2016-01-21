@@ -65,6 +65,12 @@ struct <?=$className?> {
             return (size_t) hash;
         }
 
+<?  foreach (array_keys($gbyAtts) as $index => $key) { ?>
+        const <?=$gbyAtts[$key]?>& GetKey<?=$index?>() const {
+            return <?=$key?>;
+        }
+<?  } ?>
+
 <?  if( $debug > 0 ) { ?>
         std::string to_string() const {
             char buffer[<?=pow(2, 12)?>];
