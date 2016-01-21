@@ -187,7 +187,7 @@ void DATETIME :: Set( int16_t year, int8_t month, int8_t day, int8_t hour, int8_
 
     ptime time(date(year, month, day), time_duration(hour, minute, second));
 
-    long seconds = (UNIX_EPOCH - time).total_seconds();
+    long seconds = (time - UNIX_EPOCH).total_seconds();
 
     ctime = int32_t(seconds);
 }

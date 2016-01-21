@@ -273,9 +273,11 @@ int SelectionProcessChunkWorkFunc_<?=$wpName?> (WorkDescription &workDescription
 #ifdef PER_QUERY_PROFILE
             ++numTuples_<?=queryName($query)?>;
 #endif // PER_QUERY_PROFILE
+<?          cgDeclarePreprocessing($filters, 2); ?>
             if( <?=$selExpr?> ) {
                 // compute synthesized
 <?
+        cgDeclarePreprocessing($synths, 3);
         foreach($synths as $att => $expr ) {
 ?>
             <?=$att?> = <?=$expr?>;
