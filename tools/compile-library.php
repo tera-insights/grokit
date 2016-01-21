@@ -48,7 +48,7 @@ function handleInclude($filePath, $ns, $fp) {
             $sysHeaders[] = $match;
         }
         foreach( $userMatch[1] as $match ) {
-            $userHeaders[] = $match;
+            $userHeaders[] = str_replace('/', '\\', $match);
         }
 
         $info['system_headers'] = $sysHeaders;
