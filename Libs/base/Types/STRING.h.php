@@ -441,6 +441,7 @@ const char & <?=$className?> :: at( SizeType index ) const {
 
 // Hash function
 <?  $functions[] = ['Hash', ['@type'], 'base::BIGINT', true, true]; ?>
+template<>
 inline
 uint64_t Hash( const @type & str ) {
     return HashString( (void *) str.ToString(), str.Length() );

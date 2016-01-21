@@ -30,7 +30,8 @@ inline int ToString(const @type& x, char* text){
 
 // the hash function
 // interpret as int (same size)
-inline uint64_t Hash(const @type val){
+template<>
+inline uint64_t Hash(const @type& val){
     return *( (const unsigned int*)(&val) );
 }
 

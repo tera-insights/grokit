@@ -38,7 +38,8 @@ inline int ToString(const @type & x, char* text){
 
 // the hash function
 // reinterpret bits as 64 bit int
-inline uint64_t Hash( const @type val){
+template<>
+inline uint64_t Hash( const @type& val){
     return   *((const uint64_t*)(&val));
 }
 

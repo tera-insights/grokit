@@ -126,7 +126,8 @@ void FromJson( const Json::Value & src, @type & dest ) {
 
 // The hash function
 // we just use conversion to unsigned int
-inline uint64_t Hash(const @type x){ return x.GetId();}
+template<>
+inline uint64_t Hash(const @type& x){ return x.GetId();}
 
 
 // Deep copy

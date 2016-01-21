@@ -179,6 +179,7 @@ void FromJson( const Json::Value & src, @type & dest ) {
 
 // hash function, just return the unsigned int inside
 <?  $functions[] = ['Hash', ['@type'], 'BASE::BIGINT', true, true ]; ?>
+template<>
 inline uint64_t Hash(const @type & d){
     return d.asInt();
 }

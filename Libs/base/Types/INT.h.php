@@ -36,7 +36,8 @@ inline int ToString(const @type & x, char* text){
 
 // The hash function
 // we just use conversion to unsigned int
-inline uint64_t Hash(const @type x){ return x;}
+template<>
+inline uint64_t Hash(const @type& x){ return x;}
 
 
 // Deep copy

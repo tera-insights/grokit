@@ -33,7 +33,8 @@ inline int ToString(const @type & x, char* text){
     return 1+sprintf(text,"%ld", (long int)x);
 }
 
-inline uint64_t Hash(const @type val){
+template<>
+inline uint64_t Hash(const @type& val){
     return val;
 }
 

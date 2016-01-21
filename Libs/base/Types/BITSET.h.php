@@ -174,6 +174,7 @@ bool <?=$className?>::<?=$name?>(void) const {
 <?  ob_start(); ?>
 
 <?  $functions[] = [ 'Hash', [ '@type' ], 'base::BIGINT', true, true ]; ?>
+template<>
 inline
 uint64_t Hash(const @type & thing) {
     return thing.Bits();

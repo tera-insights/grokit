@@ -291,6 +291,7 @@ int ToString( const @type & f, char * buffer ) {
 }
 
 <?  $functions[] = [ 'Hash', [ '@type' ], 'base::BIGINT', true, true ] ?>
+template<>
 inline
 uint64_t Hash( const @type & x ) {
     return x.GetID();

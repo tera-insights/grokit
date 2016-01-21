@@ -322,6 +322,7 @@ void FromString( @type & x, const char * buffer ) {
 }
 
 <?  $functions[] = ['Hash', ['@type'], 'BASE::BIGINT', true, true ]; ?>
+template<>
 inline
 uint64_t Hash( const @type & val ) {
     uint64_t hashVal = H_b;

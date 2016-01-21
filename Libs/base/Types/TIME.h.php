@@ -296,7 +296,8 @@ void ToJson( const @type & src, Json::Value & dest ) {
 
 // Hash function
 <?  $functions[] = ['Hash', ['@type'], 'BASE::BIGINT', true, true ]; ?>
-inline uint64_t Hash( const @type val ) {
+template<>
+inline uint64_t Hash( const @type& val ) {
     return val.as_millis();
 }
 
