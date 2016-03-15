@@ -14,13 +14,13 @@ function MACADDR(){ ?>
 
  */
 
-using namespace std;
-
 static char table_map[16] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
 
 class macAddr {
 
  private:
+
+     static const int HEX_TO_INT[256] __attribute__ ((weak));
 
   //Internal representation of the mac address
     union mac_rep{
@@ -89,7 +89,7 @@ class macAddr {
 
   //convert the mac address into string
   int ToString(char *addr) const{
-    return 1 + sprintf(addr, "%c%c:%c%c:%c%c:%c%c:%c%c:%c%c",
+      return 1 + std::sprintf(addr, "%c%c:%c%c:%c%c:%c%c:%c%c:%c%c",
                        table_map[mac.split.c1], table_map[mac.split.c12],
                        table_map[mac.split.c11], table_map[mac.split.c10],
                        table_map[mac.split.c9], table_map[mac.split.c8],
@@ -102,15 +102,16 @@ class macAddr {
   void Print(){
     char output[20];
     ToString((char*)output);
-    cout<<output;
+    std::cout<<output;
   }
 
   inline int HexToDecimal(char c){
-      for(int i = 0; i < 16; i++)
-        if(table_map[i] == c)
-            return i;
-      WARNING("Error: Invalid MAC Address %c", c);
-      return 0;
+      unsigned char index = c;
+      if (HEX_TO_INT[index] >= 0)
+          return HEX_TO_INT[index];
+      else {
+          FATAL("Error: Invalid MAC Address character: %c", c);
+      }
   }
 
   /* operators */
@@ -149,6 +150,27 @@ class macAddr {
     }
 
 };
+
+/**
+ * Lookup table for ASCII character to hexidecimal value
+ */
+const int macAddr::HEX_TO_INT[256] = {
+      -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
+    , -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
+    , -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
+    ,  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, -1, -1, -1, -1, -1, -1
+    , -1, 10, 11, 12, 13, 14, 15, -1, -1, -1, -1, -1, -1, -1, -1, -1
+    , -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
+    , -1, 10, 11, 12, 13, 14, 15, -1, -1, -1, -1, -1, -1, -1, -1, -1
+    , -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
+    , -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
+    , -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
+    , -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
+    , -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
+    , -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
+    , -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
+    , -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
+    , -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 };
 
 <?  ob_start(); ?>
 inline int ToString(const @type& x, char* text){
