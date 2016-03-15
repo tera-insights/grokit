@@ -3,10 +3,10 @@
 
 #include "SpookyV2_inlined.h"
 
-inline __uint64_t CongruentHashModified( const __uint64_t value, const __uint64_t seed ) {
-    SpookyHash hasher;
+inline __uint64_t SpookyHash(const __uint64_t value, const __uint64_t seed) {
+    class SpookyHash hasher;
 
-    return hasher.Hash64( (const void *) &value, sizeof( __uint64_t ), seed ); 
+    return hasher.Hash64((const void *) &value, sizeof( __uint64_t), seed);
 }
 
 /*
