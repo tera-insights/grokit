@@ -183,7 +183,7 @@ inline __uint64_t CongruentHash ( __uint64_t data, __uint64_t seed = H_b )
 /** funtion to hash a \0 terminated string */
 
 // MurmurHash2, 64-bit versions, by Austin Appleby
-inline __uint64_t HashString ( const void * key, int len, __uin+t64_t seed = H_b )
+inline __uint64_t HashString ( const void * key, int len, __uint64_t seed = H_b )
 {
 	const __uint64_t m = 0xc6a4a7935bd1e995;
 	const int r = 47;
@@ -229,7 +229,7 @@ inline __uint64_t HashString ( const void * key, int len, __uin+t64_t seed = H_b
 // Global hash function for user-defined types before template specialization.
 template <typename T>
 inline uint64_t Hash(const T& data) {
-  return HashString(&data, sizeof(T))
+  return HashString(&data, sizeof(T));
 }
 
 /*
