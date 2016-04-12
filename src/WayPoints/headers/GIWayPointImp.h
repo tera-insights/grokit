@@ -45,6 +45,9 @@ class GIWayPointImp : public WayPointImp {
     // The number of un-acked chunks we have sent out.
     size_t num_chunks_out;
 
+    // The number of chunks currently sent but not yet acked or dropped
+    size_t num_chunks_in_flight;
+
     // The ID number for the next chunk to produce.
     // Also counts as the number of chunks produced thus far.
     size_t next_chunk_no;
