@@ -38,6 +38,7 @@ GIWayPointImp :: GIWayPointImp () :
     myExits(),
     num_open_streams(0),
     num_chunks_out(0),
+    num_chunks_in_flight(0),
     next_chunk_no(0),
     tokensRequested(0),
     tID(),
@@ -91,6 +92,8 @@ void GIWayPointImp :: SendCachedChunk( CachedChunk& chunk ) {
     QueryExitContainer &whichOnes = chunk.get_whichExits();
     HistoryList &lineage = chunk.get_lineage();
     ChunkContainer &chunkCont = chunk.get_myChunk();
+
+    num_chunks_in_flight++;
 
     // Send the message
     SendHoppingDataMsg( whichOnes, lineage, chunkCont );
@@ -157,6 +160,12 @@ void GIWayPointImp :: RequestGranted( GenericWorkToken &returnVal ) {
 
         GiveBackToken( myToken );
 
+        if (num_chunks_in_flight == 0 && tokensRequested == 0) {
+          // Need to request at least one token to prevent deadlocking
+          tokensRequested++;
+          RequestTokenDelayOK (CPUWorkToken::type);
+        }
+
         return;
     }
 
@@ -215,6 +224,8 @@ void GIWayPointImp :: ProcessDropMsg( QueryExitContainer &whichExits, HistoryLis
 
     PROFILING2_INSTANT("chn", 1, GetName());
 
+    num_chunks_in_flight--;
+
     // Get chunk from mapping
     EXTRACT_HISTORY_ONLY( lineage, myHistory, GIHistory );
     ChunkID cID = myHistory.get_whichChunk();
@@ -257,6 +268,7 @@ void GIWayPointImp :: DoneProducing( QueryExitContainer &whichOnes, HistoryList 
     // Replace data with a chunk container
     data.swap(chkCont);
     num_chunks_out++;
+    num_chunks_in_flight++;
 
     // Add chunk to mapping
     chunkMap.Insert(cID, contCopy);
@@ -272,7 +284,7 @@ void GIWayPointImp :: DoneProducing( QueryExitContainer &whichOnes, HistoryList 
         // Remove this stream from the mapping.
         off_t id_no = stream.get_id();
         StreamKey id_no_key(id_no);
-        StreamKey(key);
+        StreamKey key;
         GIStreamInfo sInfo;
         open_streams.Remove(id_no_key, key, sInfo);
 
@@ -295,6 +307,7 @@ void GIWayPointImp :: ProcessAckMsg( QueryExitContainer &whichExits, HistoryList
     PROFILING2_INSTANT("cha", 1, GetName());
 
     num_chunks_out--; // one less chunk un-acked
+    num_chunks_in_flight--;
 
     // Remove chunk from mapping
     ChunkID cID = myHistory.get_whichChunk();
