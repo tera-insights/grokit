@@ -155,6 +155,7 @@ public:
 
     // Description: Test if dates equal
     bool operator==(const DATE & compare) const;
+    bool operator!=(const DATE & compare) const;
     // Description: Test if one date less than
     bool operator<(const DATE & compare) const;
     bool operator>(const DATE & compare) const;
@@ -364,6 +365,12 @@ bool DATE::operator==(const DATE & compare) const
   REPASJD(*this); REPASJD(compare);
   // Simple day compare
   return m_Date == compare.m_Date;
+}
+
+inline
+bool DATE::operator!=(const DATE & compare) const
+{
+  return !(*this == compare);
 }
 
 inline
