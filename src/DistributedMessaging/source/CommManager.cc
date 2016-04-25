@@ -67,9 +67,7 @@ int CommManager::Start(uint16_t listenPort)
     //initialize members
 
     //get the name of the host
-    char buffer[HOST_NAME_MAX + 1];
-    gethostname(buffer, HOST_NAME_MAX + 1);
-    string machineName(buffer);
+    string machineName("localhost");
 
     myAddress = HostAddress(machineName, listenPort);
 
