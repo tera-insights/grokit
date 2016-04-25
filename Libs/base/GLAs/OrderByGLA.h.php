@@ -102,6 +102,10 @@ function OrderBy( array $t_args, array $inputs, array $outputs ) {
     $limit = $limit == 0 ? $limitDefault : $limit;
     grokit_assert( $limit > 0, 'The OrderBy limit must be a positive integer');
 
+    $keepTies = get_default( $t_args, 'keep.ties', false );
+    // The operator used to decide whether a tuple if the limit is reached.
+    $op = $keepTies ? '<' : '<=';
+
     $className = generate_name('OrderBy');
 
     $debug = get_default( $t_args, 'debug', 0 );
@@ -278,7 +282,7 @@ public:
             std::cerr << ss.str(); // >
         }
 <?  } ?>
-        if( tuples.size() == K && !(t > tuples.front()) )
+        if( tuples.size() == K && (t <?=$op?> tuples.front()) )
             return;
 
         AddTupleInternal(t);
