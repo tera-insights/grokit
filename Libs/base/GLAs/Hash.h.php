@@ -11,7 +11,7 @@ function Multi_Hash(array $t_args, array $inputs, array $outputs)
     $keys = array_slice($inputs, 0, $split);
     $vals = array_slice($inputs, $split);
 
-    $sys_headers  = ['map', 'tuple', 'unordered_map'];
+    $sys_headers  = ['tuple', 'unordered_map'];
     $user_headers = [];
     $lib_headers  = ['HashFct.h'];
     $libraries    = [];
