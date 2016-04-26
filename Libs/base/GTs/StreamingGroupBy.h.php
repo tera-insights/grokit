@@ -138,9 +138,9 @@ class <?=$className?> {
       if (tuple_index == 1) {
         // The key is initialized.
         current_key = key;
-        std::cout << "First key obtained." << std::endl;
+        // std::cout << "First key obtained." << std::endl;
       } else if (key != current_key) {
-        std::cout << "Group added." << std::endl;
+        // std::cout << "Group added." << std::endl;
         // The previous tuple was the last in its group.
         group_indices.push_back(tuple_index - 1);
         current_key = key;
