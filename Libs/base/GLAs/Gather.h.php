@@ -11,7 +11,7 @@ function Gather(array $t_args, array $inputs, array $outputs) {
     $libraries    = [];
     $properties   = ['list'];
     $extra        = [];
-    $result_type  = 'single'
+    $result_type  = ['single']
 ?>
 
 class <?=$className?>;
