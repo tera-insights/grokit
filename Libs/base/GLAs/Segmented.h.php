@@ -432,6 +432,7 @@ typedef <?=$className?>::Iterator <?=$className?>_Iterator;
         'iterable'          => $iterable,
         'post_finalize'     => $iterable,
         'intermediates'     => true,
+        'extra'             => [ 'inner_gla' => $gla ],
     ];
 }
 ?>
