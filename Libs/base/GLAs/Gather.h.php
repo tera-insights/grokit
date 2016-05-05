@@ -3,6 +3,9 @@ function Gather(array $t_args, array $inputs, array $outputs) {
     // Class name randomly generated
     $className = generate_name("Gather");
 
+    // Initialization of local variables from template arguments.
+    $initSize = get_default($t_args, 'init.size', 0);
+
     $outputs = array_combine(array_keys($outputs), $inputs);
 
     $sys_headers  = ['vector'];
@@ -11,7 +14,7 @@ function Gather(array $t_args, array $inputs, array $outputs) {
     $libraries    = [];
     $properties   = ['list'];
     $extra        = [];
-    $result_type  = ['single']
+    $result_type  = ['multi']
 ?>
 
 class <?=$className?>;
@@ -33,7 +36,9 @@ class <?=$className?> {
   int return_counter;
 
  public:
-  <?=$className?>(){}
+  <?=$className?>() {
+    items.reserve(<?=$initSize?>);
+  }
 
   void AddItem(<?=const_typed_ref_args($inputs)?>) {
 <?  foreach (array_keys($inputs) as $index => $name) { ?>
@@ -47,14 +52,22 @@ class <?=$className?> {
     items.insert(items.end(), other.items.begin(), other.items.end());
   }
 
-  void Finalize() {
-    return_counter = 0;
-  }
-
   void GetResult(<?=typed_ref_args($outputs)?>, int index = 0) const {
 <?  foreach (array_keys($outputs) as $index => $name) { ?>
     <?=$name?> = std::get<<?=$index?>>(items[index]);
 <?  } ?>
+  }
+
+  void Finalize() {
+    return_counter = 0;
+  }
+
+  bool GetNextResult(<?=typed_ref_args($outputs)?>) {
+    if (return_counter == items.size())
+      return false;
+    GetResult(<?=args($outputs)?>, return_counter);
+    return_counter++;
+    return true;
   }
 
   int GetCount() const {
