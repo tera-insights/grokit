@@ -46,18 +46,18 @@ class SimpleScheduler {
 // be used with iterators instead of simple integer indices, but the object that
 // is being iterated over must have a lifespan of at least a round for the GIST.
 template<class T>
-class BlockScheduler {
+class RangeScheduler {
  private:
   // The current and last (exclusive) task to be outputted by this scheduler.
   T current_, end_;
 
  public:
-  BlockScheduler(T begin, T end) : current_(begin), end_(end) {};
+  RangeScheduler(T begin, T end) : current_(begin), end_(end) {};
 
   bool GetNextTask(T& task) {
     if (current_ == end_)
       return false;
     task = current_;
-    ++current;
+    ++current_;
   }
-}
+};
