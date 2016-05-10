@@ -5,10 +5,19 @@ function Gather(array $t_args, array $inputs, array $outputs) {
 
     // Initialization of local variables from template arguments.
     $initSize = get_default($t_args, 'init.size', 0);
+    $useArray = get_default($t_args, 'use.array', false);
+
+    if ($useArray) {
+        $innerType = array_get_index($inputs, 0);
+        foreach ($inputs as $type)
+             grokit_assert($innerType == $type,
+                           'Gather: array must contain equivalent types.');
+        $numInputs = \count($inputs);
+    }
 
     $outputs = array_combine(array_keys($outputs), $inputs);
 
-    $sys_headers  = ['vector'];
+    $sys_headers  = ['vector', 'tuple', 'array'];
     $user_headers = [];
     $lib_headers  = [];
     $libraries    = [];
@@ -21,16 +30,24 @@ class <?=$className?>;
 
 class <?=$className?> {
  public:
-  using Tuple = std::tuple<<?=typed($inputs)?>>;
+<?  if ($useArray) { ?>
+  static const constexpr size_t kLength = <?=$numInputs?>;
 
-  using Vector = std::vector<Tuple>;
+  using InnerType = <?=$innerType?>;
+
+  using ValueType = std::array<InnerType, kLength>;
+<?  } else { ?>
+  using ValueType = std::tuple<<?=typed($inputs)?>>;
+<?  } ?>
+
+  using Vector = std::vector<ValueType>;
 
  private:
   // The container that gathers the input.
   Vector items;
 
   // The tuple to be filled with the current item.
-  Tuple item;
+  ValueType item;
 
   // Used for iterating over the container during GetNextResult.
   int return_counter;
