@@ -1,4 +1,13 @@
 <?
+// This GLA simply accumulates its inputs into a single vector to be used as a
+// state. Each row of the input is placed into a tuple which is then appended to
+// the end of the vector. Vectors are combined across different processes simply
+// by concatenation with no particular order.
+
+// Template Args:
+// init.size: The initial capacity for the vector.
+// use.array: If true, an array is used instead of a tuple. All inputs must have
+//   the same type in such a case.
 function Gather(array $t_args, array $inputs, array $outputs) {
     // Class name randomly generated
     $className = generate_name("Gather");
@@ -69,6 +78,7 @@ class <?=$className?> {
     items.insert(items.end(), other.items.begin(), other.items.end());
   }
 
+  // The GLA uses a multi return type, meaning this is never implicitly called.
   void GetResult(<?=typed_ref_args($outputs)?>, int index = 0) const {
 <?  foreach (array_keys($outputs) as $index => $name) { ?>
     <?=$name?> = std::get<<?=$index?>>(items[index]);
