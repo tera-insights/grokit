@@ -7,9 +7,9 @@
 // 'distance' argument.
 
 // Template Args:
-// Distance: A non-zero integer.
-// Increment: A non-negative integer.
-// Initial: A non-negative integer.
+// distance: A non-zero integer.
+// increment: A non-negative integer.
+// initial: A non-negative integer.
 
 function Range($t_args, $inputs, $outputs) {
     // Class name is randomly generated.
