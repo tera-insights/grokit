@@ -11,6 +11,9 @@
 // increment: A non-negative integer.
 // initial: A non-negative integer.
 
+// Resources:
+// tuple: make_tuple, tuple
+// cmath: abs
 function Range($t_args, $inputs, $outputs) {
     // Class name is randomly generated.
     $className = generate_name('Range');
@@ -29,7 +32,7 @@ function Range($t_args, $inputs, $outputs) {
     $sign = $distance > 0 ? 1 : -1;
 
     // There is one extra output in the external outputs to account for the key.
-    grokit_assert(\count($outputs) == \count($outputs),
+    grokit_assert(\count($outputs) == \count($inputs),
                   'Range: Expected equal number of outputs and inputs.');
     $outputs = array_combine(array_keys($outputs), $inputs);
 
