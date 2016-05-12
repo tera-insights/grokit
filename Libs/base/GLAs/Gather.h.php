@@ -10,7 +10,7 @@
 //   the same type in such a case.
 function Gather(array $t_args, array $inputs, array $outputs) {
     // Class name randomly generated
-    $className = generate_name("Gather");
+    $className = generate_name('Gather');
 
     // Initialization of local variables from template arguments.
     $initSize = get_default($t_args, 'init.size', 0);
@@ -67,10 +67,11 @@ class <?=$className?> {
   }
 
   void AddItem(<?=const_typed_ref_args($inputs)?>) {
-<?  foreach (array_keys($inputs) as $index => $name) { ?>
-    std::get<<?=$index?>>(item) = <?=$name?>;
+<?  if ($useArray) { ?>
+    items.push_back({<?=args($inputs)?>});
+<?  } else { ?>
+    items.push_back(std::make_tuple(<?=args($inputs)?>));
 <?  } ?>
-    items.push_back(item);
   }
 
   void AddState(<?=$className?>& other) {
