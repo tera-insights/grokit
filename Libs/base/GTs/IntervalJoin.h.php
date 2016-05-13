@@ -7,12 +7,26 @@
 // distance: A non-zero integer.
 // increment: A non-negative integer.
 // initial: A non-negative integer.
-function Match($t_args, $inputs, $outputs, $states) {
+function Interval_Join($t_args, $inputs, $outputs, $states) {
     // Class name is randomly generated.
-    $className = generate_name('Match');
+    $className = generate_name('IntervalJoin');
 
+    // Processing of input states.
     $states_ = array_combine(['state'], $states);
     $state = $states['state'];
+
+    // Processing of inputs.
+    grokit_assert(\count($inputs) == 1, 'IntervalJoin: 1 input expected.');
+    $inputs_ = array_combine(['value'], $inputs);
+    grokit_assert(canConvert($inputs_['value'], $state->get('bound')),
+                  'IntervalJoin: cannot convert input to bound type.');
+
+    // Processing of outputs.
+    foreach (array_values(array_slice($state->input(), 2)) as $index => $type)
+        $outputs_["output$index"] = $type;
+    grokit_assert(\count($outputs) == \count($outputs_),
+                  'IntervalJoin: incorrect number of outputs specified.');
+    $outputs = array_combine(array_keys($outputs), $outputs_);
 
     $sys_headers  = [];
     $user_headers = [];
@@ -25,7 +39,7 @@ function Match($t_args, $inputs, $outputs, $states) {
 class <?=$className?>;
 
 <?  $constantState = lookupResource(
-        'base::Match_Constant_State',
+        'base::Interval_Join_Constant_State',
         ['className' => $className, 'state' => $state]
     ); ?>
 
@@ -42,22 +56,23 @@ class <?=$className?> {
   const ConstantState& constant_state
 
   // The current and past-the-end iterators.
-  ObjectType::const_iterator current, end;
+  ObjectType::const_iterator it, end;
 
  public:
   <?=$className?>() {}
 
-  void ProcessTuple(<?=const_typed_ref_args($inputs)?>) {
-    current = constant_state.state.Begin();
-    end = constant_state.state.End();
+  void ProcessTuple(<?=const_typed_ref_args($inputs_)?>) {
+    it = constant_state.state.Begin(value);
+    end = constant_state.state.End(value);
   }
 
-  bool GetNextResult(<?=typed_ref_args($outputs)?>) {
+  bool GetNextResult(<?=typed_ref_args($outputs_)?>) {
     if (it == end)
       return false;
-<?  foreach(array_keys($outputs) as $index => $name) { ?>
+<?  foreach(array_keys($outputs_) as $index => $name) { ?>
     <?=$name?> = std::get<<?=$index?>>(it->second);
 <?  } ?>
+    ++it;
   }
 };
 
@@ -76,7 +91,7 @@ class <?=$className?> {
     ];
 }
 
-function Match_Constant_State(array $t_args) {
+function Interval_Join_Constant_State(array $t_args) {
     // Initialization of local variables from template arguments.
     $className = $t_args['className'];
     $state     = $t_args['state'];

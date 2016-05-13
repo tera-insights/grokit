@@ -8,7 +8,7 @@
 // Template Args:
 // use.array: If true, an array is used instead of a tuple. All inputs normally
 //   placed into the tuple must have the same type in such a case.
-function IntervalMap(array $t_args, array $inputs, array $outputs) {
+function Interval_Map(array $t_args, array $inputs, array $outputs) {
     // Class name randomly generated
     $className = generate_name('IntervalMap');
 
@@ -23,7 +23,6 @@ function IntervalMap(array $t_args, array $inputs, array $outputs) {
     $inputs_ = array_merge($inputs_, $innerArgs);
 
     // Initialization of local variables from template arguments.
-    $initSize = get_default($t_args, 'init.size', 0);
     $useArray = get_default($t_args, 'use.array', false);
 
     if ($useArray) {
@@ -43,7 +42,7 @@ function IntervalMap(array $t_args, array $inputs, array $outputs) {
     $lib_headers  = [];
     $libraries    = [];
     $properties   = ['map'];
-    $extra        = [];
+    $extra        = ['bound' => $boundType];
     $result_type  = ['state']
 ?>
 
@@ -62,7 +61,7 @@ class <?=$className?> {
 <?  } ?>
 
   // The type used for the bounds of the interval map.
-  using BoundType = <?=$bound?>
+  using BoundType = <?=$boundType?>
 
   // The type used for the interval map.
   using IntervalMap = boost::icl::interval_map<BoundType, ValueType>;
