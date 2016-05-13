@@ -37,7 +37,7 @@ function Interval_Map(array $t_args, array $inputs, array $outputs) {
     $args = args($innerArgs);
     $item = $useArray ? '{' . $args . '}' : 'std::make_tuple(' . $args . ')';
 
-    $sys_headers  = ['boost/icl/interval_map.hpp', 'tuple', 'array'];
+    $sys_headers  = ['map', 'tuple', 'array', 'utility'];
     $user_headers = [];
     $lib_headers  = [];
     $libraries    = [];
@@ -57,14 +57,22 @@ class <?=$className?> {
 
   using ValueType = std::array<InnerType, kLength>;
 <?  } else { ?>
-  using ValueType = std::tuple<<?=typed($inputs)?>>;
+  using ValueType = std::tuple<<?=typed($innerArgs)?>>;
 <?  } ?>
 
-  // The type used for the bounds of the interval map.
-  using BoundType = <?=$boundType?>
+  // The types used for the bounds of the interval map.
+  using BoundType = <?=$boundType?>;
+  using Interval = std::pair<BoundType, BoundType>;
+
+  // This comparison operator does not allow for overlapping intervals.
+  struct Comparator {
+    bool operator()(const Interval& lhv, const Interval& rhv) const {
+      return lhv.second < rhv.first;
+    }
+  };
 
   // The type used for the interval map.
-  using IntervalMap = boost::icl::interval_map<BoundType, ValueType>;
+  using IntervalMap = std::map<Interval, ValueType, Comparator>;
 
   // The type for the object this GLA builds.
   using ObjectType = IntervalMap;
@@ -78,13 +86,12 @@ class <?=$className?> {
 
   void AddItem(<?=const_typed_ref_args($inputs_)?>) {
     ValueType value {<?=args($innerArgs)?>};
-    auto interval = boost::icl::interval<BoundType>::closed_interval(lower, upper);
-    map.add(std::make_pair(interval, value));
+    auto interval = std::make_pair(lower, upper);
+    map.insert(std::make_pair(interval, value));
   }
 
   void AddState(<?=$className?>& other) {
-    for (auto it = other.map.begin(); it != other.map.end(); ++it)
-      map.add(std::make_pair(it->first, it->second));
+    map.insert(other.map.cbegin(), other.map.cend());
   }
 
   const IntervalMap& GetMap() const {
@@ -95,12 +102,8 @@ class <?=$className?> {
     return map;
   }
 
-  ObjectType::const_iterator Begin(Bound value) {
-    return map.lower_bound(value);
-  }
-
-  ObjectType::const_iterator End(Bound value) {
-    return map.upper_bound(value);
+  IntervalMap::const_iterator Find(BoundType key) const {
+    return map.find(std::make_pair(key, key));
   }
 };
 

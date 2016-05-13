@@ -11,9 +11,12 @@ function Interval_Join($t_args, $inputs, $outputs, $states) {
     // Class name is randomly generated.
     $className = generate_name('IntervalJoin');
 
+    // Initialization of local variables from template arguments.
+    $keepMissing = get_default($t_args, 'keep.missing', false);
+
     // Processing of input states.
     $states_ = array_combine(['state'], $states);
-    $state = $states['state'];
+    $state = $states_['state'];
 
     // Processing of inputs.
     grokit_assert(\count($inputs) == 1, 'IntervalJoin: 1 input expected.');
@@ -23,7 +26,7 @@ function Interval_Join($t_args, $inputs, $outputs, $states) {
 
     // Processing of outputs.
     foreach (array_values(array_slice($state->input(), 2)) as $index => $type)
-        $outputs_["output$index"] = $type;
+        $outputs_["output$index"] = lookupType($type);
     grokit_assert(\count($outputs) == \count($outputs_),
                   'IntervalJoin: incorrect number of outputs specified.');
     $outputs = array_combine(array_keys($outputs), $outputs_);
@@ -46,48 +49,55 @@ class <?=$className?>;
 class <?=$className?> {
  public:
   // The type of the constant state
-  using ConstantState = <?=$state?>;
+  using ConstantState = <?=$constantState?>;
 
   // The type of the object used for matching.
-  using ObjectType = ConstantState::InnerState::ObjectType;
+  using ObjectType = ConstantState::InputState::ObjectType;
 
  private:
   // The constant state.
-  const ConstantState& constant_state
+  const ConstantState& constant_state;
 
   // The current and past-the-end iterators.
   ObjectType::const_iterator it, end;
 
  public:
-  <?=$className?>() {}
+  <?=$className?>(const ConstantState& state)
+      : constant_state(state) {}
 
-  void ProcessTuple(<?=const_typed_ref_args($inputs_)?>) {
-    it = constant_state.state.Begin(value);
-    end = constant_state.state.End(value);
-  }
-
-  bool GetNextResult(<?=typed_ref_args($outputs_)?>) {
-    if (it == end)
-      return false;
+  bool ProcessTuple(<?=process_tuple_args($inputs_, $outputs_)?>) {
+    auto it = constant_state.state.GetMap().lower_bound({value, value});
+    if (it->first.first <= value && value <= it->first.second) {
 <?  foreach(array_keys($outputs_) as $index => $name) { ?>
-    <?=$name?> = std::get<<?=$index?>>(it->second);
+      <?=$name?> = std::get<<?=$index?>>(it->second);
 <?  } ?>
-    ++it;
+      return true;
+    } else {
+<?  if ($keepMissing) { ?>
+<?      foreach($outputs_ as $name => $type) { ?>
+      <?=$name?> = <?=\grokit\getNull($type)?>;
+<?      } ?>
+      return true;
+<?  } else { ?>
+      return false;
+<?  } ?>
+    }
   }
 };
 
 <?
     return [
-        'kind'           => 'GT',
-        'name'           => $className,
-        'system_headers' => $sys_headers,
-        'user_headers'   => $user_headers,
-        'lib_headers'    => $lib_headers,
-        'libraries'      => $libraries,
-        'iterable'       => false,
-        'input'          => $inputs,
-        'output'         => $outputs,
-        'result_type'    => 'multi',
+        'kind'            => 'GT',
+        'name'            => $className,
+        'generated_state' => $constantState,
+        'system_headers'  => $sys_headers,
+        'user_headers'    => $user_headers,
+        'lib_headers'     => $lib_headers,
+        'libraries'       => $libraries,
+        'iterable'        => false,
+        'input'           => $inputs,
+        'output'          => $outputs,
+        'result_type'     => 'single',
     ];
 }
 
@@ -108,11 +118,11 @@ function Interval_Join_Constant_State(array $t_args) {
 
 class <?=$className?>ConstantState {
  public:
-  using InputState = InputState<?=$state?>;
+  using InputState = <?=$state?>;
 
  private:
   // The inner object used for matching.
-  const InputState& state
+  const InputState& state;
 
  public:
   friend class <?=$className?>;
