@@ -15,7 +15,7 @@ function Multi_Hash(array $t_args, array $inputs, array $outputs)
     // Local names for the inputs are generated.
     foreach (array_values($keys) as $index => $type)
         $inputs_["key$index"] = $type;
-    foreach (array_values($keys) as $index => $type)
+    foreach (array_values($vals) as $index => $type)
         $inputs_["val$index"] = $type;
 
     // Re-assigned using local names for the inputs.
