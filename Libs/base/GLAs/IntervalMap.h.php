@@ -17,7 +17,7 @@ function Interval_Map(array $t_args, array $inputs, array $outputs) {
     $otherType = array_get_index($inputs, 1);
     grokit_assert(canConvert($otherType, $boundType),
                   "IntervalMap: cannot convert from $otherType to $boundType");
-    foreach (array_slice($inputs, 2) as $index => $type)
+    foreach (array_slice(array_values($inputs), 2) as $index => $type)
         $innerArgs["val$index"] = $type;
     $inputs_ = array_combine(['lower', 'upper'], array_slice($inputs, 0, 2));
     $inputs_ = array_merge($inputs_, $innerArgs);
