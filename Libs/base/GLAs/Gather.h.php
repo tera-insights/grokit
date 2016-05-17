@@ -12,7 +12,7 @@ function Gather(array $t_args, array $inputs, array $outputs) {
     // Class name randomly generated
     $className = generate_name('Gather');
 
-    // Initialization of local variables from template arguments.
+    // Processing of template arguments.
     $initSize = get_default($t_args, 'init.size', 0);
     $useArray = get_default($t_args, 'use.array', false);
 

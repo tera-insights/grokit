@@ -3,6 +3,8 @@
 // to this state and attaches all of the results. The behaviour of the matching
 // is up to the input state. One common application is for an interval join.
 
+// Currently the behavior is limited to only working with an Interval_Map state.
+
 // Template Args:
 // distance: A non-zero integer.
 // increment: A non-negative integer.
@@ -11,7 +13,7 @@ function Interval_Join($t_args, $inputs, $outputs, $states) {
     // Class name is randomly generated.
     $className = generate_name('IntervalJoin');
 
-    // Initialization of local variables from template arguments.
+    // Processing of template arguments.
     $keepMissing = get_default($t_args, 'keep.missing', false);
 
     // Processing of input states.
@@ -102,7 +104,7 @@ class <?=$className?> {
 }
 
 function Interval_Join_Constant_State(array $t_args) {
-    // Initialization of local variables from template arguments.
+    // Processing of template arguments.
     $className = $t_args['className'];
     $state     = $t_args['state'];
 

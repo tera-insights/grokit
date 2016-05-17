@@ -5,6 +5,9 @@
 // is taken to be the type used for the bounds, so there must be a conversion
 // from the type of the second input that of the first.
 
+// Currently, only non-overlapping intervals are supported without aggregate on
+// overlap.
+
 // Template Args:
 // use.array: If true, an array is used instead of a tuple. All inputs normally
 //   placed into the tuple must have the same type in such a case.
@@ -22,7 +25,7 @@ function Interval_Map(array $t_args, array $inputs, array $outputs) {
     $inputs_ = array_combine(['lower', 'upper'], array_slice($inputs, 0, 2));
     $inputs_ = array_merge($inputs_, $innerArgs);
 
-    // Initialization of local variables from template arguments.
+    // Processing of template arguments.
     $useArray = get_default($t_args, 'use.array', false);
 
     if ($useArray) {

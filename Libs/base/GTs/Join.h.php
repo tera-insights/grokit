@@ -1,7 +1,7 @@
 <?
 function Join_Constant_State(array $t_args)
 {
-    // Initialization of local variables from template arguments.
+    // Processing of template arguments.
     $className = $t_args['className'];
     $states    = $t_args['states'];
 

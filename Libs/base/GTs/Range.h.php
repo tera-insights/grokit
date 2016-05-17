@@ -18,7 +18,7 @@ function Range($t_args, $inputs, $outputs) {
     // Class name is randomly generated.
     $className = generate_name('Range');
 
-    // Initialization of local variables from template arguments.
+    // Processing of template arguments.
     $distance = $t_args['distance'];
     $increment = get_default($t_args, 'increment', 1);
     $initial = get_default($t_args, 'initial', 0);
