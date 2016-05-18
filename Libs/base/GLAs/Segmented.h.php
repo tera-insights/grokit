@@ -31,10 +31,15 @@ function SegmenterState(array $targs) {
     ]);
 
      $iterable = $npasses > 1;
+     if ($gla->iterable()) {
+         $initList = '{' . args($cArgs) . '}, ';
+         $initList = str_repeat($initList, $segments);
+     }
 ?>
 
 struct <?=$classname?> {
     using SplitState = <?=$splitState?>;
+
 
     static constexpr const size_t N_PASSES = <?=$npasses?>;
 
@@ -44,17 +49,31 @@ struct <?=$classname?> {
     size_t pass;
 
 <?  if($gla->has_state()): ?>
-    // Inner GLAs constant state
-    <?=$gla->state()?> inner_cstate;
+    using GLAState = <?=$gla->state()?>;
 <?  endif; // gla has state ?>
+
+<?  if ($gla->iterable()) { ?>
+    std::array<<?=$gla->state()?>, SplitState::NUM_STATES> inner_cstates;
+    SplitState::BoolArray seg_unfinished;
+    size_t num_finished;
+<?  } else if ($gla->has_state()) { ?>
+    // Inner GLAs constant state
+    GLAState inner_cstate;
+<?  } ?>
 
     <?=$classname?>(<?=const_typed_ref_args($cArgs)?>):
         segments()
         , pass(0)
-<?  if($gla->has_state()): ?>
+<?  if ($gla->iterable()) { ?>
+        , inner_cstates{{<?=$initList?>}}
+<?  } else if($gla->has_state()) { ?>
         , inner_cstate(<?=args($cArgs)?>)
-<?  endif; // gla has state ?>
-    {}
+<?  } // gla has state ?>
+    {
+<?  if ($gla->iterable()) { ?>
+      seg_unfinished.fill(true);
+<?  } ?>
+    }
 
     void Reset() {
 
@@ -72,7 +91,7 @@ struct <?=$classname?> {
 
 function Segmenter( array $t_args, array $input, array $output, array $given_states) {
     $resType = [ 'fragment', 'multi' ];
-    $system_headers = [ 'array', 'vector', 'memory', 'cinttypes', 'unordered_map' ];
+    $system_headers = [ 'array', 'vector', 'memory', 'cinttypes', 'unordered_map', 'thread' ];
     $user_headers = [ 'HashFunctions.h' ];
     $lib_headers = [];
 
@@ -123,15 +142,20 @@ function Segmenter( array $t_args, array $input, array $output, array $given_sta
     }
 
     $cArgs['const_state'] = $constState;
-    if( $gla->has_state() ) {
+    if ($gla->iterable()) {
+        $innerCArgs[] = 'constState.inner_cstates[index]';
+    } else if ( $gla->has_state() ) {
         $innerCArgs[] = 'constState.inner_cstate';
     }
 
     $cstStr = \count($innerCArgs) > 0 ? '(' . implode(',',$innerCArgs) . ')' : '';
 
-    grokit_assert(!$gla->iterable(), 'Segementer does not support iterable GLAs');
-
-    $iterable = $n_passes > 1;
+    $iterable = $n_passes > 1 || $gla->iterable();
+    grokit_error_if($n_passes > 1 && $gla->iterable(),
+                    'Segmenter only supports iterable GLAs if passes is 1.');
+    grokit_error_if($gla->iterable() && $gla->intermediates(),
+                    'Segmenter does not support iterable GLAs with intermediate results.');
+    $intermediates = $n_passes > 1;
 ?>
 
 class <?=$className?> {
@@ -240,9 +264,8 @@ public:
         , <?=$name?>(<?=$name?>)
 <?  } // foreach constructor arg to save ?>
     {
-        for( auto & elem : localState ) {
-            elem.reset(new InnerGLA<?=$cstStr?>);
-        }
+        for (std::size_t index = 0; index < NUM_STATES; index++)
+          localState[index].reset(new InnerGLA<?=$cstStr?>);
     }
 
     void AddItem( <?=const_typed_ref_args($input)?> ) {
@@ -255,7 +278,8 @@ public:
             return;
         }
 <?  endif; // more than 1 pass ?>
-        localState[segNum]->AddItem(<?=args($innerInputs)?>);
+        if (constState.seg_unfinished[segNum])
+          localState[segNum]->AddItem(<?=args($innerInputs)?>);
     }
 
     void ChunkBoundary(void) {
@@ -265,7 +289,7 @@ public:
 
         int theseAreOk[NUM_STATES];
         for( int i = 0; NUM_STATES > i; i++ ) {
-            theseAreOk[i] = 1;
+            theseAreOk[i] = constState.seg_unfinished[i];
         }
 
         int segsLeft = NUM_STATES;
@@ -275,10 +299,10 @@ public:
             int whichOne = globalStates.CheckOutOne( theseAreOk, checkedOut );
 
             if( checkedOut == NULL ) {
-                checkedOut = new InnerGLA<?=$cstStr?>;
+                checkedOut = localState[whichOne].release();
+            } else {
+                checkedOut->AddState( *(localState[whichOne]) );
             }
-
-            checkedOut->AddState( *(localState[whichOne]) );
 
             globalStates.CheckIn( whichOne, checkedOut );
 
@@ -287,12 +311,13 @@ public:
         }
 
         // Re-initialize the local states
-        for( auto & elem : localState ) {
+        for (std::size_t index = 0; index < NUM_STATES; index++) {
 <?  if( $gla->is('resettable') ) { ?>
-            elem->Reset();
-<?  } else { // if resettable ?>
-            elem.reset(new InnerGLA<?=$cstStr?>);
-<?  } // if not resettable ?>
+            if (localState[index] != NULL)
+                localState[index]->Reset();
+            else
+<?  } ?>
+            localState[index].reset(new InnerGLA<?=$cstStr?>);
         }
     }
 
@@ -383,9 +408,33 @@ public:
 
 <?  if($iterable): ?>
     bool ShouldIterate( ConstantState & modible ) {
+<?      if ($gla->iterable()) { ?>
+        bool result = false;
+        std::array<std::thread, NUM_STATES> threads;
+        auto DoWork = [](bool* unfinished, ConstantState::GLAState* state, InnerGLA* gla) {
+            *unfinished = gla->ShouldIterate(*state);
+        };
+        for (std::size_t index = 0; index < NUM_STATES; index++) {
+            if (modible.seg_unfinished[index]) {
+                threads[index] = std::thread(DoWork, &modible.seg_unfinished[index],
+                                             &modible.inner_cstates[index],
+                                             modible.segments.Peek(index));
+            }
+        }
+        for (std::size_t index = 0; index < NUM_STATES; index++) {
+            if (threads[index].joinable()) {
+                threads[index].join();
+            }
+        }
+        for (bool el : modible.seg_unfinished)
+            if (el)
+                return true;
+        return false;
+<?      } else { ?>
         modible.pass++;
 
         return modible.pass < ConstantState::N_PASSES;
+<?      } ?>
     }
 
     void PostFinalize() {
@@ -431,7 +480,7 @@ typedef <?=$className?>::Iterator <?=$className?>_Iterator;
         'configurable'      => $gla->configurable(),
         'iterable'          => $iterable,
         'post_finalize'     => $iterable,
-        'intermediates'     => true,
+        'intermediates'     => $intermediates,
         'extra'             => [ 'inner_gla' => $gla ],
     ];
 }
