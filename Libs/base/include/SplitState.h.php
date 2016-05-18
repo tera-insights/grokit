@@ -19,12 +19,12 @@ public:
     using StateType = <?=$type?>;
 
     static constexpr size_t NUM_STATES = <?=$size?>;
-private:
     using UniqueLock =  std::unique_lock<std::mutex>;
 
     using StateArray = std::array<StateType *, NUM_STATES>;
     using BoolArray = std::array<bool, NUM_STATES>;
 
+private:
     // Array of states
     StateArray stateArray;
 
