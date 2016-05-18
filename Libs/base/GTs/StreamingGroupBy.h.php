@@ -1,5 +1,5 @@
 <?
-// This GT is used to simulate a GroupBy on data that its chunk sorted by key.
+// This GT is used to simulate a GroupBy on data whose chunks are sorted by key.
 // When a key is only present in a single chunk and all appearances of the key
 // are consecutive, the grouping for that key can be processed and outputted
 // immediately. This strategy removes the need for a large state to hold every
@@ -21,7 +21,9 @@
 // The latter is not allowed because the workers for it and the GT would fight
 // over the system resources.
 
+// TODO:
 // Iterable GLAs could be supported with current framework, but are not.
+// Multiple keys could be supported, but are not.
 
 // Template Args:
 // GLA: The inner GLA to use.
