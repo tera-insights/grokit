@@ -278,7 +278,9 @@ public:
             return;
         }
 <?  endif; // more than 1 pass ?>
+<?  if ($gla->iterable()) { ?>
         if (constState.seg_unfinished[segNum])
+<?  } ?>
           localState[segNum]->AddItem(<?=args($innerInputs)?>);
     }
 
@@ -289,7 +291,11 @@ public:
 
         int theseAreOk[NUM_STATES];
         for( int i = 0; NUM_STATES > i; i++ ) {
+<?  if ($gla->iterable()) { ?>
             theseAreOk[i] = constState.seg_unfinished[i];
+<?  }  else { ?>
+            theseAreOk[i] = 1;
+<?  } ?>
         }
 
         int segsLeft = NUM_STATES;
