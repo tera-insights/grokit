@@ -1,45 +1,17 @@
 <?
 function CSVReader( array $t_args, array $output ) {
-
-    $my_output = [];
-
-    // Handle case where outputs are given as template arguments
-    // and not implied.
-    if( \count($output) == 0 ) {
-        grokit_assert( array_key_exists( 'output', $t_args ),
-            'Did not receive any description of my output!' );
-
-        $output_list = $t_args['output'];
-
-
-        grokit_assert( is_array($output_list),
-            'Expected list of types for template argument "output"');
-
-        $i = 1;
-        foreach( $outputs_list as $name => $out_type ) {
-            grokit_assert( is_datatype($out_type) || is_identifier($out_type),
-                'Expected only types in the "output" list');
-
-            if( is_identifier($out_type) ) {
-                $out_type = lookupType($out_type->value());
-            }
-
-            $name = 'val_' . $i;
-            $my_output[$name] = $out_type;
-            $i += 1;
-        }
-    }
-    else {
-        foreach( $output as $key => $out ) {
-            $name = $key;
-            $my_output[$name] = $out;
-        }
-    }
-
     $debug = get_default($t_args, 'debug', 0);
 
     $simple = get_default($t_args, 'simple', false);
     $trimCR = get_default($t_args, 'trim.cr', false);
+    $lineNumber = get_default($t_args, 'line.number', false);
+
+    if ($lineNumber) {
+        $lineColumn = array_keys($output)[0];
+        $my_output = array_slice($output, 1);
+    } else {
+        $my_output = $output;
+    }
 
     // Handle separator
     $separator = ',';
@@ -222,9 +194,12 @@ public:
 
 // >
 
-    bool ProduceTuple( <?=typed_ref_args($my_output)?> ) {
+    bool ProduceTuple( <?=typed_ref_args($output)?> ) {
         if (count < MAX_LINES) { //>
             count++;
+<?  if ($lineNumber) { ?>
+            <?=$lineColumn?> = count;
+<?  } ?>
         } else {
             return false;
         }
@@ -308,7 +283,7 @@ public:
     return [
         'name' => $className,
         'kind' => 'GI',
-        'output' => $my_output,
+        'output' => $output,
         'system_headers' => $sys_headers,
         'user_headers' => [
             'GIStreamInfo.h',
