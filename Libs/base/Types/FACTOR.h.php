@@ -15,20 +15,26 @@ function FACTOR( array $t_args ) {
 
     switch($storageBytes) {
     case 1:
+        $columnType = 'base::uint';
         $storageType = 'uint8_t';
         break;
     case 2:
+        $columnType = 'base::uint';
         $storageType = 'uint16_t';
         break;
     case 4:
+        $columnType = 'base::uint';
         $storageType = 'uint32_t';
         break;
     case 8:
+        $columnType = 'base::bigint';
         $storageType = 'uint64_t';
         break;
     default:
         grokit_error('Unsupported # of bytes (' . $storageBytes . ') given for FACTOR, only 1, 2, 4, and 8 supported.');
     }
+
+    $columnType = lookupType($columnType);
 
     $className = generate_name('FACTOR_' . ensure_identifier($dict));
 
@@ -73,6 +79,7 @@ public:
     <?=$className?>( const <?=$stringType?> & );
 
     // Constructor from storage type
+<?  $constructors[] = [ [$columnType], true]; ?>
     <?=$className?>( const StorageType );
 
     // Copy constructor and copy assignment
@@ -96,6 +103,7 @@ public:
     const char * ToString( void ) const;
 
     // Returns the ID of the Factor.
+<?  $methods[] = [ 'GetID', [], $columnType, true ] ?>
     StorageType GetID( void ) const;
 
     // Returns whether or not the Factor is valid.
