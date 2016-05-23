@@ -159,7 +159,7 @@ function Segmenter( array $t_args, array $input, array $output, array $given_sta
 ?>
 
 class <?=$className?> {
-private:
+public:
 
     using ConstantState = <?=$constState?>;
     using SplitState = ConstantState::SplitState;
@@ -170,7 +170,6 @@ private:
     using InnerGLAPtr = std::unique_ptr<InnerGLA>;
     using GLA_Array = std::array<InnerGLAPtr, NUM_STATES>;
 
-public:
     using size_type = std::size_t;
 
 <?  if( $innerRes == 'fragment' ) { ?>
@@ -465,6 +464,17 @@ public:
         return globalStates.Peek(frag)->size();
     }
 <?  } // if the gla is a container ?>
+
+    const ConstantState& GetConstantState() const {
+        return constState;
+    }
+
+    const InnerGLA* GetInnerGLA(const <?=$keyType?>& <?=$keyName?>) const {
+        uint64_t hashVal = CongruentHash(Hash(<?=$keyName?>), H_b + 1);
+        uint64_t passNum = (hashVal / NUM_STATES) % ConstantState::N_PASSES;
+        uint64_t segNum = hashVal % NUM_STATES;
+        return constState.segments.Peek(segNum);
+    }
 };
 
 typedef <?=$className?>::Iterator <?=$className?>_Iterator;
