@@ -33,6 +33,7 @@ function Streaming_GroupBy($t_args, $inputs, $outputs) {
     $className = generate_name('AdjustableBernoulli');
 
     // Separating the inputs into the key and inner GLA arguments.
+    $args = [];  // Declared here in case there are no inner inputs.
     foreach (array_keys(array_slice($inputs, 1)) as $index => $key)
         $args["arg_$index"] = $inputs[$key];
     $inputs_ = array_combine(array_merge(['key'], array_keys($args)), $inputs);
@@ -93,7 +94,7 @@ class <?=$className?> {
   std::vector<uint64_t> group_indices;
 
   // The state for the inner GLA.
-  InnerGLA* inner_gla;
+  InnerGLA inner_gla;
 
   // The current iteration;
   uint32_t iteration;
@@ -117,7 +118,7 @@ class <?=$className?> {
   void StartChunk() {
     group_indices.clear();
     <?=$declareState?>
-    inner_gla = new InnerGLA(<?=$constructState?>);
+    inner_gla = InnerGLA(<?=$constructState?>);
     iteration = 0;
     tuple_index = 0;
 <?  if ($resultType == 'single') { ?>
@@ -133,7 +134,7 @@ class <?=$className?> {
     if (iteration != 0 && tuple_index == group_indices[group_index]) {
       group_index++;
       <?=$declareState?>
-      inner_gla = new InnerGLA(<?=$constructState?>);
+      inner_gla = InnerGLA(<?=$constructState?>);
     }
     tuple_index++;
     if (iteration == 0) {
@@ -149,14 +150,14 @@ class <?=$className?> {
       }
     } else {
       // The arguments for the inner GLA are passed through.
-      inner_gla->AddItem(<?=args($args)?>);
+      inner_gla.AddItem(<?=args($args)?>);
 
       if (tuple_index == group_indices[group_index]) {
         // The key is saved for the coming output.
         current_key = key;
 <?  if ($resultType == 'multi') { ?>
         // The result for the inner GLA is readied for output.
-        inner_gla->Finalize();
+        inner_gla.Finalize();
 <?  } ?>
       }
     }
@@ -166,10 +167,10 @@ class <?=$className?> {
     if (iteration > 0 && tuple_index == group_indices[group_index]) {
       key = current_key;
 <?  if ($resultType == 'multi') { ?>
-      return inner_gla->GetNextResult(<?=args($innerOutputs)?>);
+      return inner_gla.GetNextResult(<?=args($innerOutputs)?>);
 <?  } else { // $resultType is 'single'?>
       if (should_output)
-        inner_gla->GetResult(<?=args($innerOutputs)?>);
+        inner_gla.GetResult(<?=args($innerOutputs)?>);
       return !(should_output = !should_output);
 <?  } ?>
     } else {
