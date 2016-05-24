@@ -277,28 +277,30 @@ int GLAPreFinalizeWorkFunc_<?=$wpName?>
 
             localState.swap(curState);
 
-            // Handle fragments
-            QueryID foo = <?=queryName($query)?>;
-<?
-        if( $fragmented ) {
-?>
-            Swapify<int> val(localGLA->GetNumFragments());
-<?
-        } // if GLA produces fragments
-        else {
-?>
-            Swapify<int> val(1);
-<?
-        } // else GLA doesn't produce fragments
-?>
-            fragments.Insert(foo, val);
-
+            bool iterateRet = false;
 <?      if( $gla->iterable() ) { ?>
             // Determine whether this query should iterate
-            bool iterateRet = localGLA->ShouldIterate( *constState );
+            iterateRet = localGLA->ShouldIterate( *constState );
             if( iterateRet )
                 iterateMap.Union(iter.query);
 <?      } // if GLA is iterable  ?>
+
+            // Handle fragments
+            QueryID foo = <?=queryName($query)?>;
+            Swapify<int> val(1);
+<?
+        if( $fragmented ) {
+            if (!$gla->intermediates()) {
+?>
+            if (iterateRet)
+                val.copy(Swapify<int>(0));
+            else
+<?          } ?>
+                val.copy(Swapify<int>(localGLA->GetNumFragments()));
+<?
+        }  // if $fragmented
+?>
+            fragments.Insert(foo, val);
         } // if current query is query <?=queryName($query)?>
 <?  } // foreach query ?>
 
