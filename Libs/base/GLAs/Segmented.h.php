@@ -196,7 +196,7 @@ public:
         }
 
         bool GetNextResult( <?=typed_ref_args($gla->output())?> ) {
-            return innerIter->GetNextResult(<?=args($gla->output())?>);
+            return gla->GetNextResult(innerIter, <?=args($gla->output())?>);
         }
 
         int FragmentNumber() {
