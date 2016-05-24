@@ -293,10 +293,10 @@ int GLAPreFinalizeWorkFunc_<?=$wpName?>
             if (!$gla->intermediates()) {
 ?>
             if (iterateRet)
-                val.copy(Swapify<int>(0));
+                val = 0;
             else
 <?          } ?>
-                val.copy(Swapify<int>(localGLA->GetNumFragments()));
+                val = localGLA->GetNumFragments();
 <?
         }  // if $fragmented
 ?>
