@@ -1,0 +1,22 @@
+{
+  "general" : {
+    "debug" : false
+  },
+  "c++": {
+    "compiler" : "clang++",
+    "standard" : "c++11",
+    "stdlib" : "libstdc++",
+    "flags" : [
+      "-fPIC",
+      "-g",
+      "-D_FILE_OFFSET_BITS=64",
+      "-DDEBUG"
+    ],
+    "optimizations" : [
+        "-O0"
+    ],
+	"linkflags": [
+		"-ltcmalloc"
+	]
+  }
+}
