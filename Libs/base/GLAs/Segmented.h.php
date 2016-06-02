@@ -443,6 +443,11 @@ public:
     }
 
     void PostFinalize() {
+<?  if( $gla->post_finalize() ) { ?>
+        for (int i = 0; i < NUM_STATES; i++)
+            if (constState.segments.Peek(i))
+                constState.segments.Peek(i)->PostFinalize();
+<?  } ?>
         constState.segments.Reset();
     }
 <?  endif; // iterable ?>
