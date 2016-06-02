@@ -30,7 +30,7 @@
 
 function Streaming_GroupBy($t_args, $inputs, $outputs) {
     // Class name is randomly generated.
-    $className = generate_name('AdjustableBernoulli');
+    $className = generate_name('Streaming_GroupBy');
 
     // Separating the inputs into the key and inner GLA arguments.
     $args = [];  // Declared here in case there are no inner inputs.
@@ -59,11 +59,10 @@ function Streaming_GroupBy($t_args, $inputs, $outputs) {
     foreach (array_values($innerGLA->output()) as $index => $type)
         $outputs_["output_$index"] = $type;
     $innerOutputs = array_slice($outputs_, 1);
-    $outputs = array_combine(array_keys($outputs), $outputs_);
-
     // There is one extra output in the external outputs to account for the key.
     grokit_assert(\count($innerOutputs) + 1 == \count($outputs),
                   'Incorrect number of outputs given for Streaming GroupBy');
+    $outputs = array_combine(array_keys($outputs), $outputs_);
 
     $sys_headers  = ['vector'];
     $user_headers = [];
@@ -94,7 +93,7 @@ class <?=$className?> {
   std::vector<uint64_t> group_indices;
 
   // The state for the inner GLA.
-  InnerGLA inner_gla;
+  std::unique_ptr<InnerGLA> inner_gla;
 
   // The current iteration;
   uint32_t iteration;
@@ -112,15 +111,13 @@ class <?=$className?> {
 
  public:
   // The constructor is empty. The various fields are set-up per chunk.
-  <?=$className?>() {}
+  <?=$className?>() = default;
 
   // Each data structure is reset.
   void StartChunk() {
     group_indices.clear();
-    <?=$declareState?>
-    inner_gla = InnerGLA(<?=$constructState?>);
-    iteration = 0;
-    tuple_index = 0;
+    ResetGLA();
+    iteration = group_index = tuple_index = 0;
 <?  if ($resultType == 'single') { ?>
     should_output = true;
 <?  } ?>
@@ -133,8 +130,7 @@ class <?=$className?> {
     // The group is advanced if the previous tuple was the last in its group.
     if (iteration != 0 && tuple_index == group_indices[group_index]) {
       group_index++;
-      <?=$declareState?>
-      inner_gla = InnerGLA(<?=$constructState?>);
+      ResetGLA();
     }
     tuple_index++;
     if (iteration == 0) {
@@ -150,14 +146,14 @@ class <?=$className?> {
       }
     } else {
       // The arguments for the inner GLA are passed through.
-      inner_gla.AddItem(<?=args($args)?>);
+      inner_gla->AddItem(<?=args($args)?>);
 
       if (tuple_index == group_indices[group_index]) {
         // The key is saved for the coming output.
         current_key = key;
 <?  if ($resultType == 'multi') { ?>
         // The result for the inner GLA is readied for output.
-        inner_gla.Finalize();
+        inner_gla->Finalize();
 <?  } ?>
       }
     }
@@ -167,10 +163,10 @@ class <?=$className?> {
     if (iteration > 0 && tuple_index == group_indices[group_index]) {
       key = current_key;
 <?  if ($resultType == 'multi') { ?>
-      return inner_gla.GetNextResult(<?=args($innerOutputs)?>);
-<?  } else { // $resultType is 'single'?>
+      return inner_gla->GetNextResult(<?=args($innerOutputs)?>);
+<?  } else {  // $resultType is 'single'?>
       if (should_output)
-        inner_gla.GetResult(<?=args($innerOutputs)?>);
+        inner_gla->GetResult(<?=args($innerOutputs)?>);
       return !(should_output = !should_output);
 <?  } ?>
     } else {
@@ -179,12 +175,26 @@ class <?=$className?> {
   }
 
   bool ShouldIterate() {
-    // The last group is recorded.
-    group_indices.push_back(tuple_index);
+    if (++iteration == 1) {
+      group_indices.push_back(tuple_index);  // The last group is recorded.
+      tuple_index = 0;                       // Reset for the next iteration.
+      return true;
+    } else {
+      // std::cout << "finished chunk, # tuples: " << tuple_index << std::endl;
+      inner_gla.reset(nullptr);  // Reset here to avoid thread crossing.
+      return false;
+    }
+  }
 
-    group_index = 0;
-    tuple_index = 0;
-    return 1 == ++iteration;
+ private:
+  ResetGLA() {
+    <?=$declareState?>
+<?  if ($gla->is('resettable')) { ?>
+    if (inner_gla != nullptr)
+      inner_gla->Reset();
+    else
+<?  } else { ?>
+      inner_gla.reset(new InnerGLA(<?=$constructState?>));
   }
 };
 
