@@ -47,6 +47,9 @@ namespace {
         return is_a($object, 'grokit\\TypeInfo');
     }
 
+    function is_resource( $object ) {
+        return is_a($object, 'grokit\\Resource_Info');
+    }
 }
 
 
@@ -119,6 +122,10 @@ namespace grokit {
         }
         else if( is_datatype($val) ) {
             hash_update( $hasher, 'datatype' );
+            hash_update( $hasher, $val->hash() );
+        }
+        else if( is_resource($val) ) {
+            hash_update( $hasher, 'resource' );
             hash_update( $hasher, $val->hash() );
         }
         else if( is_functor($val) ) {
