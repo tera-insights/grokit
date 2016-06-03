@@ -47,7 +47,7 @@ namespace {
         return is_a($object, 'grokit\\TypeInfo');
     }
 
-    function is_resource( $object ) {
+    function is_resource_info( $object ) {
         return is_a($object, 'grokit\\Resource_Info');
     }
 }
@@ -124,7 +124,7 @@ namespace grokit {
             hash_update( $hasher, 'datatype' );
             hash_update( $hasher, $val->hash() );
         }
-        else if( is_resource($val) ) {
+        else if( is_resource_info($val) ) {
             hash_update( $hasher, 'resource' );
             hash_update( $hasher, $val->hash() );
         }
