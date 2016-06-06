@@ -187,13 +187,13 @@ class <?=$className?> {
   }
 
  private:
-  ResetGLA() {
+  void ResetGLA() {
     <?=$declareState?>
-<?  if ($gla->is('resettable')) { ?>
+<?  if ($innerGLA->is('resettable')) { ?>
     if (inner_gla != nullptr)
       inner_gla->Reset();
     else
-<?  } else { ?>
+<?  } ?>
       inner_gla.reset(new InnerGLA(<?=$constructState?>));
   }
 };
