@@ -135,13 +135,12 @@ struct <?=$className?> {
             std::string keyStr = key.to_string();
             fprintf(stderr, "[MOD]   State not found for key %s, generating new state.\n", keyStr.c_str());
 <?          } // if debugging enabled ?>
-            InnerState nb(initialState);
-
-            stateMap.insert(StateMap::value_type(key, nb));
-            it = stateMap.find(key);
+            // A new state is reconstructed and then moved to avoid a copy constructor.
+            InnerState nb{<?=args($cArgs)?>};
+            return stateMap.emplace(key, std::move(nb)).first->second;
+        } else {
+          return it->second;
         }
-
-        return it->second;
     }
 <?      } // if iterable ?>
 <?  } // if gla has state ?>
