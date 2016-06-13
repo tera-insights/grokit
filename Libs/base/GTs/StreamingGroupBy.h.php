@@ -190,9 +190,9 @@ class <?=$className?> {
   void ResetGLA() {
     <?=$declareState?>
 <?  if ($innerGLA->is('resettable')) { ?>
-    if (inner_gla != nullptr)
-      inner_gla->Reset();
-    else
+    // if (inner_gla != nullptr)
+      // inner_gla->Reset();
+    // else
 <?  } ?>
       inner_gla.reset(new InnerGLA(<?=$constructState?>));
   }
