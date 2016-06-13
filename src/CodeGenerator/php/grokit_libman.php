@@ -237,7 +237,10 @@ namespace grokit {
             foreach( $args as $n => &$arg_set ) {
                 if( count($arg_set) > 0 ) {
                     hash_update( $hasher, $n );
-                    hash_update( $hasher, hashArgList( $arg_set ) );
+                    if( $n > 0 )
+                        hash_update( $hasher, hashArgList( array_values($arg_set) ) );
+                    else
+                        hash_update( $hasher, hashArgList( $arg_set ) );
                 }
             }
 
