@@ -192,12 +192,13 @@ class <?=$className?> {
  public:
   using Iterator = <?=$className?>_Iterator;
   using ConstantState = <?=$constantState?>;
+  <?=array_template('using GLA{key} = {val};', PHP_EOL, array_values($myGLAs))?>
 
  private:
   Iterator multiIterator;
 
   // The inner GLAs
-  <?=array_template('{val} {key};', PHP_EOL, $myGLAs)?>;
+  <?=array_template('{val} {key};', PHP_EOL, $myGLAs)?>
 
   // The multiplexer constant state containing the inner GLAs' constant states.
   const ConstantState& const_state_;
