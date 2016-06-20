@@ -43,6 +43,7 @@ function Multiplexer(array $t_args, array $inputs, array $outputs) {
     $glaReqStates = [];
 
     $configurable = false;
+    $chunkBoundary = false;
     $constArgs = [];
     $genStates = [];
     $iterable = [];
@@ -111,6 +112,8 @@ function Multiplexer(array $t_args, array $inputs, array $outputs) {
                           'Multiplexer does not support iterable GLAs with intermediate results');
             $iterable[] = $glaName;
         }
+
+        $chunkBoundary |= $gla->chunk_boundary();
     }
 
     // Removing null results from state information.
@@ -217,6 +220,16 @@ class <?=$className?> {
 <?  } // foreach inner gla ?>
   }
 
+<?  if ($chunkBoundary) { ?>
+  void ChunkBoundary() {
+<?  foreach ($myGLAs as $gName => $gType) { ?>
+<?      if ($gType->chunk_boundary()) { ?>
+    <?=$gName?>.ChunkBoundary();
+<?      } ?>
+<?  } ?>
+  }
+<?  } ?>
+
   void AddState(<?=$className?> & other) {
     // Call AddState individually on each GLA.
 <?  foreach ($myGLAs as $gName => $gType)  { ?>
@@ -224,7 +237,7 @@ class <?=$className?> {
     if (!const_state_.<?=$gName?>_done)
 <?      } ?>
     <?=$gName?>.AddState(other.<?=$gName?>);
-<?  } // foreach inner gla ?>
+<?  } ?>
   }
 
 <?  if ($isIterable) { ?>
@@ -274,6 +287,8 @@ class <?=$className?> {
         'iterable'        => $isIterable,
         'intermediates'   => false,
         'generated_state' => $constantState,
+        'required_states' => $glaReqStates,
+        'chunk_boundary'  => $chunkBoundary,
         'libraries'       => $libraries,
         'configurable'    => $configurable,
         'extra'           => $extra,
