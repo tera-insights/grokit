@@ -474,11 +474,11 @@ public:
         return constState;
     }
 
-    const InnerGLA* GetInnerGLA(const <?=$keyType?>& <?=$keyName?>) const {
+    const InnerGLA& GetInnerGLA(const <?=$keyType?>& <?=$keyName?>) const {
         uint64_t hashVal = CongruentHash(Hash(<?=$keyName?>), H_b + 1);
         uint64_t passNum = (hashVal / NUM_STATES) % ConstantState::N_PASSES;
         uint64_t segNum = hashVal % NUM_STATES;
-        return constState.segments.Peek(segNum);
+        return *constState.segments.Peek(segNum);
     }
 };
 
