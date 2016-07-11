@@ -6,9 +6,8 @@
 // Currently the behavior is limited to only working with an Interval_Map state.
 
 // Template Args:
-// distance: A non-zero integer.
-// increment: A non-negative integer.
-// initial: A non-negative integer.
+// keep.missing: Whether to keep input tuples that have no matches. If so, the
+//   missing fields are filled in with NULL values.
 function Interval_Join($t_args, $inputs, $outputs, $states) {
     // Class name is randomly generated.
     $className = generate_name('IntervalJoin');
@@ -64,8 +63,7 @@ class <?=$className?> {
   ObjectType::const_iterator it, end;
 
  public:
-  <?=$className?>(const ConstantState& state)
-      : constant_state(state) {}
+  <?=$className?>(const ConstantState& state) : constant_state(state) {}
 
   bool ProcessTuple(<?=process_tuple_args($inputs_, $outputs_)?>) {
     auto it = constant_state.state.GetMap().lower_bound({value, value});
