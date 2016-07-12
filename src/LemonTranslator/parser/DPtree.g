@@ -1113,6 +1113,7 @@ cluster
 
             WayPointID scanner(relName);
             lT->AddScannerWP(scanner, relName, attribs);
+            lT->AddScanner(scanner, query);
 
             Schema schema;
             catalog.GetSchema(relName, schema);
