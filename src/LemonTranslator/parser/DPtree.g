@@ -317,7 +317,7 @@ complexStatement
   | relationDelete
   | FLUSHTOKEN
         {
-            catalog.SaveCatalog();
+            lT->SaveCatalog();
 
             // Sleep for a few seconds to allow the Schema message to be sent
             timespec req = { 5, 0 };

@@ -1360,3 +1360,11 @@ Json::Value LemonTranslator::GetJsonCleaner() {
 
     return info;
 }
+
+void LemonTranslator::SaveCatalog() {
+  Catalog& catalog = Catalog.GetCatalog();
+  catalog.SaveCatalog();
+  if (!this->batchMode) {
+    catalog.SendUpdate();
+  }
+}

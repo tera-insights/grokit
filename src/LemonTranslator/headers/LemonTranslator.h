@@ -207,6 +207,10 @@ class LemonTranslator {
 
         Json::Value GetJson();
         Json::Value GetJsonCleaner();
+
+        // Saves the catalog always, and sends a schema update message to the
+        // frontend if batch mode is not enabled.
+        void SaveCatalog();
 };
 
 
