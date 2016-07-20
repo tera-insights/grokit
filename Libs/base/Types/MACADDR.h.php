@@ -48,9 +48,15 @@ class macAddr {
     mac.asInt = 0;
   }
 
+<?  $constructors[] = [['BASE::STRING_LITERAL'], true];  ?>
   //constructor to convert string into the mac format sepcified format
   macAddr(const char* addr){
     FromString(addr);
+  }
+
+<?  $constructors[] = [['BASE::NULL'], true];  ?>
+  macAddr(const GrokitNull & nullval){
+    mac.asInt = 0;
   }
 
   //copy constructor
@@ -182,6 +188,15 @@ inline void FromString(@type& x, const char* text){
     x.FromString(text);
 }
 
+inline void ToJson( const @type & x, Json::Value & dest ) {
+    char buffer[18];
+    ToString(x, buffer);
+    dest = buffer;
+}
+
+inline void FromJson( const Json::Value & src, @type & dest ) {
+    FromString(dest, src.asCString());
+}
 
 inline uint64_t Hash(const @type &mac1){
     return mac1.Hash();
@@ -217,6 +232,7 @@ typedef macAddr MACADDR;
 
 return array(
     'kind' => 'TYPE',
+    'constructors'     => $constructors,
     "user_headers" => array ( "Constants.h", "Config.h", "Errors.h" ),
     "system_headers" => array ( "iostream", "cinttypes" ),
     "complex" => false,

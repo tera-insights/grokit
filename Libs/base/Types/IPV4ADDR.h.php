@@ -28,15 +28,19 @@ bool operator != (const IPv4 &d1, const IPv4 &d2);
 // function to extract the domain (class C)
 IPv4 Domain(IPv4 x);
 
+
+// The use of this union assumes that integers are stored as little-endian. The
+// left-most IP component is stored in the right-most address of asInt, which is
+// the most significant byte in little-endian but not big-endian.
 class IPv4 {
-private:
+public:
     union addr_rep {
-        unsigned int asInt;
+        uint32_t asInt;
         struct {
-            unsigned char c1;
-            unsigned char c2;
-            unsigned char c3;
-            unsigned char c4;
+            uint8_t c4;
+            uint8_t c3;
+            uint8_t c2;
+            uint8_t c1;
         } split;
     };
     addr_rep addr;
@@ -69,11 +73,11 @@ public:
     }
 
     void FromString(const char *_addr) {
-        unsigned int c1;
-        unsigned int c2;
-        unsigned int c3;
-        unsigned int c4;
-        sscanf(_addr, "%u.%u.%u.%u", &c1, &c2, &c3, &c4);
+        unsigned char c1;
+        unsigned char c2;
+        unsigned char c3;
+        unsigned char c4;
+        std::sscanf(_addr, "%hhu.%hhu.%hhu.%hhu", &c1, &c2, &c3, &c4);
 
         addr.split.c1 = c1;
         addr.split.c2 = c2;
@@ -82,18 +86,18 @@ public:
     }
 
     int ToString(char* text) const{
-        return 1+sprintf(text,"%u.%u.%u.%u",
-                                            (unsigned int) addr.split.c1,
-                                            (unsigned int) addr.split.c2,
-                                            (unsigned int) addr.split.c3,
-                                            (unsigned int) addr.split.c4);
+        return 1+std::sprintf(text,"%hhu.%hhu.%hhu.%hhu",
+                              addr.split.c1,
+                              addr.split.c2,
+                              addr.split.c3,
+                              addr.split.c4);
     }
 
-    void Print(void){ printf("%u.%u.%u.%u",
-                                                     (unsigned int) addr.split.c1,
-                                                     (unsigned int) addr.split.c2,
-                                                     (unsigned int) addr.split.c3,
-                                                     (unsigned int) addr.split.c4);
+    void Print(void){ std::printf("%hhu.%hhu.%hhu.%hhu",
+                                  addr.split.c1,
+                                  addr.split.c2,
+                                  addr.split.c3,
+                                  addr.split.c4);
     }
 
 <?  $methods[] = ['IsValid', [], 'BASE::BOOL', true];  ?>
@@ -224,7 +228,7 @@ return array(
     'functions'        => $functions,
     'global_content'   => $globalContent,
     "user_headers"     => array ("Config.h"),
-    "system_headers"   => array ( "stdlib.h", "stdio.h" ),
+    "system_headers"   => array ( "cstdlib", "cstdio", "cinttypes" ),
     "complex"          => false,
     'binary_operators' => [ '==', '!=', '>', '<', '>=', '<=' ],
     'describe_json'    => DescribeJson('ipv4addr'),

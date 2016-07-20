@@ -609,7 +609,7 @@ typedef <?=$className?>::Iterator <?=$className?>_Iterator;
         'iterable'         => $iterable,
         'properties'       => [ 'resettable', 'finite container' ],
         'libraries'        => $libraries,
-        'extra'            => [ 'inner_gla' => $innerGLA],
+        'extra'            => [ 'inner_gla' => $innerGLA, 'keys' => $gbyAtts ],
     );
 }
 ?>
