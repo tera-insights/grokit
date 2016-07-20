@@ -1362,7 +1362,7 @@ Json::Value LemonTranslator::GetJsonCleaner() {
 }
 
 void LemonTranslator::SaveCatalog() {
-  Catalog& catalog = Catalog.GetCatalog();
+  Catalog& catalog = Catalog::GetCatalog();
   catalog.SaveCatalog();
   if (!this->batchMode) {
     catalog.SendUpdate();
