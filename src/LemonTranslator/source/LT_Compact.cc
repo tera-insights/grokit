@@ -52,5 +52,9 @@ Json::Value LT_Compact ::GetJson() {
     out[J_NAME] = info.getName();
     out[J_TYPE] = JN_COMPACT_WP;
 
+    SlotToQuerySet reverse;
+    AttributesToQuerySet(used, reverse);
+    out[J_ATT_MAP] = JsonAttToQuerySets(reverse);
+
     return out;
 }
