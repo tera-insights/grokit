@@ -29,7 +29,7 @@ CompactWayPointImp :: CompactWayPointImp () :
 CompactWayPointImp :: ~CompactWayPointImp () {PDEBUG("CompactWayPointImp :: CompactWayPointImp ()");}
 
 void CompactWayPointImp :: TypeSpecificConfigure( WayPointConfigureData& config ) {
-    GPWayPointImp::Configure(config);
+    PDEBUG("CacheWayPointImp :: TypeSpecificConfigure()");
 }
 
 void CompactWayPointImp :: GotAllStates( QueryID query ) {
