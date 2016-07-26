@@ -413,6 +413,16 @@ grokit\create_data_type(
 
 <?
 grokit\create_data_type(
+    "CompactProcessChunkWorkFunc"
+    , "WorkFuncWrapper"
+    , [ ]
+    , [ ]
+    , true
+);
+?>
+
+<?
+grokit\create_data_type(
     "GSEPreProcessWorkFunc"
     , "WorkFuncWrapper"
     , [ ]

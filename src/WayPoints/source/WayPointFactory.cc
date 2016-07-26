@@ -41,11 +41,12 @@
 #include "GISTWayPointImp.h"
 #include "GIWayPointImp.h"
 #include "CacheWayPointImp.h"
+#include "CompactWayPointImp.h"
 #include "ClusterWayPointImp.h"
 
 using namespace std;
 
-/* The only function. Takes a configuration objec as input
+/* The only function. Takes a configuration object as input
      and creates the waypoint of the correct type.
 
      NOTE: the configuration object is only looked at, it will not be
@@ -106,6 +107,10 @@ WayPointImp* WayPointFactory(const WayPointConfigureData &configData){
 
         case CacheChunkConfigureData::type :
             return new CacheWayPointImp;
+
+        case CompactChunkConfigureData::type :
+            return new CompactWayPointImp;
+
         case ClusterConfigureData::type:
             return new ClusterWayPointImp;
 

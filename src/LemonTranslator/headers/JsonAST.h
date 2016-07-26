@@ -104,6 +104,7 @@
 #define JN_CLEANER_WP   "cleaner_wp"
 #define JN_CACHE_WP     "cache_wp"
 #define JN_CLUSTER_WP   "cluster_wp"
+#define JN_COMPACT_WP   "compact_wp"
 
 // Waypoint payloads
 #define JN_GLA          "gla"

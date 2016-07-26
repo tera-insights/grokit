@@ -29,6 +29,7 @@
 #include "LT_GIST.h"
 #include "LT_GI.h"
 #include "LT_Cache.h"
+#include "LT_Compact.h"
 #include "LT_Cluster.h"
 #include "AttributeManager.h"
 #include "QueryManager.h"
@@ -458,6 +459,13 @@ bool LemonTranslator :: AddCacheWP(WayPointID wpID) {
     return AddGraphNode(wpID, CacheWaypoint, WP);
 }
 
+bool LemonTranslator :: AddCompactWP(WayPointID wpID) {
+    PDEBUG("LemonTranslator::AddCompactWP(WayPointID wpID = %s)", wpID.getName().c_str());
+    FATALIF(!wpID.IsValid(), "Invalid WaypointID received in AddPrintWP");
+    LT_Waypoint* WP = new LT_Compact(wpID);
+    return AddGraphNode(wpID, CompactWaypoint, WP);
+}
+
 bool LemonTranslator::AddClusterWP(WayPointID wpID,
     std::string relation, SlotID cAtt, QueryID query)
 {
@@ -527,6 +535,15 @@ bool LemonTranslator::AddCaching(WayPointID wpID, QueryID queryID) {
     set<SlotID> attr;
     if (GetWaypointAttr(wpID, atts, attr, WP) == false) return false;
     return WP->AddCaching(queryID);
+}
+
+bool LemonTranslator::AddCompact(WayPointID wpID, QueryID queryID) {
+    FATALIF(!wpID.IsValid(), "Invalid WaypointID received in AddCompact");
+    LT_Waypoint* WP = NULL;
+    SlotContainer atts;
+    set<SlotID> attr;
+    if (GetWaypointAttr(wpID, atts, attr, WP) == false) return false;
+    return WP->AddCompact(queryID);
 }
 
 // Selection, Join

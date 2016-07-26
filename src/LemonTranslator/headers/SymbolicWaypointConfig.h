@@ -41,6 +41,7 @@ enum WaypointType {
     GISTWayPoint,
     GIWayPoint,
     CacheWaypoint,
+    CompactWaypoint,
     ClusterWaypoint
 };
 

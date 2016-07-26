@@ -32,11 +32,14 @@ BStringIterator :: BStringIterator (Column &iterateMe, Bitstring& pattern, uint6
     startCount(0),
     endCount(0),
     mLastSeenPattern(0),
+    denseQueries(0),
     onceWritten(false),
     numTuples(0),
     tupleCount(0),
     fragTuples()
 {
+        // The Bitstring is dense for all queries at creation time.
+        denseQueries.SetAll();
 
         if (it.IsInvalid ())
             return;

@@ -143,7 +143,7 @@ WorkFunc WayPointImp :: GetWorkFunction (off_t whichOne) {
 // keeps the number of files low
 WayPointImp* WayPointFactory(const WayPointConfigureData &configData);
 
-WayPointImp *WayPointImp :: Configure (WayPointConfigureData &configData) {
+WayPointImp* WayPointImp :: Configure (WayPointConfigureData &configData) {
 
     WayPointImp *returnVal;
 

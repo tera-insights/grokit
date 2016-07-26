@@ -319,6 +319,10 @@ EOT
                 $gRes = parseCacheWP( $wpast, $wpname, $header );
                 $waypoints[$wpname] = "cache";
                 break;
+            case NodeType::COMPACT_WP:
+                $gRes = parseCompactWP( $wpast, $wpname, $header );
+                $waypoints[$wpname] = "compact";
+                break;
             case NodeType::CLUSTER_WP:
                 $gRes = parseClusterWP( $wpast, $wpname, $header );
                 $waypoints[$wpname] = "cluster";
@@ -863,6 +867,33 @@ EOT
         $res->addFile($filename, $name);
         _startFile( $filename );
         CacheGenerate( $name );
+        _endFile( $filename , $myHeaders );
+
+        LibraryManager::Pop();
+
+        return $res;
+    }
+
+    function parseCompactWP( $ast, $name, $header ) {
+        ob_start();
+        LibraryManager::Push();
+
+        /***************   PROCESS AST   ***************/
+
+        $attMap = ast_get($ast, NodeKey::ATT_MAP);
+
+        $res = new GenerationInfo;
+
+        /*************** END PROCESS AST ***************/
+
+        // Get our headers
+        $myHeaders = $header . PHP_EOL . ob_get_clean();
+
+        // Only one file right now
+        $filename = $name . '.cc';
+        $res->addFile($filename, $name);
+        _startFile( $filename );
+        CompactGenerate( $name, $attMap );
         _endFile( $filename , $myHeaders );
 
         LibraryManager::Pop();

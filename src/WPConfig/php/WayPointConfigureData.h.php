@@ -100,6 +100,16 @@ grokit\create_data_type(
 
 <?
 grokit\create_data_type(
+    "CompactChunkConfigureData"
+    , "WayPointConfigureData"
+    , [ ]
+    , [ ]
+    , true
+);
+?>
+
+<?
+grokit\create_data_type(
     "ClusterConfigureData"
     , "WayPointConfigureData"
     , [ 'relation' => 'std::string' ]

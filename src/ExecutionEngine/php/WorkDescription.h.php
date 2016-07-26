@@ -54,6 +54,10 @@ grokit\create_base_data_type( "WorkDescription", "Data", [ ], [ ] );
 grokit\create_data_type("CacheChunkWD", "WorkDescription", [ ], [ 'chunkToProcess' => 'ChunkContainer' ]);
 ?>
 
+<?
+grokit\create_data_type("CompactProcessChunkWD", "WorkDescription", [ 'chunkID' => 'ChunkID', ], [ 'whichQueryExits' => 'QueryExitContainer', 'chunkToProcess' => 'Chunk' ]);
+?>
+
 <?php
 grokit\create_data_type( "SelectionPreProcessWD", "WorkDescription", [ ], [ 'whichQueryExits' => 'QueryExitContainer', 'requiredStates' => 'QueryToGLASContMap', ] );
 ?>

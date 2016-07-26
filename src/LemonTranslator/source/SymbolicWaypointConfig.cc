@@ -23,7 +23,7 @@ WPTypeTranslator nameofTypes[NUM_WAYPOINT_TYPES] = {
 	{ "Selection", SelectionWaypoint},
 	{ "Join", JoinWaypoint},
 	{ "Print", PrintWaypoint},
-    { "Scanner", ScannerWaypoint}
+  { "Scanner", ScannerWaypoint}
 };
 
 

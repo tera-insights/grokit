@@ -49,6 +49,7 @@ tokens {
   DELETE_RELATION;
   DELETE_CONTENT;
   CACHE_WP;
+  COMPACT_WP;
   STORE_MAP;
   STORE_MAP_ENTRY;
   LOAD_FILTER;
@@ -56,7 +57,7 @@ tokens {
   LOAD_FILTER_IN;
 
   CLUSTER_;
-  CLUSTER_ON; 
+  CLUSTER_ON;
 
   // Parameters for initialization of objects
   PARAMETERS__;

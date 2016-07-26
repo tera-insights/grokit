@@ -1066,6 +1066,15 @@ cacheWP :
     }
     ;
 
+compactWP :
+    ^(COMPACT_WP a=ID) {
+        WayPointID source = WayPointID::GetIdByName(TXT($a));
+        lT->AddCompactWP(wp);
+        lT->AddEdge(source, wp);
+        lT->AddCompact(wp, curQuery);
+    }
+    ;
+
 glaWP
     : ^(GLA__ {
         lT->AddGLAWP(wp);

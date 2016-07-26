@@ -27,6 +27,7 @@ require_once 'JoinRHS.cc.php';
 require_once 'JoinMergeWorkFuncs.cc.php';
 require_once 'Cleaner.cc.php';
 require_once 'Cache.cc.php';
+require_once 'Compact.cc.php';
 require_once 'Cluster.cc.php';
 
 require_once 'grokit_codegen.php';

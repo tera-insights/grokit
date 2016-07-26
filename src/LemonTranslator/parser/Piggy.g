@@ -28,6 +28,7 @@ GLOB: 'glob' | 'Glob' | 'GLOB';
 HEADER : 'HEADER';
 JOBID : 'JOBID';
 CACHE : 'CACHE';
+COMPACT : 'COMPACT';
 OVERWRITE : 'OVERWRITE';
 DELETE : 'DELETE';
 CONTENT : 'CONTENT';
@@ -213,6 +214,7 @@ actionBody
     | fe=FOREACH a=identName GENERATE generateList
         -> ^(SELECT__ $a) ^(QUERRY__ ID[$fe,ParserHelpers::qry.c_str()] generateList )
     | CACHE in=identName -> ^(CACHE_WP $in)
+    | COMPACT in=identName -> ^(COMPACT_WP $in)
     ;
 
 readAttributes

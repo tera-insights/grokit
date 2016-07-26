@@ -58,6 +58,10 @@ private:
     // so keep track of last seen bitstring pattern
     Bitstring mLastSeenPattern;
 
+    // This BitString keeps track of whether the chunk is dense for each query,
+    // i.e. whether all tuples in the corresponding chunk are active for each query.
+    Bitstring denseQueries;
+
     // Needed for insert, because we may have random pattern in our last seen pattern buffer
     // initially which may by chance match with user given pattern. This variable also useful
     // to skip advance for the first time since we dont want advance if store is empty
@@ -211,6 +215,8 @@ public:
 
     FragmentsTuples& GetFragmentsTuples ();
 
+    Bitstring& GetDenseQueries();
+
     // Used for debugging
     typedef std::map<Bitstring, int64_t> QueryInfoMap;
 
@@ -258,6 +264,10 @@ void BStringIterator :: Insert (Bitstring &addMe) {
     }
 
     numTuples++;
+
+    // This turns off the dense bit for a query if the inserted BitString is not
+    // turned on for that query.
+    denseQueries.Intersect(addMe);
 
     assert (it.IsWriteOnly() == true);
 
@@ -427,6 +437,11 @@ void BStringIterator :: SetFragmentsTuples (FragmentsTuples& _tuples) {
 inline
 FragmentsTuples& BStringIterator :: GetFragmentsTuples () {
     return fragTuples;
+}
+
+inline
+Bitstring& BStringIterator :: GetDenseQueries() {
+    return denseQueries;
 }
 
 #endif

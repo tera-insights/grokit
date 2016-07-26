@@ -93,6 +93,7 @@ class LemonTranslator {
         bool AddGTWP(WayPointID gfWP);
         bool AddGISTWP(WayPointID gistWP);
         bool AddCacheWP(WayPointID wpID);
+        bool AddCompactWP(WayPointID wpID);
         bool AddClusterWP(WayPointID wpID,
             std::string relation, SlotID cAtt, QueryID query);
 
@@ -108,6 +109,7 @@ class LemonTranslator {
         /******* Adding information for queries (per query) ****************/
 
         bool AddCaching(WayPointID wp, QueryID query);
+        bool AddCompact(WayPointID wp, QueryID query);
 
         // These functions might not be apropriate for the type
         // of waypoint defined earlier. If that is the case, false is
@@ -170,7 +172,7 @@ class LemonTranslator {
         bool AddWriter(WayPointID wpID, QueryID query, SlotToSlotMap& storeMap);
 
         bool AddScannerRange(WayPointID wpID, QueryID query, int64_t min, int64_t max);
-	bool AddScanner(WayPointID wpID, QueryID query);
+        bool AddScanner(WayPointID wpID, QueryID query);
 
         /****Interface for the rest of the system***************/
 

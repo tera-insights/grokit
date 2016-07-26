@@ -238,6 +238,10 @@ public:
         return false;
     }
 
+    virtual bool AddCompact(QueryID query) {
+        return false;
+    }
+
     virtual bool AddScanner(QueryIDSet) {}
 
     // Should not be needed except scanners
