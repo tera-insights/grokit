@@ -880,7 +880,7 @@ EOT
 
         /***************   PROCESS AST   ***************/
 
-        $attMap = ast_get($ast, NodeKey::ATT_MAP);
+        $attMap = parseAttributeMap(ast_get($ast, NodeKey::ATT_MAP));
 
         $res = new GenerationInfo;
 
