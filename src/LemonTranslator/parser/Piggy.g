@@ -94,6 +94,7 @@ statement
   | aliasStatement
   | use=USING id=identifier -> ^(IMPORT_[$use,"IMPORT"] $id)
   | clusterStatement
+  | FLUSH -> FLUSHTOKEN
   ;
 
 fragment loadFilter
