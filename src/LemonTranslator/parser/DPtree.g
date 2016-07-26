@@ -1347,6 +1347,7 @@ wpDefinition
     | gistWP
     | giWP
     | cacheWP
+    | compactWP
   ;
 
 /*
