@@ -878,11 +878,11 @@ EOT
         ob_start();
         LibraryManager::Push();
 
+        $res = new GenerationInfo;
+
         /***************   PROCESS AST   ***************/
 
-        $attMap = parseAttributeMap(ast_get($ast, NodeKey::ATT_MAP));
-
-        $res = new GenerationInfo;
+        $attMap = parseAttributeMap(ast_get($ast, NodeKey::ATT_MAP), $res);
 
         /*************** END PROCESS AST ***************/
 
