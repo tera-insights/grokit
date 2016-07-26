@@ -107,7 +107,7 @@ final class NodeType {
     const CLEANER_WP    = 'cleaner_wp';
     const CACHE_WP      = 'cache_wp';
     const CLUSTER_WP    = 'cluster_wp';
-    const COMPACT_WP    = 'clsuter_wp';
+    const COMPACT_WP    = 'compact_wp';
 
     // Waypoint payloads
     const GLA           = 'gla';
