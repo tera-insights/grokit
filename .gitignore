@@ -1,3 +1,4 @@
 installed_libs/*.php
 lock
 src/PHP/php/grokit_config.php
+src/LemonTranslator/parser/*.tokens
