@@ -87,7 +87,7 @@ int CompactProcessChunkWorkFunc_<?=$wpName?>(WorkDescription& workDescription,
         <?=$att?>_Copy_Column_Out.Advance();
 <?  } ?>
         output_iterator.Advance();
-      } else std::cout << "Throwing away tuple." << std::endl;
+      }
       // All of the input columns are advanced, including the bit strings.
 <?  cgAdvanceAttributes($attMap); ?>
       input_iterator.Advance();
@@ -99,7 +99,6 @@ int CompactProcessChunkWorkFunc_<?=$wpName?>(WorkDescription& workDescription,
     chunk.SwapColumn(<?=attCol($att)?>, <?=attSlot($att)?>);
 <?  } ?>
     output_iterator.Done();
-    std::cout << "Num tuples: " << output_iterator.GetNumTuples() << std::endl;
     chunk.SwapBitmap(output_iterator);
 
     // The chunk is outputted.
