@@ -38,6 +38,7 @@ tokens {
   ATTC;
   JOIN_IN; /* type of join */
   JOIN_NOTIN;
+  JOIN_LEFT; // left outer join
   SYNTHESIZE__;
   FUNCTEMPLATE;
   TYPE_;

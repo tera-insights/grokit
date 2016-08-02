@@ -49,7 +49,7 @@ class LemonTranslator {
         std::string jobID;
 
     public:
-        enum JoinType { Join_EQ, Join_IN, Join_NOTIN };
+        enum JoinType { Join_EQ, Join_IN, Join_NOTIN, Join_LEFT };
 
         LemonTranslator(bool batchMode);
 

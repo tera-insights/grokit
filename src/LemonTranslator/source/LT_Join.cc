@@ -299,6 +299,10 @@ bool LT_Join::AddJoin(QueryID query, SlotSet& RHS_atts, SlotVec& keys, LemonTran
         case LemonTranslator::Join_NOTIN:
             NotExistsTarget.Union(query);
             break;
+
+        case LemonTranslator::Join_LEFT:
+            LeftTarget.Union(query);
+            break;
     }
 
     queriesCovered.Union(query);
@@ -683,6 +687,7 @@ Json::Value LT_Join::GetJson() {
     }
     ret["exists_target"] = (Json::Value::UInt64) ExistsTarget.GetInt64();
     ret["not_exists_target"] = (Json::Value::UInt64) NotExistsTarget.GetInt64();
+    ret["left_target"] = (Json::Value::UInt64) LeftTarget.GetInt64();
 
     ret[J_QUERIES] = JsonQuerySet(queriesCovered);
 

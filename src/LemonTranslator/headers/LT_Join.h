@@ -41,6 +41,7 @@ private:
 
     QueryIDSet ExistsTarget; // set of queries for which we run an exists predicate
     QueryIDSet NotExistsTarget; // same for notExists
+    QueryIDSet LeftTarger;  // same as ExistsTarget but for left outer joins
 
     // id of cleaner so we can write config messages
     WayPointID cleanerID;
@@ -69,6 +70,7 @@ public:
         RHS_copy(),
         ExistsTarget(),
         NotExistsTarget(),
+        LeftTarget(),
         cleanerID(_cleanerID),
         global_defs(info[J_C_DEFS].asString()),
         global_info(info),

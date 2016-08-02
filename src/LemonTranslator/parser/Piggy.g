@@ -19,6 +19,8 @@ TO : 'to' | 'To' | 'TO';
 INTO : 'into' | 'Into' | 'INTO';
 IN : 'in' | 'In' | 'IN';
 NOT_K : 'not' | 'Not' | 'NOT';
+OUTER : 'outer' | 'Outer' | 'OUTER';
+LEFT : 'left' | 'Left' | 'LEFT';
 FOREACH : 'foreach' | 'Foreach' | 'FOREACH';
 GENERATE : 'generate' | 'Generate' | 'GENERATE';
 REQUIRES : 'requires' | 'Requires' | 'REQUIRES';
@@ -189,7 +191,7 @@ tpAtt
   : var=identName COLON dtype=type -> ^(TPATT $var $dtype)
   ;
 
-inStmt
+fragment inStmt
     : IN -> JOIN_IN
     | NOT_K IN -> JOIN_NOTIN
     ;
@@ -197,6 +199,8 @@ inStmt
 actionBody
     : jo=JOIN r1=identName BY l1=attEListAlt COMMA r2=identName BY l2=attEListAlt
         ->  ^(JOIN ^(ATTS $l1) $r1 TERMCONN $r2) ^(QUERRY__ ID[$jo,ParserHelpers::qry.c_str()] ^(JOIN ^(ATTS $l2)))
+    | LEFT OUTER jo=JOIN r1=identName BY l1=attEListAlt COMMA r2=identName BY l2=attEListAlt
+        ->  ^(JOIN ^(ATTS $l1) $r1 TERMCONN $r2) ^(QUERRY__ ID[$jo,ParserHelpers::qry.c_str()] ^(JOIN JOIN_LEFT ^(ATTS $l2)))  // There is a separate option for a left outer join. Parsing doesn't work with optional matching.
     | fi=FILTER a=identName BY exp=expressionList
         -> ^(SELECT__ $a) ^(QUERRY__ ID[$fi,ParserHelpers::qry.c_str()] ^(FILTER $exp))
     | fi=FILTER a=identName BY gf=gfDef ct=constArgs st=stateArgs (USING nexp=namedExpressionList)?

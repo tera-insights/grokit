@@ -567,6 +567,7 @@ EOT
         $jDesc->LHS_keys = ast_get($ast, "LHS_keys");
         $jDesc->exists_target = ast_get($ast, "exists_target");
         $jDesc->not_exists_target = ast_get($ast, "not_exists_target");
+        $jDesc->left_target = ast_get($ast, "left_target");
         $jDesc->queries_attribute_comparison = ast_get($ast, "queries_attribute_comparison");
 
         $jDesc->hash_RHS_attr = ast_get($ast, "hash_RHS_attr");

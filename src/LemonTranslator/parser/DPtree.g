@@ -997,6 +997,7 @@ joinType returns [LemonTranslator::JoinType type]
 : /* none, normal */ {$type = LemonTranslator::Join_EQ;}
 | JOIN_IN { $type = LemonTranslator::Join_IN; }
 | JOIN_NOTIN { $type = LemonTranslator::Join_NOTIN; }
+| JOIN_LEFT { $type = LemonTranslator::Join_LEFT; }
 ;
 
 joinRule

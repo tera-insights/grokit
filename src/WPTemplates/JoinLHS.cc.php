@@ -74,6 +74,8 @@ int JoinLHSWorkFunc_<?=$wpName?>(WorkDescription &workDescription, ExecEngineDat
 
     QueryIDSet existsTarget(<?=$jDesc->exists_target?>, true);
     QueryIDSet notExistsTarget(<?=$jDesc->not_exists_target?>, true);
+    QueryIDSet leftTarget(<?=$jDesc->left_target?>, true);
+
 
     // these are all of the attribute values that come from the hash table...
     // for each att we need a pointer as well as a dummy value that the pointer will be set to by default
