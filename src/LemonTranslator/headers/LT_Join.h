@@ -41,7 +41,7 @@ private:
 
     QueryIDSet ExistsTarget; // set of queries for which we run an exists predicate
     QueryIDSet NotExistsTarget; // same for notExists
-    QueryIDSet LeftTarger;  // same as ExistsTarget but for left outer joins
+    QueryIDSet LeftTarget;  // same as ExistsTarget but for left outer joins
 
     // id of cleaner so we can write config messages
     WayPointID cleanerID;
