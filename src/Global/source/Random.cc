@@ -69,6 +69,32 @@ double RandDouble(void)  {
     return std::generate_canonical<double, 32>(rand_state.rng);
 }
 
+std::size_t RandBytes(uint8_t* start, uint8_t* end) {
+    using data_t = RandomState::random_t::result_type;
+
+    if (!rand_state.initialized) {
+        rand_state.init();
+    }
+
+    data_t data;
+    std::size_t bitsLeft = 0;
+    std::size_t bytesGen = 0;
+    while (start != end) {
+        if (bitsLeft < 8) {
+            data = rand_state.rng();
+            bitsLeft = RandomState::random_t::word_size;
+        }
+
+        *start = uint8_t(data & 0xFF);
+        data >>= 8;
+        bitsLeft -= 8;
+        bytesGen++;
+        start++;
+     }
+
+     return bytesGen;
+}
+
 #else // _HAS_STD_RANDOM
 
 #include <cstdlib>
@@ -137,6 +163,32 @@ double RandDouble(void) {
 
     double result;
     drand48_r(&rand_state.data, &result);
+}
+
+std::size_t RandBytes(uint8_t* start, uint8_t* end) {
+    if (!rand_state.initialized) {
+        rand_state.init();
+    }
+
+    uint32_t data;
+    long tmp;
+    std::size_t bitsLeft;
+    std::size_t bytesGen;
+    while (start != end) {
+        if (bitsLeft < 8) {
+            mrand48_r(&rand_state.data, &tmp);
+            data = uint32_t(tmp & 0xFFFFFFFFLL);
+            bitsLeft = 32;
+        }
+
+        *start = uint8_t(data & 0xFF);
+        data >>= 8;
+        bitsLeft -= 8;
+        bytesGen++;
+        start++;
+     }
+
+     return bytesGen;
 }
 
 #endif // _HAS_STD_RANDOM
