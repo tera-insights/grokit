@@ -291,6 +291,8 @@ bool LT_Join::AddJoin(QueryID query, SlotSet& RHS_atts, SlotVec& keys, LemonTran
 
     LemonTranslator::JoinType type = jType;
 
+    std::cout << "JType: " << type << std::endl;
+
     switch (type){
         case LemonTranslator::Join_IN:
             ExistsTarget.Union(query);
