@@ -45,12 +45,9 @@ int CompactProcessChunkWorkFunc_<?=$wpName?>(WorkDescription& workDescription,
   Bitstring copy_bitstring = queriesToRun;
   copy_bitstring.Difference(input_iterator.GetDenseQueries());
   bool is_dense = copy_bitstring.IsEmpty();
-  std::cout << "queriesToRun: " << queriesToRun.GetInt64() << std::endl;
-  std::cout << "denseQueries: " << input_iterator.GetDenseQueries().GetInt64() << std::endl;
 
   if (is_dense) {
     // No changes are needed for this chunk and it simply returned.
-    std::cout << "The chunk is dense" << std::endl;
     chunk.SwapBitmap(input_iterator);  // Checking the bitstrings back in.
     ChunkContainer temp_result(chunk);
     temp_result.swap(result);
@@ -73,6 +70,7 @@ int CompactProcessChunkWorkFunc_<?=$wpName?>(WorkDescription& workDescription,
       // The bits for non-exiting queries are stripped from the current string.
       QueryIDSet bits = input_iterator.GetCurrent();
       bits.Intersect(queriesToRun);
+
       // The tuple is kept if it is turned on for any of the exiting queries.
       if (!bits.IsEmpty()) {
         // The column information is copied over.
