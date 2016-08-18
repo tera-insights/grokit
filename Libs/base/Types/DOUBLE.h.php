@@ -19,12 +19,6 @@ typedef double DOUBLE; // use native double
 //////////////
 // Inline functions
 
-<?  $constructors[] = [['BASE::NULL'], true, 'DOUBLE_Null']; ?>
-inline
-DOUBLE DOUBLE_Null( const GrokitNull & n ) {
-    return std::numeric_limits<DOUBLE>::quiet_NaN();
-}
-
 <? ob_start(); ?>
 inline void FromString(@type & x, const char* text){
     x = std::strtod(text, nullptr);
@@ -96,5 +90,22 @@ foreach( [ 'BYTE', 'SMALLINT', 'BIGINT', 'FLOAT', 'INT' ] as $type ) {
 
     declareFunctionGlobal( 'base', 'DOUBLE', [ $fullType ], $call );
 }
+
+declareFunction('DOUBLE', ['BASE::NULL'], function($args, $targs = []) {
+  $rtype = lookupType('BASE::DOUBLE');
+?>
+inline
+DOUBLE DOUBLE_Null( const GrokitNull & n ) {
+    return std::numeric_limits<DOUBLE>::quiet_NaN();
+}
+<?
+  return [
+      'kind' => 'FUNCTION',
+      'input' => $args,
+      'result' => $rtype,
+      'deterministic' => true,
+      'name' => 'DOUBLE_Null'
+      ];
+});
 
 ?>
