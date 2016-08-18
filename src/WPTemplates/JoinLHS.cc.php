@@ -17,7 +17,8 @@ function JoinLHS($wpName, $jDesc) {
     // This will implicitly throw an error if no matching constructor is found.
     if ($jDesc->left_target > 0)
         foreach ($jDesc->attribute_queries_RHS as $att => $queries)
-            $rhsConstructors[$att] = lookupFunction(lookupType(attType($att)), [lookupType('NULL')]);
+            $rhsConstructors[$att] = lookupFunction(attType($att),
+                                                    [lookupType('BASE::NULL')]);
 
     $jDesc->hash_RHS_attr = $rhsAttOrder;
 ?>
@@ -274,11 +275,11 @@ int JoinLHSWorkFunc_<?=$wpName?>(WorkDescription &workDescription, ExecEngineDat
     // we did not get a match, we need to add an emtpy btstring
     if (numHits == 0) {
       // The RHS columns are advanced as necessary.
-      if (stillShallow || leftTarget > 0) {
+      if (stillShallow || !leftTarget.IsEmpty()) {
 <?  foreach ($jDesc->attribute_queries_RHS_copy as $att => $qrys) { ?>
 <?      if ($jDesc->left_target > 0) { ?>
         // A null object is created using the null constructor.
-        <?=attType($att)?> tmp_<?=attData($att)?> = <?=$rhsConstructors[$att]?>(n);
+        <?=attType($att)?> tmp_<?=attData($att)?> = <?=$rhsConstructors[$att]?>(GrokitNull::Value);
 <?      } else { ?>
         // A dummy object is created using the default constructor.
         <?=attType($att)?> tmp_<?=attData($att)?>;
@@ -289,7 +290,7 @@ int JoinLHSWorkFunc_<?=$wpName?>(WorkDescription &workDescription, ExecEngineDat
       }
 
       // Copy the LHS input to the output as for a non-shallow left outer join.
-      if (leftTarget > 0 && !stillShallow) {
+      if (!leftTarget.IsEmpty() && !stillShallow) {
 <?  foreach ($jDesc->attribute_queries_LHS_copy as $att => $qrys) { ?>
             <?=attData($att)?>_Out.Insert(<?=attData($att)?>.GetCurrent());
             <?=attData($att)?>_Out.Advance();
@@ -298,7 +299,7 @@ int JoinLHSWorkFunc_<?=$wpName?>(WorkDescription &workDescription, ExecEngineDat
 
       // An empty bitstring is inserted for a shallow join that has no output
       // for this tuple. This cannot happen for a left outer join.
-      if (stilLShallow && oldBitstringLHS.IsEmpty()) {
+      if (stillShallow && oldBitstringLHS.IsEmpty()) {
         myOutBStringIter.Insert(oldBitstringLHS);
         myOutBStringIter.Advance();
       }
