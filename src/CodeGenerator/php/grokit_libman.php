@@ -967,10 +967,12 @@ namespace grokit {
 
                 // Set up null datatype
                 $nullHash = hash( 'sha256', 'BASE::NULL' );
+				$altNullHash = hash( 'sha256', 'BASE::GROKITNULL' );
                 $nullExtras = [ 'properties' => [ 'null' ] ];
                 $nullDT = new DataType( $nullHash, 'BASE::NULL', 'GrokitNull', $nullExtras, [[]] );
 
                 self::$instance->defineType( $nullHash, $nullDT );
+				self::$instance->defineType( $altNullHash, $nullDT );
             }
 
             return self::$instance;
@@ -1158,11 +1160,11 @@ namespace {
         return $libman->isFunctionDefined( $hash );
     }
 
-    function lookupFunction( $name, array $args, array $t_args = null ) {
+    function lookupFunction( $name, array $args, array $t_args = null, $fuzzy = true, $allowGenerate = true ) {
         $t_args = is_null($t_args) ? [] : $t_args;
         $libman = & \grokit\LibraryManager::GetLibraryManager();
 
-        return $libman->lookupFunction( $name, $args, $t_args );
+        return $libman->lookupFunction( $name, $args, $t_args, $fuzzy, $allowGenerate );
     }
 
     function lookupOperator( $name, $args ) {
