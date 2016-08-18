@@ -17,7 +17,7 @@ function JoinLHS($wpName, $jDesc) {
     // This will implicitly throw an error if no matching constructor is found.
     if ($jDesc->left_target > 0)
         foreach ($jDesc->attribute_queries_RHS as $att => $queries)
-            $rhsConstructors[$att] = lookupFunction(attType($att), [lookupType('NULL')]);
+            $rhsConstructors[$att] = lookupFunction(lookupType(attType($att)), [lookupType('NULL')]);
 
     $jDesc->hash_RHS_attr = $rhsAttOrder;
 ?>
