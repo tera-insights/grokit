@@ -289,7 +289,7 @@ int JoinLHSWorkFunc_<?=$wpName?>(WorkDescription &workDescription, ExecEngineDat
 <?  } ?>
       }
 
-      // Copy the LHS input to the output as for a non-shallow left outer join.
+      // Copy the LHS input to the output for a non-shallow left outer join.
       if (!leftTarget.IsEmpty() && !stillShallow) {
 <?  foreach ($jDesc->attribute_queries_LHS_copy as $att => $qrys) { ?>
             <?=attData($att)?>_Out.Insert(<?=attData($att)?>.GetCurrent());
