@@ -17,7 +17,7 @@ function JoinLHS($wpName, $jDesc) {
     // This will implicitly throw an error if no matching constructor is found.
     if ($jDesc->left_target > 0)
         foreach ($jDesc->attribute_queries_RHS as $att => $queries)
-            $rhsConstructors[$att] = lookupFunction(attType($att), ['NULL']);
+            $rhsConstructors[$att] = lookupFunction(attType($att), [lookupType('NULL')]);
 
     $jDesc->hash_RHS_attr = $rhsAttOrder;
 ?>
@@ -276,7 +276,13 @@ int JoinLHSWorkFunc_<?=$wpName?>(WorkDescription &workDescription, ExecEngineDat
       // The RHS columns are advanced as necessary.
       if (stillShallow || leftTarget > 0) {
 <?  foreach ($jDesc->attribute_queries_RHS_copy as $att => $qrys) { ?>
+<?      if ($jDesc->left_target > 0) { ?>
+        // A null object is created using the null constructor.
         <?=attType($att)?> tmp_<?=attData($att)?> = <?=$rhsConstructors[$att]?>(n);
+<?      } else { ?>
+        // A dummy object is created using the default constructor.
+        <?=attType($att)?> tmp_<?=attData($att)?>;
+<?      } ?>
         <?=attData($att)?>_Out.Insert (tmp_<?=attData($att)?>);
         <?=attData($att)?>_Out.Advance();
 <?  } ?>
