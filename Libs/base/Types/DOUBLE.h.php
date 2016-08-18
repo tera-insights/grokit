@@ -91,7 +91,7 @@ foreach( [ 'BYTE', 'SMALLINT', 'BIGINT', 'FLOAT', 'INT' ] as $type ) {
     declareFunctionGlobal( 'base', 'DOUBLE', [ $fullType ], $call );
 }
 
-declareFunction('DOUBLE', ['BASE::NULL'], function($args, $targs = []) {
+declareFunction('DOUBLE', ['GrokitNull'], function($args, $targs = []) {
   $rtype = lookupType('BASE::DOUBLE');
 ?>
 inline
