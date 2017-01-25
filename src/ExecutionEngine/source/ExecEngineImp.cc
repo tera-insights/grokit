@@ -22,6 +22,8 @@
 #include "DiskPool.h"
 #include "CommunicationFramework.h"
 
+#include <ctime>
+
 // these are the codes for the various message types handled by the exec engine
 // these are only used internally, within the exec engine
 #define HOPPING_DOWNSTREAM_MESSAGE 1
@@ -49,8 +51,8 @@ void ExecEngineImp :: Debugg(void){
     }END_FOREACH
     printf(" \n ------- unused CPU token = %d",unusedCPUTokens.Length());
     printf(" \n ------- unused Disk token = %d",unusedDiskTokens.Length());
-    printf(" \n ------- CPU request List = %d", requestListCPU.Length());
-    printf(" \n ------- Disk request List = %d", requestListDisk.Length());
+    printf(" \n ------- CPU request List = %d", requestListCPU.size());
+    printf(" \n ------- Disk request List = %d", requestListDisk.size());
     printf(" \n ------- Num requests in list =%d", requests.Length());
 
 }
@@ -90,6 +92,7 @@ ExecEngineImp :: ExecEngineImp (const std::string & _mailbox) :
     RegisterMessageProcessor (ConfigureExecEngineMessage::type, &ConfigureExecEngine, 1);
     RegisterMessageProcessor (ServiceRequestMessage::type, &ServiceRequestMessage_H, 3);
     RegisterMessageProcessor (ServiceControlMessage::type, &ServiceControlMessage_H, 2);
+    RegisterMessageProcessor (TickMessage::type, &TickHandler, 1);
 
     // create and load up all of the CPU tokens
     for (int i = 0; i < NUM_EXEC_ENGINE_THREADS; i++) {
@@ -102,6 +105,9 @@ ExecEngineImp :: ExecEngineImp (const std::string & _mailbox) :
         DiskWorkToken temp(i + 200);
         unusedDiskTokens.Insert (temp);
     }
+
+    // Send us ticks 10 times per second
+    SchedulerClock clock(1000 * 1000 * 1000 / 10, Self());
 }
 
 void ExecEngineImp :: PreStart(void) {
@@ -334,14 +340,15 @@ int ExecEngineImp :: DeliverSomeMessage () {
             /*********************/
         } case CPU_TOKEN_REQUEST: {
 
-            TokenRequest whoIsAsking;
-
             // take out the CPU request
-            requestListCPU.MoveToStart ();
-            requestListCPU.Remove (whoIsAsking);
+	    TokenRequest whoIsAsking = requestListCPU.top();
+            requestListCPU.pop();
 
             // now we have the CPU request... so we will make sure it has a high enough priority
-            if (whoIsAsking.priority > GetPriorityCutoff (CPUWorkToken::type)) {
+	    timespec now;
+	    clock_gettime(CLOCK_REALTIME, &now);
+            if (whoIsAsking.priority > GetPriorityCutoff (CPUWorkToken::type) && 
+		whoIsAsking.minStartTime < now) {
 
                 // if we got in there, it is not high enough priority, so we just buffer it
                 // for future use... if the priority cutoff changes in the future, we will
@@ -367,14 +374,15 @@ int ExecEngineImp :: DeliverSomeMessage () {
             /*********************/
         } case DISK_TOKEN_REQUEST: {
 
-            TokenRequest whoIsAsking;
-
             // take out the Disk request
-            requestListDisk.MoveToStart ();
-            requestListDisk.Remove (whoIsAsking);
+            TokenRequest whoIsAsking = requestListDisk.top();
+	    requestListDisk.pop();
 
             // now we have the Disk request... so we will make sure it has a high enough priority
-            if (whoIsAsking.priority > GetPriorityCutoff (DiskWorkToken::type)) {
+	    timespec now;
+	    clock_gettime(CLOCK_REALTIME, &now);
+            if (whoIsAsking.priority > GetPriorityCutoff (DiskWorkToken::type) && 
+				whoIsAsking.minStartTime < now) {
 
                 // if we got in there, it is not high enough priority, so we just buffer it
                 // for future use... if the priority cutoff changes in the future, we will
@@ -417,7 +425,7 @@ int ExecEngineImp :: RequestTokenImmediate (WayPointID &whoIsAsking, off_t reque
         if (priority > GetPriorityCutoff (CPUWorkToken::type))
             return 0;
 
-        if (unusedCPUTokens.Length () > requestListCPU.Length ()) {
+        if (unusedCPUTokens.Length () > requestListCPU.size ()) {
             CPUWorkToken temp;
             unusedCPUTokens.Remove (temp);
             temp.swap (returnVal);
@@ -432,7 +440,7 @@ int ExecEngineImp :: RequestTokenImmediate (WayPointID &whoIsAsking, off_t reque
         if (priority > GetPriorityCutoff (DiskWorkToken::type))
             return 0;
 
-        if (unusedDiskTokens.Length () > requestListDisk.Length ()) {
+        if (unusedDiskTokens.Length () > requestListDisk.size ()) {
             DiskWorkToken temp;
             unusedDiskTokens.Remove (temp);
             temp.swap (returnVal);
@@ -444,32 +452,28 @@ int ExecEngineImp :: RequestTokenImmediate (WayPointID &whoIsAsking, off_t reque
     FATAL ("You have asked for an unsupported token type!!\n");
 }
 
-void ExecEngineImp :: RequestTokenDelayOK (WayPointID &whoIsAsking, off_t requestType, int priority) {
+void ExecEngineImp :: RequestTokenDelayOK (WayPointID &whoIsAsking, off_t requestType, timespec minStartTime, int priority) {
 
     // create a work request
-    TokenRequest temp (whoIsAsking, priority);
+    TokenRequest temp (whoIsAsking, priority, minStartTime);
 
     // we cannot, so shove the request on a queue
     // first, we look to give out a CPU work token
     if (requestType == CPUWorkToken::type) {
-
-        // record the request
-        requestListCPU.Insert (temp);
+        requestListCPU.push(temp);
 
         // schedule some token delivery in the future
-        if (unusedCPUTokens.Length () >= requestListCPU.Length ()) {
+        if (unusedCPUTokens.Length () >= requestListCPU.size()) {
             InsertRequest(CPU_TOKEN_REQUEST);
         }
 
     } else if (requestType == DiskWorkToken::type) {
+        requestListDisk.push(temp);
 
-        // record the request
-        requestListDisk.Insert (temp);
-
-        if (unusedDiskTokens.Length () >= requestListDisk.Length ()) {
+	// schedule some token delivery in the future
+        if (unusedDiskTokens.Length () >= requestListDisk.size()) {
             InsertRequest(DISK_TOKEN_REQUEST);
         }
-
     } else {
         FATAL ("Bad request for a work token.\n");
     }
@@ -605,7 +609,7 @@ void ExecEngineImp :: GiveBackToken (GenericWorkToken &giveBack) {
         unusedCPUTokens.Insert (temp);
 
         // if there was someone waiting on the token, then put in the request
-        if (unusedCPUTokens.Length () <= requestListCPU.Length ()) {
+        if (unusedCPUTokens.Length () <= requestListCPU.size()) {
             InsertRequest(CPU_TOKEN_REQUEST);
         }
 
@@ -618,7 +622,7 @@ void ExecEngineImp :: GiveBackToken (GenericWorkToken &giveBack) {
         unusedDiskTokens.Insert (temp);
 
         // if there was someone waiting on the token, then put in the request
-        if (unusedDiskTokens.Length () <= requestListDisk.Length ()) {
+        if (unusedDiskTokens.Length () <= requestListDisk.size()) {
             InsertRequest(DISK_TOKEN_REQUEST);
         }
 
@@ -719,7 +723,8 @@ void ExecEngineImp :: SetPriorityCutoff (off_t requestType, int priority) {
             if (frozenOutFromCPU.Current ().priority <= priority) {
                 TokenRequest temp;
                 frozenOutFromCPU.Remove (temp);
-                RequestTokenDelayOK (temp.whoIsAsking, CPUWorkToken :: type, temp.priority);
+                RequestTokenDelayOK (temp.whoIsAsking, CPUWorkToken :: type, temp.minStartTime,
+				     temp.priority);
             } else {
                 frozenOutFromCPU.Advance ();
             }
@@ -737,7 +742,8 @@ void ExecEngineImp :: SetPriorityCutoff (off_t requestType, int priority) {
             if (frozenOutFromDisk.Current ().priority <= priority) {
                 TokenRequest temp;
                 frozenOutFromDisk.Remove (temp);
-                RequestTokenDelayOK (temp.whoIsAsking, DiskWorkToken :: type, temp.priority);
+                RequestTokenDelayOK (temp.whoIsAsking, DiskWorkToken :: type, temp.minStartTime,
+				     temp.priority);
             } else {
                 frozenOutFromDisk.Advance ();
             }
@@ -816,6 +822,16 @@ MESSAGE_HANDLER_DEFINITION_BEGIN(ExecEngineImp, ServiceControlMessage_H, Service
         ServiceData errReply = ServiceErrors::MakeError(data, ServiceErrors::NoSuchService, "No such service");
 
         evProc.SendServiceReply(errReply);
+    }
+} MESSAGE_HANDLER_DEFINITION_END
+
+MESSAGE_HANDLER_DEFINITION_BEGIN(ExecEngineImp, TickHandler, TickMessage) {
+    if (evProc.unusedCPUTokens.Length () >= evProc.requestListCPU.size()) {
+      evProc.InsertRequest(CPU_TOKEN_REQUEST);
+    }
+
+    if (evProc.unusedDiskTokens.Length () >= evProc.requestListDisk.size()) {
+      evProc.InsertRequest(DISK_TOKEN_REQUEST);
     }
 } MESSAGE_HANDLER_DEFINITION_END
 

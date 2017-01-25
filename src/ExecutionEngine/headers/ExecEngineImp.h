@@ -19,6 +19,8 @@
 
 #include <string>
 #include <unordered_map>
+#include <queue>
+#include <ctime>
 
 #include "Tokens.h"
 #include "EventProcessor.h"
@@ -59,8 +61,8 @@ private:
     WayPointMap myWayPoints;
 
     // this is the set of outstanding requests for disk and CPU tokens
-    TwoWayList <TokenRequest> requestListCPU;
-    TwoWayList <TokenRequest> requestListDisk;
+    std::priority_queue <TokenRequest> requestListCPU;
+    std::priority_queue <TokenRequest> requestListDisk;
 
     // this is the set of outstanding requests that are too low in priority to be fulfilled
     TwoWayList <TokenRequest> frozenOutFromCPU;
@@ -131,7 +133,7 @@ protected:
     // request a work token for some future time... note that your request can never be granted until
     // the priority cutoff for your request type has been set to a number that is equal to or greater
     // than your request's priority
-    void RequestTokenDelayOK (WayPointID &whoIsAsking, off_t requestType, int priority = 1);
+    void RequestTokenDelayOK (WayPointID &whoIsAsking, off_t requestType, timespec minStartTime, int priority = 1);
 
     // this sets the priority cutoff for a particular requet type (note a lower number means a higher
     // cutoff, since 1 is the highest priority).  The way that this works is that no token requests will
@@ -183,6 +185,9 @@ public:
 
     // allows someone to send a control message to a registered service.
     MESSAGE_HANDLER_DECLARATION(ServiceControlMessage_H);
+
+    // Checks if there are any requests that we can now satisfy. Called ~10 times/second
+    MESSAGE_HANDLER_DECLARATION(TickHandler);
 };
 
 // this is a silly little struct that is used to hold requests for resource tokens
@@ -190,13 +195,15 @@ struct TokenRequest {
 
     WayPointID whoIsAsking;
     int priority;
+    timespec minStartTime;
 
     TokenRequest () {}
     ~TokenRequest () {}
 
-    TokenRequest (WayPointID whoIn, int priorityIn) {
+    TokenRequest (WayPointID whoIn, int priorityIn, timespec minStartTimeIn) {
         whoIsAsking = whoIn;
         priority = priorityIn;
+	minStartTime = minStartTimeIn;
     }
 
     void swap (TokenRequest &withMe) {
@@ -205,7 +212,20 @@ struct TokenRequest {
         memmove (&withMe, this, sizeof (TokenRequest));
         memmove (this, temp, sizeof (TokenRequest));
     }
-
 };
+
+// Because we use a std::priority_queue<TokenRequest>, we want the "greatest"
+// TokenRequest (i.e. the one popped first) to be the one with the soonest
+// minStartDate.
+bool operator<(const TokenRequest a, const TokenRequest b) {
+  if (a.minStartTime.tv_sec == b.minStartTime.tv_sec) {
+    // if a.tv_nsec > b.tv_nsec, then a < b. This makes sense:
+    // a.minStartTime is after b.minStartTime and we want to schedule
+    // b before a.
+    return a.minStartTime.tv_nsec > b.minStartTime.tv_nsec;
+  }
+
+  return a.minStartTime.tv_sec > b.minStartTime.tv_sec;
+}
 
 #endif

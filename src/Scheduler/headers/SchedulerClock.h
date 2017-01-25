@@ -7,6 +7,8 @@
 #include <ctime>
 
 class SchedulerClockImp : public EventGeneratorImp {
+    EventProcessor recipient;
+
     // The period of the clock
     const timespec period;
 
@@ -17,7 +19,8 @@ class SchedulerClockImp : public EventGeneratorImp {
 
     public:
         // Creates a new clock with a period _ns nanoseconds long
-        SchedulerClockImp( unsigned long long _ns );
+        SchedulerClockImp( unsigned long long _ns, 
+			   EventProcessor &recipient );
 
         virtual void PreStart(void) override;
         virtual int ProduceMessage(void) override;
@@ -26,7 +29,8 @@ class SchedulerClockImp : public EventGeneratorImp {
 class SchedulerClock : public EventGenerator {
 
     public:
-        SchedulerClock( unsigned long long _ns );
+      SchedulerClock( unsigned long long _ns, 
+		      EventProcessor &recipient );
 };
 
 #endif//_SCHEDULER_CLOCK_H_

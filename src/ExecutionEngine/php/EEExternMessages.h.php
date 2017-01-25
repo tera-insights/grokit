@@ -67,5 +67,12 @@ grokit\create_message_type( 'QueriesDoneMessage', [ ], [ 'completedQueries' => '
 ?>
 
 
+//////////// TICK MESSAGE /////////////
+/** Used to check if there are any requests we can now satisfy */
+
+<?php
+grokit\create_message_type( 'TickMessage', [ ], [ ] );
+?>
+
 
 #endif
