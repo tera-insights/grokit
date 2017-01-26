@@ -21,6 +21,7 @@
 #include "Diagnose.h"
 #include "DiskPool.h"
 #include "CommunicationFramework.h"
+#include "SchedulerClock.h"
 
 #include <ctime>
 
@@ -107,7 +108,8 @@ ExecEngineImp :: ExecEngineImp (const std::string & _mailbox) :
     }
 
     // Send us ticks 10 times per second
-    SchedulerClock clock(1000 * 1000 * 1000 / 10, Self());
+    EventProcessor self = Self();
+    SchedulerClock clock(1000 * 1000 * 1000 / 10, self);
 }
 
 void ExecEngineImp :: PreStart(void) {

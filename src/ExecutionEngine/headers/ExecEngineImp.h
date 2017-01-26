@@ -214,18 +214,22 @@ struct TokenRequest {
     }
 };
 
+bool operator<(const timespec a, const timespec b) {
+  if (a.tv_sec == b.tv_sec) {
+    return a.tv_nsec > b.tv_nsec;
+  }
+
+  return a.tv_sec > b.tv_sec;
+}
+
 // Because we use a std::priority_queue<TokenRequest>, we want the "greatest"
 // TokenRequest (i.e. the one popped first) to be the one with the soonest
 // minStartDate.
+// If a.tv_nsec > b.tv_nsec, then a < b. This makes sense:
+// a.minStartTime is after b.minStartTime and we want to schedule
+// b before a.
 bool operator<(const TokenRequest a, const TokenRequest b) {
-  if (a.minStartTime.tv_sec == b.minStartTime.tv_sec) {
-    // if a.tv_nsec > b.tv_nsec, then a < b. This makes sense:
-    // a.minStartTime is after b.minStartTime and we want to schedule
-    // b before a.
-    return a.minStartTime.tv_nsec > b.minStartTime.tv_nsec;
-  }
-
-  return a.minStartTime.tv_sec > b.minStartTime.tv_sec;
+  return a.minStartTime < b.minStartTime;
 }
 
 #endif

@@ -3,9 +3,8 @@
 
 #include <ctime>
 
-#include "EEMessageTypes.h"
+#include "EEExternMessages.h"
 #include "SchedulerClock.h"
-#include "SchedulerMessages.h"
 
 // Static constants
 
@@ -15,12 +14,13 @@ constexpr unsigned long long SchedulerClockImp :: NS_PER_SEC;
 
 SchedulerClock :: SchedulerClock ( unsigned long long _ns,
 				   EventProcessor &r ) {
-  evProc = new SchedulerClockImp(_ns, r);
+  this->evGen = new SchedulerClockImp(_ns, r);
 }
 
 SchedulerClockImp :: SchedulerClockImp( unsigned long long _ns,
 					EventProcessor &r ) :
-  period { _ns / NS_PER_SEC, _ns % NS_PER_SEC } {
+  period { static_cast<time_t>(_ns / NS_PER_SEC), 
+    static_cast<long>(_ns % NS_PER_SEC)} {
     recipient.copy(r);
 }
 

@@ -4,6 +4,9 @@
 #ifndef _SCHEDULER_CLOCK_H_
 #define _SCHEDULER_CLOCK_H_
 
+#include "EventGenerator.h"
+#include "EventGeneratorImp.h"
+
 #include <ctime>
 
 class SchedulerClockImp : public EventGeneratorImp {

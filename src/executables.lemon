@@ -33,6 +33,7 @@ Tool_DataPath/executable/dp:
     NumaMemoryAllocator
     Profiler
     QueryManager
+    Scheduler
     Tool_DataPath
     WayPoints
     WPConfig
