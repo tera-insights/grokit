@@ -14,6 +14,8 @@
 //  limitations under the License.
 //
 
+#include <ctime>
+
 #include "AggWayPointImp.h"
 #include "CPUWorkerPool.h"
 #include "Logging.h"
@@ -163,7 +165,7 @@ void AggWayPointImp :: ProcessHoppingDataMsg (HoppingDataMsg &data) {
 
 // the only kind of message we are interested in is a query done message... everything else is
 // just forwarded on, down the graph
-void AggWayPointImp :: ProcessHoppingDownstreamMsg (HoppingDownstreamMsg &message) {
+void AggWayPointImp :: ProcessHoppingDownstreamMsg (HoppingDownstreamMsg &message, timespec minStart) {
 	PDEBUG ("AggWayPointImp :: ProcessHoppingDownstreamMsg ()");
 
 	// this is the set of queries that we are waiting to finish up
@@ -186,7 +188,7 @@ void AggWayPointImp :: ProcessHoppingDownstreamMsg (HoppingDownstreamMsg &messag
 
 		// ask for a worker, if we have not already asked
 		if (!alreadyAreSome) {
-			RequestTokenDelayOK (CPUWorkToken::type);
+		  RequestTokenDelayOK (CPUWorkToken::type, minStart);
 		}
 
 	} else {
@@ -230,7 +232,7 @@ void AggWayPointImp :: ProcessAckMsg (QueryExitContainer &whichOnes, HistoryList
 
 }
 
-void AggWayPointImp :: ProcessDropMsg (QueryExitContainer &whichOnes, HistoryList &lineage) {
+void AggWayPointImp :: ProcessDropMsg (QueryExitContainer &whichOnes, HistoryList &lineage, timespec minStart) {
 	PDEBUG ("AggWayPointImp :: ProcessDropMsg ()");
 
 	// make sure that the HistoryList has one item that is of the right type
@@ -250,7 +252,8 @@ void AggWayPointImp :: ProcessDropMsg (QueryExitContainer &whichOnes, HistoryLis
 	}
 
 	// ask for a worker to re-send the chunk, if we have not already asked
-	if (!alreadyAreSome)
-		RequestTokenDelayOK (CPUWorkToken::type);
+	if (!alreadyAreSome) {
+	    RequestTokenDelayOK (CPUWorkToken::type, minStart);
+	}
 }
 

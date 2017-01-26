@@ -72,7 +72,7 @@ void TextLoaderWayPointImp :: RequestTokens(){
     // one for each element of the list
     for (int i=0; i<noReq; i++) {
         tokensRequested++;
-        RequestTokenDelayOK (CPUWorkToken::type);
+        RequestTokenNowDelayOK (CPUWorkToken::type);
     }
 }
 

@@ -281,7 +281,7 @@ void PrintWayPointImp :: ProcessHoppingDownstreamMsg (HoppingDownstreamMsg &mess
         queriesToFinalize.SuckUp(whichOnesC);
 
         // Get a work token so we can finalize the files
-        RequestTokenDelayOK(CPUWorkToken::type);
+        RequestTokenNowDelayOK(CPUWorkToken::type);
 
     } else {
         FATAL ("Why did I get some hopping downstream message that was not a query done message?\n");

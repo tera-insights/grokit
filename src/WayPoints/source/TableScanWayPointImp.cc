@@ -132,7 +132,7 @@ void TableScanWayPointImp :: RequestGranted (GenericWorkToken &returnVal) {
 
 	// queue up some more work requests
 	for (; numRequestsOut < 5; numRequestsOut++) {
-		RequestTokenDelayOK (DiskWorkToken::type);
+		RequestTokenNowDelayOK (DiskWorkToken::type);
 	}
 }
 
@@ -165,7 +165,7 @@ void TableScanWayPointImp :: ProcessHoppingUpstreamMsg (HoppingUpstreamMsg &mess
 
 	// if we don't have five requests for tokens out (five is a random choice) then send them
 	for (; numRequestsOut < 5; numRequestsOut++) {
-		RequestTokenDelayOK (DiskWorkToken::type);
+		RequestTokenNowDelayOK (DiskWorkToken::type);
 	}
 }
 
@@ -197,7 +197,7 @@ void TableScanWayPointImp :: ProcessDropMsg (QueryExitContainer &whichExits, His
 
 	// if we don't have five requests for tokens out (five is a random choice) then send them
 	for (; numRequestsOut < 5; numRequestsOut++) {
-		RequestTokenDelayOK (DiskWorkToken::type);
+		RequestTokenNowDelayOK (DiskWorkToken::type);
 	}
 }
 
@@ -261,6 +261,6 @@ void TableScanWayPointImp :: ProcessAckMsg (QueryExitContainer &whichExits, Hist
 
 	// if we don't have five requests for tokens out (five is a random choice) then send them
 	for (; numRequestsOut < 5; numRequestsOut++) {
-		RequestTokenDelayOK (DiskWorkToken::type);
+		RequestTokenNowDelayOK (DiskWorkToken::type);
 	}
 }

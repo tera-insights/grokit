@@ -15,6 +15,8 @@
 //
 // for Emacs -*- c++ -*-
 
+#include <ctime>
+
 #include "WayPointImp.h"
 #include "ExecEngine.h"
 #include "JoinWayPointImp.h"
@@ -81,9 +83,15 @@ int WayPointImp :: RequestTokenImmediate (off_t requestType, GenericWorkToken &r
     return executionEngine.RequestTokenImmediate (temp, requestType, returnVal, priority);
 }
 
-void WayPointImp :: RequestTokenDelayOK (off_t requestType, int priority) {
+void WayPointImp :: RequestTokenDelayOK (off_t requestType, timespec minStart, int priority) {
     WayPointID temp = myID;
-    executionEngine.RequestTokenDelayOK (temp, requestType, priority);
+    executionEngine.RequestTokenDelayOK (temp, requestType, minStart, priority);
+}
+
+void WayPointImp :: RequestTokenNowDelayOK(off_t rt, int p) {
+  timespec now;
+  clock_gettime(CLOCK_REALTIME, &now);
+  RequestTokenDelayOK(rt, now, p);
 }
 
 void WayPointImp :: SendHoppingDataMsg( QueryExitContainer& whichOnes, HistoryList& lineage, ExecEngineData& data ) {
@@ -283,7 +291,7 @@ void WayPointImp :: GenerateTokenRequests( void ) {
 
         while( tokenRequestsOut[type] < maxReq ) {
             tokenRequestsOut[type] += 1;
-            RequestTokenDelayOK( type, priority );
+            RequestTokenNowDelayOK( type, priority );
         }
     }
 }
@@ -298,7 +306,7 @@ void WayPointImp :: GenerateTokenRequests( off_t requestType ) {
 
         while( tokenRequestsOut[type] < maxReq ) {
             tokenRequestsOut[type] += 1;
-            RequestTokenDelayOK( type, priority );
+            RequestTokenNowDelayOK( type, priority );
         }
     }
 }

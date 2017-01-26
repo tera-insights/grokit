@@ -153,7 +153,7 @@ void TableWayPointImp :: TypeSpecificConfigure (WayPointConfigureData &configDat
 void TableWayPointImp::GenerateTokenRequests(){
     PDEBUG ("TableWayPointImp :: GenerateTokenRequests()");
     for (; numRequestsOut < FILE_SCANNER_MAX_NO_CHUNKS_REQUEST; numRequestsOut++) {
-        RequestTokenDelayOK (DiskWorkToken::type);
+        RequestTokenNowDelayOK (DiskWorkToken::type);
     }
 }
 

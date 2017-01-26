@@ -116,7 +116,7 @@ void HashTableCleanerWayPointImp :: SendOutRequests () {
     // if one is not here, put out some delayed requests
     for (; numWorkers < MAX_CLEANER_CPU_WORKERS; numWorkers++) {
         //		cout << "Sending request\n";
-        RequestTokenDelayOK (CPUWorkToken::type, 1);
+      RequestTokenNowDelayOK (CPUWorkToken::type, 1);
     }
 }
 

@@ -22,6 +22,7 @@
 #include "EfficientMap.h"
 #include "ExecEngineData.h"
 #include "TableScanID.h"
+#include "RateLimiter.h"
 
 class GIWayPointImp : public WayPointImp {
 
@@ -73,6 +74,8 @@ class GIWayPointImp : public WayPointImp {
     // Cache of chunks that need to be sent out
     typedef TwoWayList<CachedChunk> ChunkCache;
     ChunkCache chunkCache;
+
+    RateLimiter limiter;
 
     // function to request as many tokens as we could use
     void RequestTokens();

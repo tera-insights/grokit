@@ -117,7 +117,7 @@ void TileJoinWayPointImp::GenerateTokenRequests(){
 	// This limit should be CPU limit, but let it be same for now
 	//for (; numDiskRequestsOut < FILE_SCANNER_MAX_NO_CHUNKS_REQUEST; numDiskRequestsOut++) {
 	for (; numDiskRequestsOut < 8; numDiskRequestsOut++) {
-		RequestTokenDelayOK (DiskWorkToken::type);
+		RequestTokenNowDelayOK (DiskWorkToken::type);
 	}
 }
 

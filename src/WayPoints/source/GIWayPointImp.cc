@@ -24,9 +24,6 @@
 #include "Swap.h"
 #include "Stl.h"
 
-// TEMPORARY
-#include "Timer.h"
-
 using namespace std;
 
 const double GIWayPointImp::CACHE_INTERVAL = 0.2;
@@ -83,7 +80,7 @@ void GIWayPointImp :: RequestTokens(){
     // one for each element of the list
     for (int i=0; i<noReq; i++) {
         tokensRequested++;
-        RequestTokenDelayOK (CPUWorkToken::type);
+        RequestTokenDelayOK (CPUWorkToken::type, limiter.GetMinStart());
     }
 }
 
@@ -163,7 +160,7 @@ void GIWayPointImp :: RequestGranted( GenericWorkToken &returnVal ) {
         if (num_chunks_in_flight == 0 && tokensRequested == 0) {
           // Need to request at least one token to prevent deadlocking
           tokensRequested++;
-          RequestTokenDelayOK (CPUWorkToken::type);
+          RequestTokenDelayOK (CPUWorkToken::type, limiter.GetMinStart());
         }
 
         return;

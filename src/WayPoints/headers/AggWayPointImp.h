@@ -17,6 +17,8 @@
 #ifndef AGG_WAY_POINT_IMP
 #define AGG_WAY_POINT_IMP
 
+#include <ctime>
+
 #include "ID.h"
 #include "History.h"
 #include "Tokens.h"
@@ -51,9 +53,9 @@ public:
 	void DoneProducing (QueryExitContainer &whichOnes, HistoryList &history, int returnVal, ExecEngineData& data);
 	void RequestGranted (GenericWorkToken &returnVal);
 	void ProcessHoppingDataMsg (HoppingDataMsg &data);
-	void ProcessHoppingDownstreamMsg (HoppingDownstreamMsg &message);
+	void ProcessHoppingDownstreamMsg (HoppingDownstreamMsg &message, timespec minStart);
 	void ProcessAckMsg (QueryExitContainer &whichOnes, HistoryList &lineage);
-	void ProcessDropMsg (QueryExitContainer &whichOnes, HistoryList &lineage);
+	void ProcessDropMsg (QueryExitContainer &whichOnes, HistoryList &lineage, timespec minStart);
 	
 };
 

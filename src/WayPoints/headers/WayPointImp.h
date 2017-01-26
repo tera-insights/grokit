@@ -18,6 +18,7 @@
 #ifndef _WAYPOINT_IMP_H_
 #define _WAYPOINT_IMP_H_
 
+#include <ctime>
 #include <map>
 #include <utility>
 
@@ -143,7 +144,11 @@ public:
     int RequestTokenImmediate (off_t requestType, GenericWorkToken &returnVal, int priority = 1); // by default we use the highest priority
 
     // like above, but the token can be returned at a later time via a callback to the waypoint
-    void RequestTokenDelayOK (off_t requestType, int priority = 1); // by default we use the highest priority
+    // by default we use the highest priority
+    void RequestTokenDelayOK (off_t requestType, timespec minStart, int priority = 1);
+    
+    // Helper function for RequestTokenDelayOK that sets minStart = now
+    void RequestTokenNowDelayOK(off_t requestType, int priority = 1);
 
     // the following five methods provide five different ways to send messages to/beween waypoints.  There is
     // a sixth way to send a message (the so-called "hopping data message") but this is always sent
