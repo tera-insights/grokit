@@ -109,7 +109,9 @@ ExecEngineImp :: ExecEngineImp (const std::string & _mailbox) :
 
     // Send us ticks 10 times per second
     EventProcessor self = Self();
-    SchedulerClock clock(1000 * 1000 * 1000 / 10, self);
+    SchedulerClock temp(1000 * 1000 * 1000 / 10, self);
+    clock.swap(temp);
+    clock.Run();
 }
 
 void ExecEngineImp :: PreStart(void) {
@@ -127,7 +129,6 @@ void ExecEngineImp :: PreStart(void) {
 
 // this function picks one message/token and delivers it to the place it needs to go to next
 int ExecEngineImp :: DeliverSomeMessage () {
-
 
     // first, see if there are any requests
     if (!AreRequests ())
@@ -341,16 +342,16 @@ int ExecEngineImp :: DeliverSomeMessage () {
 
             /*********************/
         } case CPU_TOKEN_REQUEST: {
-
+	    if (requestListCPU.size() == 0) {
+	      return 1;
+	    }
+	    
             // take out the CPU request
 	    TokenRequest whoIsAsking = requestListCPU.top();
             requestListCPU.pop();
 
             // now we have the CPU request... so we will make sure it has a high enough priority
-	    timespec now;
-	    clock_gettime(CLOCK_REALTIME, &now);
-            if (whoIsAsking.priority > GetPriorityCutoff (CPUWorkToken::type) && 
-		whoIsAsking.minStartTime < now) {
+            if (whoIsAsking.priority > GetPriorityCutoff (CPUWorkToken::type)) {
 
                 // if we got in there, it is not high enough priority, so we just buffer it
                 // for future use... if the priority cutoff changes in the future, we will
@@ -359,6 +360,14 @@ int ExecEngineImp :: DeliverSomeMessage () {
                 frozenOutFromCPU.Insert (whoIsAsking);
                 return 1;
             }
+
+	    timespec now;
+	    clock_gettime(CLOCK_MONOTONIC, &now);
+	    if (whoIsAsking.minStartTime > now) {
+	      InsertRequest(CPU_TOKEN_REQUEST);
+	      requestListCPU.push(whoIsAsking);
+	      return 0;
+	    }
 
             // take out the token
             CPUWorkToken workToken;
@@ -376,15 +385,16 @@ int ExecEngineImp :: DeliverSomeMessage () {
             /*********************/
         } case DISK_TOKEN_REQUEST: {
 
+	    if (requestListDisk.size() == 0) {
+	      return 1;
+	    }
+
             // take out the Disk request
             TokenRequest whoIsAsking = requestListDisk.top();
 	    requestListDisk.pop();
 
             // now we have the Disk request... so we will make sure it has a high enough priority
-	    timespec now;
-	    clock_gettime(CLOCK_REALTIME, &now);
-            if (whoIsAsking.priority > GetPriorityCutoff (DiskWorkToken::type) && 
-				whoIsAsking.minStartTime < now) {
+            if (whoIsAsking.priority > GetPriorityCutoff (DiskWorkToken::type)) {
 
                 // if we got in there, it is not high enough priority, so we just buffer it
                 // for future use... if the priority cutoff changes in the future, we will
@@ -393,6 +403,14 @@ int ExecEngineImp :: DeliverSomeMessage () {
                 frozenOutFromDisk.Insert (whoIsAsking);
                 return 1;
             }
+
+   	    timespec now;
+	    clock_gettime(CLOCK_MONOTONIC, &now);
+	    if (whoIsAsking.minStartTime > now) {
+	      InsertRequest(DISK_TOKEN_REQUEST);
+	      requestListDisk.push(whoIsAsking);
+	      return 0;
+	    }
 
             // take out the token
             DiskWorkToken workToken;
@@ -595,7 +613,6 @@ MESSAGE_HANDLER_DEFINITION_BEGIN(ExecEngineImp, ConfigureExecEngine, ConfigureEx
 
     // at this point, we are fully configured, so we process any messages that are waiting to be delivered
     while (evProc.DeliverSomeMessage ());
-
 } MESSAGE_HANDLER_DEFINITION_END
 
 extern CPUWorkerPool myCPUWorkers;
@@ -675,7 +692,6 @@ MESSAGE_HANDLER_DEFINITION_BEGIN(ExecEngineImp, HoppingDataMsgReady, HoppingData
 
     // and then process any messages that are waiting to be delivered
     while (evProc.DeliverSomeMessage ());
-
 } MESSAGE_HANDLER_DEFINITION_END
 
 
@@ -829,11 +845,11 @@ MESSAGE_HANDLER_DEFINITION_BEGIN(ExecEngineImp, ServiceControlMessage_H, Service
 
 MESSAGE_HANDLER_DEFINITION_BEGIN(ExecEngineImp, TickHandler, TickMessage) {
     if (evProc.unusedCPUTokens.Length () >= evProc.requestListCPU.size()) {
-      evProc.InsertRequest(CPU_TOKEN_REQUEST);
+      evProc.DeliverSomeMessage();
     }
 
     if (evProc.unusedDiskTokens.Length () >= evProc.requestListDisk.size()) {
-      evProc.InsertRequest(DISK_TOKEN_REQUEST);
+      evProc.DeliverSomeMessage();
     }
 } MESSAGE_HANDLER_DEFINITION_END
 

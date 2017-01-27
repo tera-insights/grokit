@@ -17,9 +17,9 @@
 #include "RateLimiter.h"
 
 RateLimiter :: RateLimiter() : 
-  speedupParam(),
-  slowdownParam(2),
-  delay(1000)
+  speedupParam(1000 * 1000), // 1ms
+  slowdownParam(2), // half
+  delay(1000 * 1000) // 1ms
 {}
 
 void RateLimiter :: ChunkOut() {
@@ -30,7 +30,7 @@ void RateLimiter :: ChunkOut() {
 void RateLimiter :: ChunkAcked() {
   chunksAcked++;
   delay -= speedupParam;
-  if (delay < 1000 * 1000) {
+  if (delay < 1000 * 1000) { // 1ms minimum
     delay = 1000 * 1000;
   }
 }
@@ -45,11 +45,15 @@ void RateLimiter :: ChunkDropped() {
 
 timespec RateLimiter :: GetMinStart() {
   timespec when;
-  clock_gettime(CLOCK_REALTIME, &when);
+  clock_gettime(CLOCK_MONOTONIC, &when);
   when.tv_nsec = when.tv_nsec + delay;
   if (when.tv_nsec >= 1000000000L) {
     when.tv_sec++;  
     when.tv_nsec = when.tv_nsec - 1000000000L;
   }
   return when;
+}
+
+uint64_t RateLimiter :: GetDelay() {
+  return delay;
 }

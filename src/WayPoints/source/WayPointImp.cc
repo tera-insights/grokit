@@ -90,7 +90,7 @@ void WayPointImp :: RequestTokenDelayOK (off_t requestType, timespec minStart, i
 
 void WayPointImp :: RequestTokenNowDelayOK(off_t rt, int p) {
   timespec now;
-  clock_gettime(CLOCK_REALTIME, &now);
+  clock_gettime(CLOCK_MONOTONIC, &now);
   RequestTokenDelayOK(rt, now, p);
 }
 

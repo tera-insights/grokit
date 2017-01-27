@@ -30,6 +30,7 @@
 #include "WayPoint.h"
 #include "ServiceData.h"
 #include "ServiceMessages.h"
+#include "SchedulerClock.h"
 
 struct TokenRequest;
 
@@ -74,6 +75,8 @@ private:
     // priority cutoff changes to a value that is no smaller than the priority of the request
     int priorityCPU;
     int priorityDisk;
+
+    EventGenerator clock;
 
     // ask the execution engine to deliver some message
     int DeliverSomeMessage ();
@@ -199,6 +202,12 @@ struct TokenRequest {
 
     TokenRequest () {}
     ~TokenRequest () {}
+
+    TokenRequest(const TokenRequest& other) {
+      whoIsAsking.copy(other.whoIsAsking);
+      priority = other.priority;
+      minStartTime = other.minStartTime;
+    }
 
     TokenRequest (WayPointID whoIn, int priorityIn, timespec minStartTimeIn) {
         whoIsAsking = whoIn;

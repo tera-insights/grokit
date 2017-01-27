@@ -52,6 +52,8 @@ void* EventGeneratorImp::RunInternal(void* aux){
     // force the thread to exit immediately after pthread_cancel is called
     pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 
+    // everything is terrible b/c evGenPtr->PreStart points to random stuff
+    // Pointer to vtable gets screwed up during thread creation
     evGenPtr->PreStart();
 
     while (true){ // infinite loop

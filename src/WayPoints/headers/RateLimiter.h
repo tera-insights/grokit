@@ -37,6 +37,7 @@ class RateLimiter {
   void ChunkAcked(void);
   void ChunkDropped(void);
   timespec GetMinStart(void);
+  uint64_t GetDelay();
 };
 
 #endif //  _RATE_LIMITER_H_

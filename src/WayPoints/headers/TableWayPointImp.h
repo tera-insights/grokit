@@ -21,6 +21,7 @@
 #include "ID.h"
 #include "EfficientMap.h"
 #include "DiskPool.h"
+#include "RateLimiter.h"
 
 #include <string>
 
@@ -71,6 +72,8 @@ class TableWayPointImp : public WayPointImp {
         ClusterRangeList clusterRanges;
 
         QueryToScannerRangeList queryClusterRanges;
+	
+	RateLimiter limiter;
 
         /// AUXILIARY FUNCTIONS
         // look for queries that can tag chunk _chunkId

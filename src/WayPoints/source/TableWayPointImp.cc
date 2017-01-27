@@ -21,6 +21,7 @@
 #include "Logging.h"
 #include "Profiling.h"
 #include "CPUWorkerPool.h"
+#include "RateLimiter.h"
 
 #include <cmath>
 
@@ -55,7 +56,8 @@ TableWayPointImp :: TableWayPointImp () :
     lastChunkId(0),
     numChunks(0),
     clusterRanges(),
-    queryClusterRanges()
+    queryClusterRanges(),
+    limiter()
 {
     PDEBUG ("TableWayPointImp :: TableWayPointImp ()");
 }
@@ -153,7 +155,7 @@ void TableWayPointImp :: TypeSpecificConfigure (WayPointConfigureData &configDat
 void TableWayPointImp::GenerateTokenRequests(){
     PDEBUG ("TableWayPointImp :: GenerateTokenRequests()");
     for (; numRequestsOut < FILE_SCANNER_MAX_NO_CHUNKS_REQUEST; numRequestsOut++) {
-        RequestTokenNowDelayOK (DiskWorkToken::type);
+      RequestTokenDelayOK (DiskWorkToken::type, limiter.GetMinStart());
     }
 }
 
@@ -274,6 +276,8 @@ void TableWayPointImp :: RequestGranted (GenericWorkToken &returnVal) {
         return;
     }
 
+    limiter.ChunkOut();
+
     GenerateTokenRequests();
 }
 
@@ -362,6 +366,9 @@ void TableWayPointImp :: ProcessHoppingUpstreamMsg (HoppingUpstreamMsg &message)
 
 void TableWayPointImp :: ProcessDropMsg (QueryExitContainer &whichExits,
         HistoryList &lineage) {
+
+    limiter.ChunkDropped();
+
     PDEBUG ("TableWayPointImp :: ProcessDropMsg()");
 
     //printf("X"); fflush(stdout);
@@ -508,6 +515,8 @@ void TableWayPointImp :: ProcessAckMsg (QueryExitContainer &whichExits, HistoryL
 
     //printf("."); fflush(stdout);
     PROFILING2_INSTANT("cha", 1, myName);
+
+    limiter.ChunkAcked();
 
     // make sure that the HistoryList has one item that is of the right type
     lineage.MoveToStart ();

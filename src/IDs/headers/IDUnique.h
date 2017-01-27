@@ -155,7 +155,7 @@ void swap( IDUnique & a, IDUnique & b ) {
 
 inline
 void IDUnique::copy(const IDUnique& swapMe){
-    memcpy ((void *) this, (void *) &swapMe, sizeof (IDUnique));
+    id = swapMe.id;
 }
 
 
