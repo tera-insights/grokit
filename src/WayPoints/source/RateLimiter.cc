@@ -17,8 +17,8 @@
 #include "RateLimiter.h"
 
 RateLimiter :: RateLimiter() : 
-  speedupParam(1000 * 1000), // 1ms
-  slowdownParam(2), // half
+  speedupParam(10 * 1000 * 1000), // 10ms
+  slowdownParam(1.2), // half
   delay(1000 * 1000) // 1ms
 {}
 
@@ -54,6 +54,6 @@ timespec RateLimiter :: GetMinStart() {
   return when;
 }
 
-uint64_t RateLimiter :: GetDelay() {
+int64_t RateLimiter :: GetDelay() {
   return delay;
 }

@@ -154,6 +154,8 @@ void TableWayPointImp :: TypeSpecificConfigure (WayPointConfigureData &configDat
 
 void TableWayPointImp::GenerateTokenRequests(){
     PDEBUG ("TableWayPointImp :: GenerateTokenRequests()");
+    std::printf("%s has delay %llu\n", myName.c_str(), 
+		limiter.GetDelay());
     for (; numRequestsOut < FILE_SCANNER_MAX_NO_CHUNKS_REQUEST; numRequestsOut++) {
       RequestTokenDelayOK (DiskWorkToken::type, limiter.GetMinStart());
     }

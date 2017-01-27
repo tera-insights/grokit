@@ -21,14 +21,14 @@
 #include <ctime>
 
 class RateLimiter {
-  double speedupParam;
+  int64_t speedupParam;
   double slowdownParam;
 
-  uint64_t delay; // in nanoseconds
+  int64_t delay; // in nanoseconds
 
-  uint64_t chunksOut;
-  uint64_t chunksAcked;
-  uint64_t chunksDropped;
+  int64_t chunksOut;
+  int64_t chunksAcked;
+  int64_t chunksDropped;
 
  public:
   RateLimiter();
@@ -37,7 +37,7 @@ class RateLimiter {
   void ChunkAcked(void);
   void ChunkDropped(void);
   timespec GetMinStart(void);
-  uint64_t GetDelay();
+  int64_t GetDelay();
 };
 
 #endif //  _RATE_LIMITER_H_
