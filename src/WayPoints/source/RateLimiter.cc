@@ -14,46 +14,102 @@
 //  limitations under the License.
 //
 
+/**
+   RateLimiter calculates the minimum start time at which chunks should be sent.
+   These times are determined by delays from the current CLOCK_MONOTONIC time. 
+   The delays are calculated from a few factors: the average ack time, the send times
+   of chunks currently in-flight, and how many times chunks have been dropped.
+*/
+
+
 #include "RateLimiter.h"
+#include "ExecEngineImp.h"
+
+timespec getNow() {
+  timespec now;
+  clock_gettime(CLOCK_MONOTONIC, &now);
+  return now;
+}
 
 RateLimiter :: RateLimiter() : 
-  speedupParam(10 * 1000 * 1000), // 10ms
-  slowdownParam(1.2), // half
-  delay(1000 * 1000) // 1ms
+  slowdownParam(1.01),
+  averageAckTime(1000 * 1000),
+  oldAckWeight(0.5),
+  inFlight()
 {}
 
-void RateLimiter :: ChunkOut() {
-  chunksOut++;
+int chunksAcked = 0;
+
+void RateLimiter :: ChunkOut(int id) {
+  ChunkWrapper cw;
+  cw.usedInCalc = false;
+  cw.start = getNow();
+  inFlight[id] = cw;
 }
 
-// Delay never goes below 1ms
-void RateLimiter :: ChunkAcked() {
+// New Ack Time = L * Old Ack Time + (1 - L) * Time for this chunk
+void RateLimiter :: ChunkAcked(int id) {
   chunksAcked++;
-  delay -= speedupParam;
-  if (delay < 1000 * 1000) { // 1ms minimum
-    delay = 1000 * 1000;
+  std::printf("chunks acked = %d\n", chunksAcked);
+  auto now = getNow();
+  timespec start = inFlight.at(id).start;
+  
+  // nanoseconds
+  uint64_t elapsed = 1000 * 1000 * 1000 * (now.tv_sec - start.tv_sec);
+
+  // Explicitly handling the subtraction case to avoid problems in case
+  // tv_nsec can't handle negative values.
+  if (now.tv_nsec >= start.tv_nsec) {
+    elapsed += now.tv_nsec - start.tv_nsec;
+  } else {
+    elapsed -= start.tv_nsec - now.tv_nsec;
   }
+
+  averageAckTime = oldAckWeight * averageAckTime + 
+    (1 - oldAckWeight) * elapsed;
 }
 
-void RateLimiter :: ChunkDropped() {
-  chunksDropped++;
-  delay *= slowdownParam;
-  if (delay > 1000 * 1000 * 1000) {
-    delay = 1000 * 1000 * 1000;
-  }
+// Ack Time *= slowdownParam
+void RateLimiter :: ChunkDropped(int id) {
+  inFlight.erase(id);
+  // averageAckTime *= slowdownParam;
 }
 
+/**
+   GetMinStart uses the average ack time to propose a minimum start time m_p.
+   m_p = time_for_oldest_chunk + average_ack_time;
+*/
 timespec RateLimiter :: GetMinStart() {
-  timespec when;
-  clock_gettime(CLOCK_MONOTONIC, &when);
-  when.tv_nsec = when.tv_nsec + delay;
-  if (when.tv_nsec >= 1000000000L) {
-    when.tv_sec++;  
-    when.tv_nsec = when.tv_nsec - 1000000000L;
+  timespec oldest = getNow(); 
+  int oldestKey;
+
+  for (auto iter = inFlight.begin(); iter != inFlight.end(); iter++) {
+    auto current = inFlight[iter->first];
+    if (!current.usedInCalc && current.start < oldest) {
+      oldest = current.start;
+      oldestKey = iter->first;
+    }
   }
-  return when;
+
+  inFlight[oldestKey].usedInCalc = true;
+
+  timespec now = getNow();
+  uint64_t elapsed = 1000ULL * 1000 * 1000 * (now.tv_sec - oldest.tv_sec);
+  if (now.tv_nsec >= oldest.tv_nsec) {
+    elapsed += now.tv_nsec - oldest.tv_nsec;
+  } else {
+    elapsed -= oldest.tv_nsec - now.tv_nsec;
+  }
+  // std::printf("diff b/w now and oldest = %lld\n", elapsed);
+  
+  oldest.tv_nsec += averageAckTime;
+  if (oldest.tv_nsec >= 1000000000L) {
+    oldest.tv_sec++;  
+    oldest.tv_nsec = oldest.tv_nsec - 1000000000L;
+  }
+  return oldest;
 }
 
-int64_t RateLimiter :: GetDelay() {
-  return delay;
+uint64_t RateLimiter :: GetAverageAckTime() {
+  return averageAckTime;
 }

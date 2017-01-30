@@ -154,8 +154,8 @@ void TableWayPointImp :: TypeSpecificConfigure (WayPointConfigureData &configDat
 
 void TableWayPointImp::GenerateTokenRequests(){
     PDEBUG ("TableWayPointImp :: GenerateTokenRequests()");
-    std::printf("%s has delay %llu\n", myName.c_str(), 
-		limiter.GetDelay());
+    std::printf("%s has average ack time %llu\n", myName.c_str(), 
+    	limiter.GetAverageAckTime());
     for (; numRequestsOut < FILE_SCANNER_MAX_NO_CHUNKS_REQUEST; numRequestsOut++) {
       RequestTokenDelayOK (DiskWorkToken::type, limiter.GetMinStart());
     }
@@ -278,7 +278,7 @@ void TableWayPointImp :: RequestGranted (GenericWorkToken &returnVal) {
         return;
     }
 
-    limiter.ChunkOut();
+    limiter.ChunkOut(_chunkId);
 
     GenerateTokenRequests();
 }
@@ -369,8 +369,6 @@ void TableWayPointImp :: ProcessHoppingUpstreamMsg (HoppingUpstreamMsg &message)
 void TableWayPointImp :: ProcessDropMsg (QueryExitContainer &whichExits,
         HistoryList &lineage) {
 
-    limiter.ChunkDropped();
-
     PDEBUG ("TableWayPointImp :: ProcessDropMsg()");
 
     //printf("X"); fflush(stdout);
@@ -388,6 +386,7 @@ void TableWayPointImp :: ProcessDropMsg (QueryExitContainer &whichExits,
 
     Bitstring toKill = qeTranslator.queryExitToBitstring(whichExits);
     ChunkID cnkID = myHistory.get_whichChunk ();
+    limiter.ChunkDropped(cnkID.GetID());
 
     Bitstring ackedQ = ackQueries->GetBits(cnkID.GetInt());
     ackedQ.Intersect(toKill);
@@ -518,8 +517,6 @@ void TableWayPointImp :: ProcessAckMsg (QueryExitContainer &whichExits, HistoryL
     //printf("."); fflush(stdout);
     PROFILING2_INSTANT("cha", 1, myName);
 
-    limiter.ChunkAcked();
-
     // make sure that the HistoryList has one item that is of the right type
     lineage.MoveToStart ();
     FATALIF (lineage.RightLength () != 1 || (lineage.Current ().Type() != TableReadHistory::type),
@@ -529,6 +526,7 @@ void TableWayPointImp :: ProcessAckMsg (QueryExitContainer &whichExits, HistoryL
     TableReadHistory myHistory;
     lineage.Remove (myHistory);
     ChunkID cnkID = myHistory.get_whichChunk ();
+    limiter.ChunkAcked(cnkID.GetID());
 
     // this is the set of totally completed queries
 

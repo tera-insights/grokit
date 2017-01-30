@@ -19,25 +19,28 @@
 
 #include <cinttypes>
 #include <ctime>
+#include <unordered_map>
+
+struct ChunkWrapper {
+  bool usedInCalc; // To avoid computing the same delays
+  timespec start; // When we think it was sent
+};
 
 class RateLimiter {
-  int64_t speedupParam;
   double slowdownParam;
+  double oldAckWeight;
 
-  int64_t delay; // in nanoseconds
-
-  int64_t chunksOut;
-  int64_t chunksAcked;
-  int64_t chunksDropped;
+  uint64_t averageAckTime; // in nanoseconds
+  std::unordered_map<int, ChunkWrapper> inFlight;
 
  public:
   RateLimiter();
 
-  void ChunkOut(void);
-  void ChunkAcked(void);
-  void ChunkDropped(void);
+  void ChunkOut(int id);
+  void ChunkAcked(int id);
+  void ChunkDropped(int id);
   timespec GetMinStart(void);
-  int64_t GetDelay();
+  uint64_t GetAverageAckTime(void);
 };
 
 #endif //  _RATE_LIMITER_H_
