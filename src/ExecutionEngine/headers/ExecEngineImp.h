@@ -20,7 +20,6 @@
 #include <string>
 #include <unordered_map>
 #include <queue>
-#include <ctime>
 
 #include "Tokens.h"
 #include "EventProcessor.h"
@@ -31,6 +30,7 @@
 #include "ServiceData.h"
 #include "ServiceMessages.h"
 #include "SchedulerClock.h"
+#include "RateLimiter.h"
 
 struct TokenRequest;
 
@@ -136,7 +136,7 @@ protected:
     // request a work token for some future time... note that your request can never be granted until
     // the priority cutoff for your request type has been set to a number that is equal to or greater
     // than your request's priority
-    void RequestTokenDelayOK (WayPointID &whoIsAsking, off_t requestType, timespec minStartTime, int priority = 1);
+    void RequestTokenDelayOK (WayPointID &whoIsAsking, off_t requestType, schedule_time minStartTime, int priority = 1);
 
     // this sets the priority cutoff for a particular requet type (note a lower number means a higher
     // cutoff, since 1 is the highest priority).  The way that this works is that no token requests will
@@ -198,9 +198,10 @@ struct TokenRequest {
 
     WayPointID whoIsAsking;
     int priority;
-    timespec minStartTime;
+    schedule_time minStartTime;
 
     TokenRequest () {}
+
     ~TokenRequest () {}
 
     TokenRequest(const TokenRequest& other) {
@@ -209,7 +210,7 @@ struct TokenRequest {
       minStartTime = other.minStartTime;
     }
 
-    TokenRequest (WayPointID whoIn, int priorityIn, timespec minStartTimeIn) {
+    TokenRequest (WayPointID whoIn, int priorityIn, schedule_time minStartTimeIn) {
         whoIsAsking = whoIn;
         priority = priorityIn;
 	minStartTime = minStartTimeIn;
@@ -222,20 +223,6 @@ struct TokenRequest {
         memmove (this, temp, sizeof (TokenRequest));
     }
 };
-
-inline bool operator<(const timespec a, const timespec b) {
-  if (a.tv_sec == b.tv_sec) {
-    return a.tv_nsec < b.tv_nsec;
-  }
-  return a.tv_sec < b.tv_sec;
-}
-
-inline bool operator>(const timespec a, const timespec b) {
-  if (a.tv_sec == b.tv_sec) {
-    return a.tv_nsec > b.tv_nsec;
-  }
-  return a.tv_sec > b.tv_sec;
-}
 
 // Because we use a std::priority_queue<TokenRequest>, we want the "greatest"
 // TokenRequest (i.e. the one popped first) to be the one with the soonest

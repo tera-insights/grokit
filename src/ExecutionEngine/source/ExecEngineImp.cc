@@ -23,8 +23,6 @@
 #include "CommunicationFramework.h"
 #include "SchedulerClock.h"
 
-#include <ctime>
-
 // these are the codes for the various message types handled by the exec engine
 // these are only used internally, within the exec engine
 #define HOPPING_DOWNSTREAM_MESSAGE 1
@@ -361,9 +359,7 @@ int ExecEngineImp :: DeliverSomeMessage () {
                 return 1;
             }
 
-	    timespec now;
-	    clock_gettime(CLOCK_MONOTONIC, &now);
-	    if (whoIsAsking.minStartTime > now) {
+	    if (whoIsAsking.minStartTime > RateLimiter::GetNow()) {
 	      InsertRequest(CPU_TOKEN_REQUEST);
 	      requestListCPU.push(whoIsAsking);
 	      return 0;
@@ -404,9 +400,7 @@ int ExecEngineImp :: DeliverSomeMessage () {
                 return 1;
             }
 
-   	    timespec now;
-	    clock_gettime(CLOCK_MONOTONIC, &now);
-	    if (whoIsAsking.minStartTime > now) {
+	    if (whoIsAsking.minStartTime > RateLimiter::GetNow()) {
 	      InsertRequest(DISK_TOKEN_REQUEST);
 	      requestListDisk.push(whoIsAsking);
 	      return 0;
@@ -472,7 +466,7 @@ int ExecEngineImp :: RequestTokenImmediate (WayPointID &whoIsAsking, off_t reque
     FATAL ("You have asked for an unsupported token type!!\n");
 }
 
-void ExecEngineImp :: RequestTokenDelayOK (WayPointID &whoIsAsking, off_t requestType, timespec minStartTime, int priority) {
+void ExecEngineImp :: RequestTokenDelayOK (WayPointID &whoIsAsking, off_t requestType, schedule_time minStartTime, int priority) {
 
     // create a work request
     TokenRequest temp (whoIsAsking, priority, minStartTime);

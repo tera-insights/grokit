@@ -14,11 +14,10 @@
 //  limitations under the License.
 //
 
-#include <ctime>
-
 #include "AggWayPointImp.h"
 #include "CPUWorkerPool.h"
 #include "Logging.h"
+#include "RateLimiter.h"
 
 using namespace std;
 
@@ -165,7 +164,7 @@ void AggWayPointImp :: ProcessHoppingDataMsg (HoppingDataMsg &data) {
 
 // the only kind of message we are interested in is a query done message... everything else is
 // just forwarded on, down the graph
-void AggWayPointImp :: ProcessHoppingDownstreamMsg (HoppingDownstreamMsg &message, timespec minStart) {
+void AggWayPointImp :: ProcessHoppingDownstreamMsg (HoppingDownstreamMsg &message, schedule_time minStart) {
 	PDEBUG ("AggWayPointImp :: ProcessHoppingDownstreamMsg ()");
 
 	// this is the set of queries that we are waiting to finish up
@@ -232,7 +231,7 @@ void AggWayPointImp :: ProcessAckMsg (QueryExitContainer &whichOnes, HistoryList
 
 }
 
-void AggWayPointImp :: ProcessDropMsg (QueryExitContainer &whichOnes, HistoryList &lineage, timespec minStart) {
+void AggWayPointImp :: ProcessDropMsg (QueryExitContainer &whichOnes, HistoryList &lineage, schedule_time minStart) {
 	PDEBUG ("AggWayPointImp :: ProcessDropMsg ()");
 
 	// make sure that the HistoryList has one item that is of the right type

@@ -15,8 +15,6 @@
 //
 // for Emacs -*- c++ -*-
 
-#include <ctime>
-
 #include "WayPointImp.h"
 #include "ExecEngine.h"
 #include "JoinWayPointImp.h"
@@ -83,15 +81,13 @@ int WayPointImp :: RequestTokenImmediate (off_t requestType, GenericWorkToken &r
     return executionEngine.RequestTokenImmediate (temp, requestType, returnVal, priority);
 }
 
-void WayPointImp :: RequestTokenDelayOK (off_t requestType, timespec minStart, int priority) {
+void WayPointImp :: RequestTokenDelayOK (off_t requestType, schedule_time minStart, int priority) {
     WayPointID temp = myID;
     executionEngine.RequestTokenDelayOK (temp, requestType, minStart, priority);
 }
 
 void WayPointImp :: RequestTokenNowDelayOK(off_t rt, int p) {
-  timespec now;
-  clock_gettime(CLOCK_MONOTONIC, &now);
-  RequestTokenDelayOK(rt, now, p);
+  RequestTokenDelayOK(rt, RateLimiter::GetNow(), p);
 }
 
 void WayPointImp :: SendHoppingDataMsg( QueryExitContainer& whichOnes, HistoryList& lineage, ExecEngineData& data ) {

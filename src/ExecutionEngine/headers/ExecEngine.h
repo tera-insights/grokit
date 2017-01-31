@@ -83,7 +83,7 @@ class ExecEngine : public EventProcessor {
             return temp->RequestTokenImmediate (myID, requestType, returnVal, priority);
         }
 
-        void RequestTokenDelayOK (WayPointID &myID, off_t requestType, timespec minStartTime, int priority = 2) {
+        void RequestTokenDelayOK (WayPointID &myID, off_t requestType, schedule_time minStartTime, int priority = 2) {
             ExecEngineImp *temp = dynamic_cast <ExecEngineImp *> (evProc);
             temp->RequestTokenDelayOK (myID, requestType, minStartTime, priority);
         }

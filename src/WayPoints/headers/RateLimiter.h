@@ -18,19 +18,21 @@
 #define _RATE_LIMITER_H_
 
 #include <cinttypes>
-#include <ctime>
 #include <unordered_map>
+#include <chrono>
+
+typedef std::chrono::time_point<std::chrono::steady_clock> schedule_time;
 
 struct ChunkWrapper {
   bool usedInCalc; // To avoid computing the same delays
-  timespec start; // When we think it was sent
+  schedule_time start; // When we think it was sent
 };
 
 class RateLimiter {
   double slowdownParam;
   double oldAckWeight;
 
-  uint64_t averageAckTime; // in nanoseconds
+  std::chrono::nanoseconds averageAckTime; // in nanoseconds
   std::unordered_map<int, ChunkWrapper> inFlight;
 
  public:
@@ -39,8 +41,10 @@ class RateLimiter {
   void ChunkOut(int id);
   void ChunkAcked(int id);
   void ChunkDropped(int id);
-  timespec GetMinStart(void);
-  uint64_t GetAverageAckTime(void);
+  schedule_time GetMinStart(void);
+  std::chrono::nanoseconds GetAverageAckTime(void);
+
+  static schedule_time GetNow(void);
 };
 
 #endif //  _RATE_LIMITER_H_

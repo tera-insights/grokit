@@ -18,12 +18,12 @@
 #ifndef _WAYPOINT_IMP_H_
 #define _WAYPOINT_IMP_H_
 
-#include <ctime>
 #include <map>
 #include <utility>
 
 #include "WayPoint.h"
 #include "ServiceData.h"
+#include "RateLimiter.h"
 
 // Let's define some useful macros for subclasses to use.
 
@@ -145,7 +145,7 @@ public:
 
     // like above, but the token can be returned at a later time via a callback to the waypoint
     // by default we use the highest priority
-    void RequestTokenDelayOK (off_t requestType, timespec minStart, int priority = 1);
+    void RequestTokenDelayOK (off_t requestType, schedule_time minStart, int priority = 1);
     
     // Helper function for RequestTokenDelayOK that sets minStart = now
     void RequestTokenNowDelayOK(off_t requestType, int priority = 1);

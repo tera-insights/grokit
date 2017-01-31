@@ -25,12 +25,6 @@
 #include "RateLimiter.h"
 #include "ExecEngineImp.h"
 
-timespec getNow() {
-  timespec now;
-  clock_gettime(CLOCK_MONOTONIC, &now);
-  return now;
-}
-
 RateLimiter :: RateLimiter() : 
   slowdownParam(1.01),
   averageAckTime(1000 * 1000),
@@ -43,7 +37,7 @@ int chunksAcked = 0;
 void RateLimiter :: ChunkOut(int id) {
   ChunkWrapper cw;
   cw.usedInCalc = false;
-  cw.start = getNow();
+  cw.start = RateLimiter::GetNow();
   inFlight[id] = cw;
 }
 
@@ -51,36 +45,25 @@ void RateLimiter :: ChunkOut(int id) {
 void RateLimiter :: ChunkAcked(int id) {
   chunksAcked++;
   std::printf("chunks acked = %d\n", chunksAcked);
-  auto now = getNow();
-  timespec start = inFlight.at(id).start;
-  
-  // nanoseconds
-  uint64_t elapsed = 1000 * 1000 * 1000 * (now.tv_sec - start.tv_sec);
-
-  // Explicitly handling the subtraction case to avoid problems in case
-  // tv_nsec can't handle negative values.
-  if (now.tv_nsec >= start.tv_nsec) {
-    elapsed += now.tv_nsec - start.tv_nsec;
-  } else {
-    elapsed -= start.tv_nsec - now.tv_nsec;
-  }
-
-  averageAckTime = oldAckWeight * averageAckTime + 
-    (1 - oldAckWeight) * elapsed;
+  schedule_time now = RateLimiter::GetNow();
+  schedule_time start = inFlight.at(id).start;
+  std::chrono::nanoseconds elapsed = now - start;
+  averageAckTime = std::chrono::duration_cast<std::chrono::nanoseconds>(oldAckWeight * averageAckTime + 
+									(1 - oldAckWeight) * elapsed);
 }
 
 // Ack Time *= slowdownParam
 void RateLimiter :: ChunkDropped(int id) {
   inFlight.erase(id);
-  // averageAckTime *= slowdownParam;
+  averageAckTime *= slowdownParam;
 }
 
 /**
    GetMinStart uses the average ack time to propose a minimum start time m_p.
    m_p = time_for_oldest_chunk + average_ack_time;
 */
-timespec RateLimiter :: GetMinStart() {
-  timespec oldest = getNow(); 
+schedule_time RateLimiter :: GetMinStart() {
+  schedule_time oldest = RateLimiter::GetNow(); 
   int oldestKey;
 
   for (auto iter = inFlight.begin(); iter != inFlight.end(); iter++) {
@@ -93,23 +76,18 @@ timespec RateLimiter :: GetMinStart() {
 
   inFlight[oldestKey].usedInCalc = true;
 
-  timespec now = getNow();
-  uint64_t elapsed = 1000ULL * 1000 * 1000 * (now.tv_sec - oldest.tv_sec);
-  if (now.tv_nsec >= oldest.tv_nsec) {
-    elapsed += now.tv_nsec - oldest.tv_nsec;
-  } else {
-    elapsed -= oldest.tv_nsec - now.tv_nsec;
-  }
+  schedule_time now = RateLimiter::GetNow();
+  std::chrono::nanoseconds elapsed = now - oldest;
   // std::printf("diff b/w now and oldest = %lld\n", elapsed);
   
-  oldest.tv_nsec += averageAckTime;
-  if (oldest.tv_nsec >= 1000000000L) {
-    oldest.tv_sec++;  
-    oldest.tv_nsec = oldest.tv_nsec - 1000000000L;
-  }
-  return oldest;
+  std::printf("returning delay of %lld\n", oldest + averageAckTime);
+  return oldest + averageAckTime;
 }
 
-uint64_t RateLimiter :: GetAverageAckTime() {
+std::chrono::nanoseconds RateLimiter :: GetAverageAckTime() {
   return averageAckTime;
+}
+
+schedule_time RateLimiter :: GetNow() {
+  return std::chrono::steady_clock::now();
 }

@@ -17,13 +17,12 @@
 #ifndef AGG_WAY_POINT_IMP
 #define AGG_WAY_POINT_IMP
 
-#include <ctime>
-
 #include "ID.h"
 #include "History.h"
 #include "Tokens.h"
 #include "WayPointImp.h"
 #include "AggStorageMap.h"
+#include "RateLimiter.h"
 
 /** WARNING: The chunk processing functin has to return 0 and the
 		finalize function 1 otherwise acknoledgements are not sent
@@ -53,9 +52,9 @@ public:
 	void DoneProducing (QueryExitContainer &whichOnes, HistoryList &history, int returnVal, ExecEngineData& data);
 	void RequestGranted (GenericWorkToken &returnVal);
 	void ProcessHoppingDataMsg (HoppingDataMsg &data);
-	void ProcessHoppingDownstreamMsg (HoppingDownstreamMsg &message, timespec minStart);
+	void ProcessHoppingDownstreamMsg (HoppingDownstreamMsg &message, schedule_time minStart);
 	void ProcessAckMsg (QueryExitContainer &whichOnes, HistoryList &lineage);
-	void ProcessDropMsg (QueryExitContainer &whichOnes, HistoryList &lineage, timespec minStart);
+	void ProcessDropMsg (QueryExitContainer &whichOnes, HistoryList &lineage, schedule_time minStart);
 	
 };
 
