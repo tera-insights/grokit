@@ -154,8 +154,6 @@ void TableWayPointImp :: TypeSpecificConfigure (WayPointConfigureData &configDat
 
 void TableWayPointImp::GenerateTokenRequests(){
     PDEBUG ("TableWayPointImp :: GenerateTokenRequests()");
-    std::printf("%s has average ack time %llu\n", myName.c_str(), 
-    	limiter.GetAverageAckTime());
     for (; numRequestsOut < FILE_SCANNER_MAX_NO_CHUNKS_REQUEST; numRequestsOut++) {
       RequestTokenDelayOK (DiskWorkToken::type, limiter.GetMinStart());
     }

@@ -28,7 +28,7 @@
 RateLimiter :: RateLimiter() : 
   slowdownParam(1.01),
   averageAckTime(1000 * 1000),
-  oldAckWeight(0.5),
+  oldAckWeight(0.95),
   inFlight()
 {}
 
@@ -41,20 +41,28 @@ void RateLimiter :: ChunkOut(int id) {
   inFlight[id] = cw;
 }
 
+using FpNanoseconds = std::chrono::duration<double, std::chrono::nanoseconds::period>;
+
 // New Ack Time = L * Old Ack Time + (1 - L) * Time for this chunk
 void RateLimiter :: ChunkAcked(int id) {
   chunksAcked++;
-  std::printf("chunks acked = %d\n", chunksAcked);
   schedule_time now = RateLimiter::GetNow();
   schedule_time start = inFlight.at(id).start;
   std::chrono::nanoseconds elapsed = now - start;
-  averageAckTime = std::chrono::duration_cast<std::chrono::nanoseconds>(oldAckWeight * averageAckTime + 
-									(1 - oldAckWeight) * elapsed);
+  auto foo = oldAckWeight * averageAckTime.count();
+  long firstTerm = oldAckWeight * averageAckTime.count();
+  long secondTerm = (1 - oldAckWeight) * elapsed.count();
+  if (chunksAcked >= 8) {
+    firstTerm *= 0.4;
+    secondTerm *= 0.4;
+  }
+  averageAckTime = std::chrono::nanoseconds(firstTerm + secondTerm);
 }
 
 // Ack Time *= slowdownParam
 void RateLimiter :: ChunkDropped(int id) {
   inFlight.erase(id);
+  chunksAcked = 0;
   averageAckTime *= slowdownParam;
 }
 
@@ -76,11 +84,7 @@ schedule_time RateLimiter :: GetMinStart() {
 
   inFlight[oldestKey].usedInCalc = true;
 
-  schedule_time now = RateLimiter::GetNow();
-  std::chrono::nanoseconds elapsed = now - oldest;
-  // std::printf("diff b/w now and oldest = %lld\n", elapsed);
-  
-  std::printf("returning delay of %lld\n", oldest + averageAckTime);
+  schedule_time now = RateLimiter::GetNow(); 
   return oldest + averageAckTime;
 }
 
