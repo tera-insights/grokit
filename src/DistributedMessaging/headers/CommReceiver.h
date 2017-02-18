@@ -39,7 +39,7 @@ class CommReceiverImp : public EventGeneratorImp {
 
         // Address that this receiver connects to
         HostAddress remoteAddr;
-CommReceiver
+
         // The number of times the connection has failed in a row. Used to determine
         // how long to wait before attempting to re-establish the connection.
         size_t conn_fails;

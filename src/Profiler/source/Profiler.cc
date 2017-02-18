@@ -14,7 +14,7 @@
 #endif
 
 
-
+#include "Settings.h"
 #include <sqlite3.h>
 #include <assert.h>
 #include "Debug.h"
