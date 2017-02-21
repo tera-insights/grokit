@@ -34,6 +34,11 @@
 
 #include <sys/resource.h>
 
+#include "Settings.h"
+
+// global settings
+bool GlobalSettings::batchMode = false;
+
 #include "Errors.h"
 #include "Message.h"
 #include "Coordinator.h"
@@ -76,7 +81,6 @@ int main(int argc, char** argv){
     bool isDaemon=false; // run  as demon and listen to the EXECUTE pipe
     bool quitWhenDone=false; // quit after completing queries
     bool suppressOutput = false; // Suppress profiler output
-    bool batchMode = false;
     bool compileOnly = false;
 
     const rlim_t kStackSize = 64L * 1024L * 1024L;  // min stack size = 64 MB
@@ -119,7 +123,7 @@ int main(int argc, char** argv){
     int c;
     while ((c = getopt (argc, argv, "bde:rqost")) != -1){
         switch(c){
-            case 'b': batchMode=true; break;
+            case 'b': GlobalSettings::batchMode = true; break;
             case 'd': isDaemon=true; break;
             case 'e': progToRun=optarg; break;
             case 'r': rdOnly=true; break;
@@ -170,7 +174,7 @@ int main(int argc, char** argv){
     LOG_ENTRY(1, "MAIN: Communication Framework Started");
 
     // Make the Catalog send a schema update
-    if( !batchMode ) {
+    if( !GlobalSettings::batchMode ) {
         Catalog& catalog = Catalog::GetCatalog();
         catalog.SendUpdate();
     }
@@ -196,7 +200,7 @@ int main(int argc, char** argv){
     // start the execution engine
     executionEngine.ForkAndSpin ();
     // start the coordinator. Exec engine already ticking
-    Coordinator coord(quitWhenDone, batchMode, compileOnly);
+    Coordinator coord(quitWhenDone, GlobalSettings::batchMode, compileOnly);
     globalCoordinator.swap(coord);
     globalCoordinator.ForkAndSpin();
 

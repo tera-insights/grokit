@@ -13,6 +13,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 //
+#include "Settings.h"
 #include "Catalog.h"
 #include "SerializeJson.h"
 #include "Catalog-MSG.h"
@@ -384,6 +385,8 @@ void FromJson(const Json::Value & src, Catalog & dest ) {
 }
 
 void Catalog :: SendUpdate(void) {
+    if (GlobalSettings::batchMode)
+        return;
     // Get proxy actor for the update logger
     HostAddress frontend;
     GetFrontendAddress(frontend);

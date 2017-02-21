@@ -46,6 +46,10 @@ ProfilerImp::ProfilerImp( bool suppress ): lastCpu(0), lastTick(0)
     ,EventProcessorImp(true, "Profiler")
 #endif
 {
+#ifdef PROFILER_SEND_EVENTS
+    FATALIF(GlobalSettings::batchMode, "Cannot be in batch mode and have PROFILER_SEND_EVENTS set.");
+#endif //PROFILER_SEND_EVENTS
+
     RegisterMessageProcessor(ProfileMessage::type, &ProfileMessage_H, 2);
     RegisterMessageProcessor(ProfileSetMessage::type, &ProfileSetMessage_H, 2);
     RegisterMessageProcessor(ProfileIntervalMessage::type, &ProfileIntervalMessage_H, 2);
@@ -56,10 +60,12 @@ ProfilerImp::ProfilerImp( bool suppress ): lastCpu(0), lastTick(0)
 }
 
 void ProfilerImp::PreStart(void) {
-    HostAddress frontend;
-    GetFrontendAddress(frontend);
-    MailboxAddress loggerAddr(frontend, "logger");
-    FindRemoteEventProcessor(loggerAddr, logger);
+    if (!GlobalSettings::batchMode){
+        HostAddress frontend;
+        GetFrontendAddress(frontend);
+        MailboxAddress loggerAddr(frontend, "logger");
+        FindRemoteEventProcessor(loggerAddr, logger);
+    }
 
     timespec lastWallSpec;
     timespec lastCpuSpec;
@@ -154,7 +160,9 @@ MESSAGE_HANDLER_DEFINITION_BEGIN(ProfilerImp, ProfileIntervalMessage_H, ProfileI
 
     evProc.progMap.clear();
 
-    ProfileAggregateMessage::Factory(evProc.logger, evProc.lastTick, msg.wallTime, stats, progress );
+    if (!GlobalSettings::batchMode)
+        ProfileAggregateMessage::Factory(evProc.logger, evProc.lastTick, 
+            msg.wallTime, stats, progress );
 
     evProc.lastCpu = msg.cTime;
     evProc.lastTick = msg.wallTime;
@@ -166,7 +174,8 @@ MESSAGE_HANDLER_DEFINITION_BEGIN(ProfilerImp, ProfileIntervalMessage_H, ProfileI
 
 MESSAGE_HANDLER_DEFINITION_BEGIN(ProfilerImp, PerfTopMessage_H, PerfTopMessage) {
     // Forward to logger
-    PerfTopMessage::Factory( evProc.logger, msg.wallTime, msg.info );
+    if (!GlobalSettings::batchMode)
+        PerfTopMessage::Factory( evProc.logger, msg.wallTime, msg.info );
 
 } MESSAGE_HANDLER_DEFINITION_END
 

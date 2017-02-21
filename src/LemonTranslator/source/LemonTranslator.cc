@@ -13,6 +13,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 //
+#include "Settings.h"
 #include "AttributeManager.h"
 #include "LemonTranslator.h"
 #include <lemon/bfs.h>
@@ -780,7 +781,7 @@ bool LemonTranslator::GetConfig(string dir,
         GenerateCodeJSON(dir);
 
         // Send the generation info to the frontend
-        if( !batchMode ) {
+        if( !GlobalSettings::batchMode ) {
             ifstream genInfoIn("./Generated/GenerationInfo.json");
             Json::Value genInfo;
             genInfoIn >> genInfo;
@@ -1381,7 +1382,7 @@ Json::Value LemonTranslator::GetJsonCleaner() {
 void LemonTranslator::SaveCatalog() {
   Catalog& catalog = Catalog::GetCatalog();
   catalog.SaveCatalog();
-  if (!this->batchMode) {
+  if (!GlobalSettings::batchMode) {
     catalog.SendUpdate();
   }
 }

@@ -13,7 +13,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 //
-
+#include "Settings.h"
 #include "ExecEngineImp.h"
 #include "ExecEngine.h"
 #include "Constants.h"
@@ -110,11 +110,13 @@ void ExecEngineImp :: PreStart(void) {
     EventProcessor self = Self();
     RegisterAsRemoteEventProcessor(self, mailbox);
 
-    // Get proxy for actor in frontend to send service reply and info messages.
-    HostAddress frontend;
-    GetFrontendAddress(frontend);
-    MailboxAddress serviceFrontendAddress(frontend, "grokit_services");
-    FindRemoteEventProcessor(serviceFrontendAddress, serviceFrontend);
+    if (!GlobalSettings::batchMode){
+        // Get proxy for actor in frontend to send service reply and info messages.
+        HostAddress frontend;
+        GetFrontendAddress(frontend);
+        MailboxAddress serviceFrontendAddress(frontend, "grokit_services");
+        FindRemoteEventProcessor(serviceFrontendAddress, serviceFrontend);
+    }
 }
 
 // this function picks one message/token and delivers it to the place it needs to go to next
@@ -820,11 +822,15 @@ MESSAGE_HANDLER_DEFINITION_BEGIN(ExecEngineImp, ServiceControlMessage_H, Service
 } MESSAGE_HANDLER_DEFINITION_END
 
 void ExecEngineImp :: SendServiceReply( ServiceData& reply ) {
-    EventProcessor dest = serviceFrontend;
-    ServiceReplyMessage::Factory(dest, reply);
+    if (!GlobalSettings::batchMode){
+        EventProcessor dest = serviceFrontend;
+        ServiceReplyMessage::Factory(dest, reply);
+    }
 }
 
 void ExecEngineImp :: SendServiceInfo( std::string& serviceID, std::string& status, Json::Value& data ) {
-    EventProcessor dest = serviceFrontend;
-    ServiceInfoMessage::Factory(dest, serviceID, status, data);
+    if (!GlobalSettings::batchMode){
+        EventProcessor dest = serviceFrontend;
+        ServiceInfoMessage::Factory(dest, serviceID, status, data);
+    }
 }
