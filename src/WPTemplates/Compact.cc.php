@@ -91,6 +91,8 @@ int CompactProcessChunkWorkFunc_<?=$wpName?>(WorkDescription& workDescription,
       input_iterator.Advance();
     }
 
+<?  cgCloseColumns($attMap); ?>
+
     // The various information is inserted into the chunk.
 <?  foreach ($attMap as $att => $expr) { ?>
     <?=$att?>_Copy_Column_Out.Done(<?=attCol($att)?>);

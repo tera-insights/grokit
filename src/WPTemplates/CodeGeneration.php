@@ -123,6 +123,16 @@ function cgPutbackColumns($att_map, $chunk, $wpName){ ?>
 
 }
 
+// Closes columns without putting them back into the chunk
+function cgCloseColumns($att_map){ ?>
+<? foreach( $att_map as $att => $qry ){ ?>
+    // Closing column for <?=$att?>:
+    if (<?=$att?>_Qrys.Overlaps(queriesToRun)){
+        <?=$att?>_Column.Done(<?=attCol($att)?>);
+    }
+<? }
+}
+
 
 // Function to extract attributes from columns into local variables
 function cgAccessAttributes($att_map) { ?>
