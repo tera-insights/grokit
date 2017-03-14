@@ -165,6 +165,7 @@ void <?=$className?> :: FromJson( const Json::Value & src ) {
 }
 
 <?  foreach($values as $index => $name ) { ?>
+inline
 bool <?=$className?>::<?=$name?>(void) const {
     return bits & 0x<?=sprintf("%X", (1 << $index))?>;
 }
