@@ -135,7 +135,7 @@ HashTable :: ~HashTable () {
 
 	pthread_mutex_lock (myMutex);
 	(*numCopies)--;
-	if (numCopies > 0) {
+	if (*numCopies > 0) {
 		pthread_mutex_unlock (myMutex);
 		return;
 	}
