@@ -127,6 +127,9 @@ CCFLAGS += -O3 -march=native
 #CCFLAGS += -fsanitize=address
 #LINKFLAGS += -fsanitize=address
 
+# Use standalone ASIO library instead of Boost ASIO for websocket connections
+CCFLAGS += -DASIO_STANDALONE
+
 # antlr3 executable
 ANTLR = java -jar /usr/local/lib/antlr-3.3-complete.jar
 

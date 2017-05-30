@@ -40,9 +40,9 @@ class CommListenerImp : public EventGeneratorImp {
         typedef comm::ws_server_ptr server_ptr;
         typedef comm::ws_server_pair connection_pair;
         typedef comm::ws_server::connection_ptr connection_ptr;
-        typedef comm::ws_server::endpoint_type::message_ptr message_ptr;
+        typedef comm::ws_server::message_ptr message_ptr;
 
-        typedef std::set<connection_hdl> connection_list;
+        typedef std::set<connection_hdl, std::owner_less<connection_hdl>> connection_list;
 
         // The server used by this listener
         server_ptr server;
