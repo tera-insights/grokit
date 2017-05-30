@@ -57,7 +57,7 @@ namespace grokit {
         file_put_contents($filename, $contents, FILE_APPEND);
 
         // Nicely format the generated file
-        shell_exec('astyle --style=kr ' . $filename);
+        shell_exec('clang-format -i --style=LLVM ' . $filename);
     }
 
     /*
