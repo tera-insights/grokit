@@ -40,7 +40,7 @@ typedef Keyify<size_t> Size_t_key;
 class TableScanID : public IDUnique {
     private:
         // constructor from int used by TableScanInfoImp
-        TableScanID(size_t _id):IDUnique(id){ }
+        TableScanID(size_t _id):IDUnique(_id){ }
 
         static std::map<std::string, size_t> nameToID;
 

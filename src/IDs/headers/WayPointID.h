@@ -33,7 +33,7 @@ class WayPointInfoImp;
 class WayPointID : public IDUnique {
 private:
     // constructor from int used by WayPointInfoImp
-    WayPointID(size_t _id):IDUnique(id){ }
+    WayPointID(size_t _id):IDUnique(_id){ }
 
     // map so that we give the same WayPointID to the same string
     static std::map<std::string, size_t> nameToID;
