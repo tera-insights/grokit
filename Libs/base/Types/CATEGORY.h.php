@@ -18,30 +18,46 @@ function CATEGORY( array $t_args ) {
         }
     }
 
-    $cardinality = \count($values);
+    $valid_sizes = [
+        1 => 'uint8_t',
+        2 => 'uint16_t',
+        4 => 'uint32_t',
+        8 => 'uint64_t',
+    ];
 
+    $cardinality = \count($values);
     // Add 1 to the cardinality for the invalid id
     $storageTypeBits = ceil(log($maxID + 1, 2));
-    if( $storageTypeBits > 64 ) {
-        // This should never happen. PHP would explode processing 2^64 values.
-        grokit_error("Unable to store $cardinality values within 64 bits.");
+
+    if (array_key_exists('size.bytes', $t_args)) {
+        $storageBytes = $t_args['size.bytes'];
+        grokit_assert(array_key_exists($storageBytes, $valid_sizes), 'size.bytes must be 1, 2, 4, or 8');
+        $storageType = $valid_sizes[$storageBytes];
+
+        grokit_assert($storageTypeBits <= ($storageBytes * 8), "$storageBytes bytes not enough to store all values");
+    } else {
+        if( $storageTypeBits > 64 ) {
+            // This should never happen. PHP would explode processing 2^64 values.
+            grokit_error("Unable to store $cardinality values within 64 bits.");
+        }
+        else if( $storageTypeBits > 32 ) {
+            $storageType = 'uint64_t';
+            $storageBytes = 8;
+        }
+        else if( $storageTypeBits > 16 ) {
+            $storageType = 'uint32_t';
+            $storageBytes = 4;
+        }
+        else if( $storageTypeBits > 8 ) {
+            $storageType = 'uint16_t';
+            $storageBytes = 2;
+        }
+        else {
+            $storageType = 'uint8_t';
+            $storageBytes = 1;
+        }
     }
-    else if( $storageTypeBits > 32 ) {
-        $storageType = 'uint64_t';
-        $storageBytes = 8;
-    }
-    else if( $storageTypeBits > 16 ) {
-        $storageType = 'uint32_t';
-        $storageBytes = 4;
-    }
-    else if( $storageTypeBits > 8 ) {
-        $storageType = 'uint16_t';
-        $storageBytes = 2;
-    }
-    else {
-        $storageType = 'uint8_t';
-        $storageBytes = 1;
-    }
+
 
     $className = generate_name('CATEGORY');
 
