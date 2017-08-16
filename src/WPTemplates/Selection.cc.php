@@ -75,7 +75,7 @@ int SelectionPreProcessWorkFunc_<?=$wpName?>
             givenStates.MoveToStart();
             GLAPtr reqTemp;
 <?
-                    foreach( $givenStates as $gs ) {
+                    foreach( $given_states as $gs ) {
                         $cstArgs[] = $gs->name();
 ?>
             // Extract state from waypoint[<?=$gs->waypoint()?>]
