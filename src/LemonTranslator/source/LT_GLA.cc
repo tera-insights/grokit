@@ -48,6 +48,21 @@ bool LT_GLA::GetConfig(WayPointConfigureData& where){
     QueryExitContainer myGLAFlowThroughQueryExits;
     GetQueryExits (myGLAFlowThroughQueryExits, myGLAEndingQueryExits);
     PDEBUG("Printing query exits for AGGREGATE WP ID = %s", glaIDOne.getName().c_str());
+#ifdef DEBUG
+        cout << "\nFlow through query exits\n" << flush;
+        myGLAFlowThroughQueryExits.MoveToStart();
+        while (myGLAFlowThroughQueryExits.RightLength()) {
+                (myGLAFlowThroughQueryExits.Current()).Print();
+                myGLAFlowThroughQueryExits.Advance();
+        }
+        cout << "\nEnding query exits\n" << flush;
+        myGLAEndingQueryExits.MoveToStart();
+        while (myGLAEndingQueryExits.RightLength()) {
+                (myGLAEndingQueryExits.Current()).Print();
+                myGLAEndingQueryExits.Advance();
+        }
+        cout << endl;
+#endif
 
     QueryToReqStates myReqStates;
     for( auto it = stateSources.begin(); it != stateSources.end(); ++it ) {
