@@ -883,7 +883,7 @@ namespace grokit {
          * $outputs should be an array of TypeInfo objects giving the types of
          * the given outputs.
          */
-        public function apply( array $inputs, array $outputs ) {
+        public function apply( array $inputs, array $states ) {
             // Ensure that the outputs we are given are exactly the same as the
             // ones we expect.
 

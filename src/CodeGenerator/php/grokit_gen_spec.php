@@ -118,13 +118,13 @@ namespace grokit {
         // Perform the lookup for the GF.
         // If given, $outputs should be an array of TypeInfos giving the outputs
         // expected by the waypoint.
-        public function apply( $inputs ) {
+        public function apply( $inputs, $sargs = [] ) {
             try {
                 $input = [];
                 foreach( $inputs as $n => $v ) {
                     $input[$n] = $v->type();
                 }
-                return lookupGF( $this->name, $this->t_args, $input, $this->alias );
+                return lookupGF( $this->name, $this->t_args, $input, $sargs, $this->alias );
             }
             catch( Exception $e ) {
                 grokit_error( 'Failed to lookup GF ' . $this->name . ' from spec ' . $this->source, $e);

@@ -683,6 +683,11 @@ EOT
         foreach( $qFilters as $query => $qInfo ) {
             $filterAST = ast_get($qInfo, NodeKey::ARGS);
             $gfAST = ast_get($qInfo, NodeKey::TYPE);
+            $sargs = ast_has($qInfo, NodeKey::SARGS) ? parseStateList( ast_get($qInfo, NodeKey::SARGS), $query ) : [];
+            $reqStates = [];
+            foreach( $sargs as $val ) {
+                $reqStates[$val->name()] = $val->type();
+            }
 
             if( $gfAST !== null )
                 $filter = parseNamedExpressionList($filterAST);
@@ -692,7 +697,7 @@ EOT
             $gf = null;
             if( $gfAST !== null ) {
                 $gf = parseGF($gfAST);
-                $gf = $gf->apply($filter);
+                $gf = $gf->apply($filter, $reqStates);
             }
 
             if( ast_has( $qInfo, NodeKey::CARGS) ) {
@@ -702,7 +707,6 @@ EOT
                 $cargs = [];
             }
 
-            $sargs = ast_has($qInfo, NodeKey::SARGS) ? parseStateList( ast_get($qInfo, NodeKey::SARGS), $query ) : [];
 
             $synths = Array();
             $synthAST = ast_get($ast, NodeKey::SYNTH);

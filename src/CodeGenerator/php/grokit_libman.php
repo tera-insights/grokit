@@ -1220,8 +1220,8 @@ namespace {
         return $info;
     }
 
-    function lookupGF( $name, $t_args, $input, $alias = null ) {
-        $args = [ $t_args, $input ];
+    function lookupGF( $name, $t_args, $input, $sargs = [], $alias = null ) {
+        $args = [ $t_args, $input, $sargs ];
         $info = _lookupType($name, $args, $alias);
         grokit_assert( $info->isGF(),
             'Tried looking up ' . $name . ' as a GF, got a ' . $info->kind() . ' instead');
