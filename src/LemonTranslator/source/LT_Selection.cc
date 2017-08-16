@@ -43,6 +43,21 @@ bool LT_Selection::GetConfig(WayPointConfigureData& where){
   QueryExitContainer mySelectionFlowThroughQueryExits;
   GetQueryExits (mySelectionFlowThroughQueryExits, mySelectionEndingQueryExits);
   PDEBUG("Printing query exits for SELECTION WP ID = %s", selectionID.getName().c_str());
+#ifdef DEBUG
+        cout << "\nFlow through query exits\n" << flush;
+        mySelectionFlowThroughQueryExits.MoveToStart();
+        while (mySelectionFlowThroughQueryExits.RightLength()) {
+                (mySelectionFlowThroughQueryExits.Current()).Print();
+                mySelectionFlowThroughQueryExits.Advance();
+        }
+        cout << "\nEnding query exits\n" << flush;
+        mySelectionEndingQueryExits.MoveToStart();
+        while (mySelectionEndingQueryExits.RightLength()) {
+                (mySelectionEndingQueryExits.Current()).Print();
+                mySelectionEndingQueryExits.Advance();
+        }
+        cout << endl;
+#endif
 
   QueryToReqStates myReqStates;
   for( QueryToWayPointIDs::iterator it = states.begin(); it != states.end(); ++it ) {
