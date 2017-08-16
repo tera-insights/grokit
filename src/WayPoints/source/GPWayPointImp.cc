@@ -440,6 +440,7 @@ bool GPWayPointImp :: ReceivedStartProducingMsg(HoppingUpstreamMsg& message, Que
 }
 
 void GPWayPointImp :: GotState( StateContainer& state ) {
+    PDEBUG("GPWayPointImp :: GotState()");
     // Extract information from the state container.
 
     QueryExit qe;
