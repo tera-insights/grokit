@@ -143,7 +143,7 @@ Dictionary::const_iterator Dictionary::end( void ) const {
 }
 
 Dictionary & Dictionary :: GetDictionary( const std::string name ) {
-    std::lock_guard guard{mut_dicts};
+    std::lock_guard<std::mutex> guard{mut_dicts};
     if( dicts.find(name) == dicts.end() ) {
         dicts.insert( make_pair(name, Dictionary(name)) );
     }
