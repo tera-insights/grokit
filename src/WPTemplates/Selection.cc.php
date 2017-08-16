@@ -76,11 +76,11 @@ int SelectionPreProcessWorkFunc_<?=$wpName?>
             GLAPtr reqTemp;
 <?
                     foreach( $given_states as $gs ) {
-                        $cstArgs[] = $gs->name();
+                        $cstArgs[] = '*' . $gs->name();
 ?>
             // Extract state from waypoint[<?=$gs->waypoint()?>]
             <?=$gs->type()?> * <?=$gs->name()?> = nullptr;
-            reqTemp.Swap(givenStates.Current());
+            reqTemp.swap(givenStates.Current());
             FATALIF( reqTemp.get_glaType() != <?=$gs->type()->cHash()?>,
                 "Got different type than expected for required state of type <?=$gs->type()?>");
             <?=$gs->name()?> = (<?=$gs->type()?> *) reqTemp.get_glaPtr();
