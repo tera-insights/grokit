@@ -35,26 +35,28 @@ public:
     LT_Selection(WayPointID id): LT_Waypoint(id)
     {}
 
-    virtual void ClearAllDataStructure();
+    virtual void ClearAllDataStructure() override;
 
-    virtual WaypointType GetType() {return SelectionWaypoint;}
+    virtual WaypointType GetType() override {return SelectionWaypoint;}
 
-    virtual bool AddBypass(QueryID query);
+    virtual bool AddBypass(QueryID query) override;
 
-    virtual void DeleteQuery(QueryID query);
+    virtual void DeleteQuery(QueryID query) override;
 
-    virtual bool AddFilter(QueryID query, SlotSet& atts, StateSourceVec& reqStates, Json::Value& expr);
+    virtual bool AddFilter(QueryID query, SlotSet& atts, StateSourceVec& reqStates, Json::Value& expr) override;
 
-    virtual bool AddSynthesized(QueryID query, SlotID att, SlotSet& atts, Json::Value& expr);
+    virtual bool AddSynthesized(QueryID query, SlotID att, SlotSet& atts, Json::Value& expr) override;
 
-    virtual bool PropagateDown(QueryID query, const SlotSet& atts, SlotSet& result, QueryExit qe);
+    virtual bool PropagateDown(QueryID query, const SlotSet& atts, SlotSet& result, QueryExit qe) override;
 
-    virtual bool PropagateUp(QueryToSlotSet& result);
+    virtual bool PropagateDownTerminating(QueryID query, const SlotSet& atts, SlotSet& rez, QueryExit qe) override;
+
+    virtual bool PropagateUp(QueryToSlotSet& result) override;
 
     // get the content of this waypoint as a large JSON object
-    virtual Json::Value GetJson();
+    virtual Json::Value GetJson() override;
 
-    virtual bool GetConfig(WayPointConfigureData& where);
+    virtual bool GetConfig(WayPointConfigureData& where) override;
 }; // class
 
 #endif // _LT_SELECTION_H_

@@ -172,6 +172,11 @@ bool LT_Selection::PropagateDown(QueryID query, const SlotSet& atts, SlotSet& re
   return true;
 }
 
+bool LT_Selection::PropagateDownTerminating(QueryID query, const SlotSet& atts, SlotSet& result, QueryExit qe) {
+    queryExitTerminating.Insert(qe);
+    return true;
+}
+
 // Implementation bottom -> up as follows for all queries together:
 // 1. used = used + new queries attributes filled after analysis
 // 2. result = attributes coming from below + synthesized
