@@ -82,7 +82,7 @@ int SelectionPreProcessWorkFunc_<?=$wpName?>
             <?=$gs->type()?> * <?=$gs->name()?> = nullptr;
             reqTemp.Swap(givenStates.Current());
             FATALIF( reqTemp.get_glaType() != <?=$gs->type()->cHash()?>,
-                "Got different type than expected for required state of type <?=$gs>type()?>");
+                "Got different type than expected for required state of type <?=$gs->type()?>");
             <?=$gs->name()?> = (<?=$gs->type()?> *) reqTemp.get_glaPtr();
             reqTemp.swap(givenStates.Current());
             givenStates.Advance();
