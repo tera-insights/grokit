@@ -3,7 +3,8 @@
 
 #include <string>
 #include <unordered_map>
-#include <cinttypes>
+#include <cstdint>
+#include <mutex>
 
 // This class represents a dictionary that maps integer values to strings.
 class Dictionary {
@@ -98,6 +99,7 @@ private:
 
     // Storage for global dictionaries
     static DictionaryMap dicts;
+    static std::mutex    mut_dicts;
 
 /* ***** Static Methods ***** */
 public:
