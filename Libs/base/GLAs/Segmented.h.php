@@ -91,9 +91,11 @@ struct <?=$classname?> {
 
 function Segmenter( array $t_args, array $input, array $output, array $given_states) {
     $resType = [ 'fragment', 'multi' ];
-    $system_headers = [ 'array', 'vector', 'memory', 'cinttypes', 'unordered_map', 'thread' ];
+    $system_headers = [ 'array', 'vector', 'memory',
+        'cinttypes', 'unordered_map', 'thread', 'exception' ];
     $user_headers = [ 'HashFunctions.h' ];
     $lib_headers = [];
+    $properties = ['segmented'];
 
     $preferFragment = get_default($t_args, 'inner.prefer.fragment', false);
     $wantedRes = $preferFragment ? ['fragment', 'multi'] : ['multi', 'fragment'];
@@ -288,6 +290,12 @@ public:
 
         SplitState & globalStates = constState.segments;
 
+<?  if ($gla->chunk_boundary) { ?>
+        for (auto &state : localState) {
+            state.ChunkBoundary();
+        }
+<?  } ?>
+
         int theseAreOk[NUM_STATES];
         for( int i = 0; NUM_STATES > i; i++ ) {
 <?  if ($gla->iterable()) { ?>
@@ -480,6 +488,17 @@ public:
         uint64_t segNum = hashVal % NUM_STATES;
         return *constState.segments.Peek(segNum);
     }
+
+    size_type NumSegments() const {
+        return NUM_STATES;
+    }
+
+    const InnerGLA& GetSegment(size_type index) const {
+        if (index >= NUM_STATES) {
+            throw std::out_of_range("index too large");
+        }
+        return *(constState.segments.Peek(index));
+    }
 };
 
 typedef <?=$className?>::Iterator <?=$className?>_Iterator;
@@ -492,6 +511,7 @@ typedef <?=$className?>::Iterator <?=$className?>_Iterator;
         'user_headers'      => $user_headers,
         'lib_headers'       => $lib_headers,
         'libraries'         => $libraries,
+        'properties'        => $properties,
         'input'             => $input,
         'output'            => $output,
         'result_type'       => $resType,
