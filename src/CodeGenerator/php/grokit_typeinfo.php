@@ -743,6 +743,7 @@ namespace grokit {
         private $iterable = false;
         private $finalize_as_state = false;
         private $post_finalize = false;
+        private $pre_chunk = false;
         private $chunk_boundary = false;
         private $intermediates = false;
 
@@ -784,6 +785,9 @@ namespace grokit {
             if( array_key_exists( 'chunk_boundary', $args ) ) {
                 $this->chunk_boundary = $args['chunk_boundary'];
             }
+            if( array_key_exists( 'pre_chunk', $args ) ) {
+                $this->pre_chunk = $args['pre_chunk'];
+            }
 
             if( array_key_exists( 'intermediates' , $args ) ) {
                 $this->intermediates = $args['intermediates'];
@@ -816,6 +820,7 @@ namespace grokit {
         public function iterable() { return $this->iterable; }
         public function finalize_as_state() { return $this->finalize_as_state; }
         public function post_finalize() { return $this->post_finalize; }
+        public function pre_chunk() { return $this->pre_chunk; }
         public function chunk_boundary() { return $this->chunk_boundary; }
         public function intermediates() { return $this->intermediates; }
 

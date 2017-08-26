@@ -710,6 +710,19 @@ int GLAProcessChunkWorkFunc_<?=$wpName?>
 <?
     } // foreach query
 
+    // Tell GLAs that wish to know about the pre-chunk boundary.
+    foreach( $queries as $query => $info ) {
+        $gla = $info['gla'];
+        $glaVar = $glaVars[$query];
+
+        if( $gla->pre_chunk() ) {
+?>
+    <?=$glaVar?>->PreChunk();
+<?
+        } // if GLA wishes to know about pre-chunk boundary
+    } // foreach query
+?>
+
     // Define constants used in expressions
     foreach( $queries as $query => $info ) {
         $input = $info['expressions'];
@@ -723,6 +736,7 @@ int GLAProcessChunkWorkFunc_<?=$wpName?>
 <?
     } // foreach query
 ?>
+
     int64_t numTuples = 0;
     while( !queries.AtEndOfColumn() ) {
         ++numTuples;
