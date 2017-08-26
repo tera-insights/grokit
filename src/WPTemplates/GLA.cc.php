@@ -721,7 +721,6 @@ int GLAProcessChunkWorkFunc_<?=$wpName?>
 <?
         } // if GLA wishes to know about pre-chunk boundary
     } // foreach query
-?>
 
     // Define constants used in expressions
     foreach( $queries as $query => $info ) {
